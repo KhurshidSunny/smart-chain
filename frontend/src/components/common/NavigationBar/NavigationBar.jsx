@@ -1,6 +1,6 @@
-// src/components/common/NavigationBar/NavigationBar.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     AppBar,
     Toolbar,
@@ -9,38 +9,75 @@ import {
     Drawer,
     List,
     ListItem,
-    ListItemIcon,
     ListItemText,
+    ListItemIcon,
+    Divider,
     Box,
+    Button,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import HomeIcon from '@mui/icons-material/Home';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import InventoryIcon from '@mui/icons-material/Inventory';
-import WarehouseIcon from '@mui/icons-material/Warehouse';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import PeopleIcon from '@mui/icons-material/People';
-import { useNavigate } from 'react-router-dom';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 const NavigationBar = () => {
-    const [drawerOpen, setDrawerOpen] = React.useState(false);
-    const user = useSelector((state) => state.auth.user); // Assuming auth slice exists
+    const [drawerOpen, setDrawerOpen] = useState(false);
+    const { user } = useSelector((state) => state.auth); // Assuming authSlice manages user state
+    const location = useLocation();
     const navigate = useNavigate();
 
-    const menuItems = [
-        { text: 'Dashboard', icon: <HomeIcon />, path: '/dashboard', roles: ['all'] },
-        { text: 'Orders', icon: <ShoppingCartIcon />, path: '/orders', roles: ['admin', 'sales', 'warehouse', 'logistics', 'customer_service'] },
-        { text: 'Inventory', icon: <InventoryIcon />, path: '/inventory', roles: ['admin', 'inventory', 'warehouse'] },
-        { text: 'Warehouse', icon: <WarehouseIcon />, path: '/warehouse', roles: ['admin', 'warehouse'] },
-        { text: 'Logistics', icon: <LocalShippingIcon />, path: '/logistics', roles: ['admin', 'logistics'] },
-        { text: 'Feedback', icon: <FeedbackIcon />, path: '/feedback', roles: ['admin', 'customer_service', 'sales'] },
-        { text: 'Users', icon: <PeopleIcon />, path: '/users', roles: ['admin'] },
-    ];
+    // Role-based navigation items
+    const getNavItems = () => {
+        const role = user?.role || 'customer'; // Default to 'customer' if no user
+        const commonItems = [
+            { text: 'Dashboard', path: '/dashboard', icon: <HomeIcon />, roles: ['all'] },
+            { text: 'Orders', path: '/orders', icon: <AssignmentIcon />, roles: ['all'] },
+        ];
 
-    const filteredMenuItems = menuItems.filter(
-        (item) => item.roles.includes('all') || (user && item.roles.includes(user.role))
-    );
+        const roleSpecificItems = {
+            admin: [
+                { text: 'Inventory', path: '/inventory', icon: <InventoryIcon /> },
+                { text: 'Warehouse', path: '/warehouse', icon: <LocalShippingIcon /> },
+                { text: 'Logistics', path: '/logistics', icon: <LocalShippingIcon /> },
+                { text: 'Feedback', path: '/feedback', icon: <FeedbackIcon /> },
+                { text: 'Users', path: '/users', icon: <PeopleIcon /> },
+            ],
+            warehouse_manager: [
+                { text: 'Warehouse', path: '/warehouse', icon: <LocalShippingIcon /> },
+                { text: 'Inventory', path: '/inventory', icon: <InventoryIcon /> },
+            ],
+            warehouse_staff: [
+                { text: 'Warehouse', path: '/warehouse', icon: <LocalShippingIcon /> },
+            ],
+            inventory_manager: [
+                { text: 'Inventory', path: '/inventory', icon: <InventoryIcon /> },
+            ],
+            sales_manager: [
+                { text: 'Feedback', path: '/feedback', icon: <FeedbackIcon /> },
+            ],
+            logistics_manager: [
+                { text: 'Logistics', path: '/logistics', icon: <LocalShippingIcon /> },
+            ],
+            customer_service: [
+                { text: 'Feedback', path: '/feedback', icon: <FeedbackIcon /> },
+            ],
+            customer: [
+                { text: 'Tracking', path: '/tracking', icon: <LocalShippingIcon /> },
+                { text: 'Feedback', path: '/feedback', icon: <FeedbackIcon /> },
+            ],
+        };
+
+        const items = [...commonItems, ...(roleSpecificItems[role] || [])];
+        return items.filter(
+            (item) => item.roles.includes('all') || item.roles.includes(role)
+        );
+    };
+
+    const navItems = getNavItems();
 
     const handleDrawerToggle = () => {
         setDrawerOpen(!drawerOpen);
@@ -51,15 +88,38 @@ const NavigationBar = () => {
         setDrawerOpen(false);
     };
 
+    const handleLogout = () => {
+        // TODO: Dispatch logout action and redirect to login
+        navigate('/login');
+    };
+
     const drawerContent = (
-        <Box sx={{ width: 250 }} role="presentation">
+        <Box sx={{ width: 250 }}>
+            <Typography variant="h6" sx={{ p: 2 }}>
+                Smart-Chain
+            </Typography>
+            <Divider />
             <List>
-                {filteredMenuItems.map((item) => (
-                    <ListItem button key={item.text} onClick={() => handleNavigation(item.path)}>
+                {navItems.map((item) => (
+                    <ListItem
+                        button
+                        key={item.text}
+                        onClick={() => handleNavigation(item.path)}
+                        selected={location.pathname === item.path}
+                        sx={{
+                            bgcolor: location.pathname === item.path ? 'grey.200' : 'inherit',
+                        }}
+                    >
                         <ListItemIcon>{item.icon}</ListItemIcon>
                         <ListItemText primary={item.text} />
                     </ListItem>
                 ))}
+                {user && (
+                    <ListItem button onClick={handleLogout}>
+                        <ListItemIcon><ExitToAppIcon /></ListItemIcon>
+                        <ListItemText primary="Logout" />
+                    </ListItem>
+                )}
             </List>
         </Box>
     );
@@ -69,25 +129,45 @@ const NavigationBar = () => {
             <AppBar position="static">
                 <Toolbar>
                     <IconButton
-                        edge="start"
                         color="inherit"
-                        aria-label="menu"
+                        edge="start"
                         onClick={handleDrawerToggle}
-                        sx={{ mr: 2 }}
+                        sx={{ mr: 2, display: { sm: 'none' } }} // Hidden on larger screens
                     >
                         <MenuIcon />
                     </IconButton>
-                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                        Order Tracking System
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        Smart-Chain
                     </Typography>
-                    {user && (
-                        <Typography variant="subtitle1">
-                            {user.username} ({user.role})
-                        </Typography>
-                    )}
+                    <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                        {navItems.map((item) => (
+                            <Button
+                                key={item.text}
+                                color="inherit"
+                                onClick={() => handleNavigation(item.path)}
+                                sx={{
+                                    mx: 1,
+                                    borderBottom:
+                                        location.pathname === item.path ? '2px solid white' : 'none',
+                                }}
+                            >
+                                {item.text}
+                            </Button>
+                        ))}
+                        {user && (
+                            <Button color="inherit" onClick={handleLogout}>
+                                Logout
+                            </Button>
+                        )}
+                    </Box>
                 </Toolbar>
             </AppBar>
-            <Drawer anchor="left" open={drawerOpen} onClose={handleDrawerToggle}>
+            <Drawer
+                anchor="left"
+                open={drawerOpen}
+                onClose={handleDrawerToggle}
+                sx={{ display: { xs: 'block', sm: 'none' } }} // Visible only on mobile
+            >
                 {drawerContent}
             </Drawer>
         </Box>

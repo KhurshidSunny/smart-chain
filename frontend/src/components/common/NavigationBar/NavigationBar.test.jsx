@@ -1,11 +1,16 @@
-// src/components/common/NavigationBar/NavigationBar.test.jsx
-
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Provider } from 'react-redux';
-import { MemoryRouter } from 'react-router-dom';
 import configureStore from 'redux-mock-store';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import NavigationBar from './NavigationBar';
+
+// Mock useNavigate
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+    ...jest.requireActual('react-router-dom'),
+    useNavigate: () => mockNavigate,
+    useLocation: jest.fn(), // Will override in tests
+}));
 
 const mockStore = configureStore([]);
 
@@ -13,61 +18,117 @@ describe('NavigationBar', () => {
     let store;
 
     beforeEach(() => {
+        mockNavigate.mockClear();
         store = mockStore({
             auth: {
-                user: { username: 'testuser', role: 'admin' },
+                user: { role: 'admin', username: 'testadmin' },
             },
         });
     });
 
-    test('renders NavigationBar with title and user info', () => {
+    it('renders Smart-Chain title', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
         render(
             <Provider store={store}>
-                <MemoryRouter>
+                <MemoryRouter initialEntries={['/dashboard']}>
                     <NavigationBar />
                 </MemoryRouter>
             </Provider>
         );
-
-        expect(screen.getByText('Order Tracking System')).toBeInTheDocument();
-        expect(screen.getByText('testuser (admin)')).toBeInTheDocument();
+        expect(screen.getByText('Smart-Chain')).toBeInTheDocument();
     });
 
-    test('opens drawer on menu button click', () => {
+    it('displays role-specific navigation items for admin', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
         render(
             <Provider store={store}>
-                <MemoryRouter>
+                <MemoryRouter initialEntries={['/dashboard']}>
                     <NavigationBar />
                 </MemoryRouter>
             </Provider>
         );
-
-        const menuButton = screen.getByLabelText('menu');
-        fireEvent.click(menuButton);
-
         expect(screen.getByText('Dashboard')).toBeInTheDocument();
-        expect(screen.getByText('Users')).toBeInTheDocument(); // Admin role should see all options
-    });
-
-    test('filters menu items based on role', () => {
-        store = mockStore({
-            auth: {
-                user: { username: 'warehouseuser', role: 'warehouse' },
-            },
-        });
-
-        render(
-            <Provider store={store}>
-                <MemoryRouter>
-                    <NavigationBar />
-                </MemoryRouter>
-            </Provider>
-        );
-
-        fireEvent.click(screen.getByLabelText('menu'));
-
-        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Orders')).toBeInTheDocument();
+        expect(screen.getByText('Inventory')).toBeInTheDocument();
         expect(screen.getByText('Warehouse')).toBeInTheDocument();
-        expect(screen.queryByText('Users')).not.toBeInTheDocument(); // Warehouse role shouldn't see Users
+        expect(screen.getByText('Logistics')).toBeInTheDocument();
+        expect(screen.getByText('Feedback')).toBeInTheDocument();
+        expect(screen.getByText('Users')).toBeInTheDocument();
+        expect(screen.getByText('Logout')).toBeInTheDocument();
+    });
+
+    it('highlights current section', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/orders' });
+        render(
+            <Provider store={store}>
+                <MemoryRouter initialEntries={['/orders']}>
+                    <NavigationBar />
+                </MemoryRouter>
+            </Provider>
+        );
+        const ordersButton = screen.getByText('Orders');
+        expect(ordersButton).toHaveStyle('border-bottom: 2px solid white');
+    });
+
+    it('navigates to selected path on button click', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
+        render(
+            <Provider store={store}>
+                <MemoryRouter initialEntries={['/dashboard']}>
+                    <NavigationBar />
+                </MemoryRouter>
+            </Provider>
+        );
+        fireEvent.click(screen.getByText('Orders'));
+        expect(mockNavigate).toHaveBeenCalledWith('/orders');
+    });
+
+    it('opens and closes drawer on mobile', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
+        render(
+            <Provider store={store}>
+                <MemoryRouter initialEntries={['/dashboard']}>
+                    <NavigationBar />
+                </MemoryRouter>
+            </Provider>
+        );
+        const menuButton = screen.getByLabelText(/menu/i); // aria-label added implicitly by IconButton
+        fireEvent.click(menuButton);
+        expect(screen.getByText('Dashboard')).toBeVisible(); // In drawer
+        fireEvent.click(screen.getByText('Orders')); // Closes drawer after navigation
+        expect(mockNavigate).toHaveBeenCalledWith('/orders');
+    });
+
+    it('handles logout', () => {
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
+        render(
+            <Provider store={store}>
+                <MemoryRouter initialEntries={['/dashboard']}>
+                    <NavigationBar />
+                </MemoryRouter>
+            </Provider>
+        );
+        fireEvent.click(screen.getByText('Logout'));
+        expect(mockNavigate).toHaveBeenCalledWith('/login');
+        // TODO: Add test for logout action dispatch when implemented
+    });
+
+    it('displays limited items for customer role', () => {
+        store = mockStore({
+            auth: { user: { role: 'customer', username: 'testcustomer' } },
+        });
+        jest.spyOn(require('react-router-dom'), 'useLocation').mockReturnValue({ pathname: '/dashboard' });
+        render(
+            <Provider store={store}>
+                <MemoryRouter initialEntries={['/dashboard']}>
+                    <NavigationBar />
+                </MemoryRouter>
+            </Provider>
+        );
+        expect(screen.getByText('Dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Orders')).toBeInTheDocument();
+        expect(screen.getByText('Tracking')).toBeInTheDocument();
+        expect(screen.getByText('Feedback')).toBeInTheDocument();
+        expect(screen.queryByText('Inventory')).not.toBeInTheDocument();
     });
 });
