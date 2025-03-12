@@ -1,6 +1,6 @@
 # Smart Chain
 
-This versinoo of Smart Chain is a Minimum Viable Product (MVP) for an Order Processing and Real-Time QR Code Tracking System. Built with a microservices architecture, it provides end-to-end visibility for order management, inventory tracking, warehouse operations, logistics, and customer feedback. The system leverages QR codes for real-time updates, ensuring efficiency and transparency across the supply chain.
+This versinoo of Smart Chain is a Minimum Viable Product (MVP) for a modern Supply Chain Management System. Built with a microservices architecture, it provides end-to-end visibility for order management, inventory tracking, warehouse operations, logistics, and customer feedback. The system leverages QR codes for real-time updates, ensuring efficiency and transparency across the supply chain.
 
 ## Project Overview
 
