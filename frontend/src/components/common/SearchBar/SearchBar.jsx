@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     TextField,
     InputAdornment,
@@ -9,6 +9,7 @@ import {
     ListItem,
     ListItemText,
     Typography,
+    Box,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -18,26 +19,33 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
     const [anchorEl, setAnchorEl] = useState(null);
     const [recentSearches, setRecentSearches] = useState([]);
     const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+    const inputRef = useRef(null);
 
-    // Load recent searches from localStorage on mount
     useEffect(() => {
         const storedSearches = JSON.parse(localStorage.getItem('recentSearches')) || [];
         setRecentSearches(storedSearches);
     }, []);
 
-    // Filter suggestions based on query
     useEffect(() => {
         if (query.trim()) {
             const filtered = suggestions.filter((suggestion) =>
                 suggestion.toLowerCase().includes(query.toLowerCase())
             );
-            setFilteredSuggestions(filtered);
-            setAnchorEl(document.getElementById('search-bar'));
+            if (JSON.stringify(filtered) !== JSON.stringify(filteredSuggestions)) {
+                setFilteredSuggestions(filtered);
+            }
+            if (!anchorEl) {
+                setAnchorEl(inputRef.current);
+            }
         } else {
-            setFilteredSuggestions([]);
-            setAnchorEl(null);
+            if (filteredSuggestions.length > 0) {
+                setFilteredSuggestions([]);
+            }
+            if (anchorEl) {
+                setAnchorEl(null);
+            }
         }
-    }, [query, suggestions]);
+    }, [query, suggestions, filteredSuggestions, anchorEl]);
 
     const handleSearch = (searchQuery = query) => {
         if (searchQuery.trim()) {
@@ -45,7 +53,7 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
             const updatedSearches = [
                 searchQuery,
                 ...recentSearches.filter((item) => item !== searchQuery),
-            ].slice(0, 5); // Keep only 5 recent searches
+            ].slice(0, 5);
             setRecentSearches(updatedSearches);
             localStorage.setItem('recentSearches', JSON.stringify(updatedSearches));
             setQuery('');
@@ -75,6 +83,7 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
         <Box sx={{ position: 'relative', width: '100%', maxWidth: 400 }}>
             <TextField
                 id="search-bar"
+                inputRef={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -107,9 +116,10 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
                             <List dense>
                                 {filteredSuggestions.map((suggestion, index) => (
                                     <ListItem
-                                        button
                                         key={index}
+                                        component="button" // Replace deprecated 'button' prop
                                         onClick={() => handleSuggestionClick(suggestion)}
+                                        sx={{ width: '100%' }}
                                     >
                                         <ListItemText primary={suggestion} />
                                     </ListItem>
@@ -124,7 +134,12 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
                             </Typography>
                             <List dense>
                                 {recentSearches.map((search, index) => (
-                                    <ListItem button key={index} onClick={() => handleSearch(search)}>
+                                    <ListItem
+                                        key={index}
+                                        component="button" // Replace deprecated 'button' prop
+                                        onClick={() => handleSearch(search)}
+                                        sx={{ width: '100%' }}
+                                    >
                                         <ListItemText primary={search} />
                                     </ListItem>
                                 ))}

@@ -1,83 +1,69 @@
-import React from 'react';
-import { Button, IconButton, Tooltip, Box } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import { render, screen, fireEvent } from '@testing-library/react';
+import ActionButton from './ActionButton';
+import AddIcon from '@mui/icons-material/Add';
 
-// Define variants for different action types
-const variantStyles = {
-    primary: {
-        backgroundColor: 'primary.main',
-        color: 'white',
-        '&:hover': { backgroundColor: 'primary.dark' },
-    },
-    secondary: {
-        backgroundColor: 'secondary.main',
-        color: 'white',
-        '&:hover': { backgroundColor: 'secondary.dark' },
-    },
-    cancel: {
-        backgroundColor: 'grey.500',
-        color: 'white',
-        '&:hover': { backgroundColor: 'grey.700' },
-    },
-    disabled: {
-        backgroundColor: 'grey.300',
-        color: 'grey.700',
-    },
-};
-
-// Styled button with dynamic variant
-const StyledButton = styled(Button)(({ variant }) => ({
-    borderRadius: 8,
-    padding: '8px 16px',
-    fontWeight: 'bold',
-    textTransform: 'none',
-    ...(variantStyles[variant] || variantStyles.primary),
-}));
-
-const StyledIconButton = styled(IconButton)(({ variant }) => ({
-    ...(variantStyles[variant] || variantStyles.primary),
-}));
-
-const ActionButton = ({
-    label,
-    icon,
-    onClick,
-    variant = 'primary',
-    disabled = false,
-    tooltip = '',
-    isIconOnly = false,
-}) => {
-    const buttonProps = {
-        onClick: disabled ? undefined : onClick,
-        disabled,
-        variant: disabled ? 'disabled' : variant,
-        'aria-label': label || tooltip || 'action button',
+describe('ActionButton', () => {
+    const defaultProps = {
+        label: 'Save',
+        onClick: jest.fn(),
     };
 
-    const buttonContent = (
-        <>
-            {icon && !isIconOnly && <Box sx={{ mr: 1 }}>{icon}</Box>}
-            {(!isIconOnly || !icon) && label}
-        </>
-    );
+    it('renders with label and default styles', () => {
+        render(<ActionButton {...defaultProps} />);
+        const button = screen.getByRole('button', { name: /save/i });
+        expect(button).toBeInTheDocument();
+        expect(button).toHaveAttribute('variant', 'contained');
+        expect(button).toHaveAttribute('color', 'primary');
+    });
 
-    const buttonComponent = isIconOnly ? (
-        <StyledIconButton {...buttonProps}>
-            {icon}
-        </StyledIconButton>
-    ) : (
-        <StyledButton {...buttonProps} startIcon={icon && !isIconOnly ? icon : null}>
-            {buttonContent}
-        </StyledButton>
-    );
+    it('displays icon when provided', () => {
+        render(<ActionButton {...defaultProps} icon={<AddIcon />} />);
+        expect(screen.getByTestId('AddIcon')).toBeInTheDocument(); // Material-UI icons use data-testid
+    });
 
-    return tooltip ? (
-        <Tooltip title={tooltip}>
-            <span>{buttonComponent}</span> {/* Span needed for Tooltip with disabled button */}
-        </Tooltip>
-    ) : (
-        buttonComponent
-    );
-};
+    it('calls onClick when clicked', () => {
+        render(<ActionButton {...defaultProps} />);
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
+        expect(defaultProps.onClick).toHaveBeenCalledTimes(1);
+    });
 
-export default ActionButton;
+    it('shows loading indicator and disables button when loading', () => {
+        render(<ActionButton {...defaultProps} loading />);
+        const button = screen.getByRole('button', { name: /save/i });
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
+        expect(button).toBeDisabled();
+    });
+
+    it('applies disabled state', () => {
+        render(<ActionButton {...defaultProps} disabled />);
+        expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
+    });
+
+    it('uses custom variant, color, and size', () => {
+        render(<ActionButton {...defaultProps} variant="outlined" color="secondary" size="large" />);
+        const button = screen.getByRole('button', { name: /save/i });
+        expect(button).toHaveAttribute('variant', 'outlined');
+        expect(button).toHaveAttribute('color', 'secondary');
+        expect(button).toHaveClass('MuiButton-sizeLarge');
+    });
+
+    it('applies fullWidth when specified', () => {
+        render(<ActionButton {...defaultProps} fullWidth />);
+        expect(screen.getByRole('button', { name: /save/i })).toHaveStyle('width: 100%');
+    });
+
+    it('applies custom sx styles', () => {
+        render(<ActionButton {...defaultProps} sx={{ bgcolor: 'red' }} />);
+        expect(screen.getByRole('button', { name: /save/i })).toHaveStyle('background-color: red');
+    });
+
+    it('does not call onClick when disabled or loading', () => {
+        render(<ActionButton {...defaultProps} disabled />);
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
+        expect(defaultProps.onClick).not.toHaveBeenCalled();
+
+        render(<ActionButton {...defaultProps} loading />);
+        fireEvent.click(screen.getByRole('button', { name: /save/i }));
+        expect(defaultProps.onClick).not.toHaveBeenCalled();
+    });
+});

@@ -1,35 +1,47 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { ThemeProvider } from '@mui/material/styles';
+import { Box } from '@mui/material';
+import store from './redux/store';
+import theme from './assets/styles/theme';
+import AppRoutes from './routes/AppRoutes';
+import NavigationBar from './components/common/NavigationBar/NavigationBar';
 
-function App() {
-  const [count, setCount] = useState(0)
+const App = () => {
+    return (
+        <div className="min-h-screen w-full max-w-full overflow-x-hidden"> {/* Reinforced root overflow protection */}
+            <Provider store={store}>
+                <ThemeProvider theme={theme}>
+                    <BrowserRouter>
+                        <Box
+                            component="main"
+                            sx={{
+                                minHeight: '100vh',
+                                width: '100%',
+                                maxWidth: '100vw',
+                                overflowX: 'hidden',
+                                display: 'flex',
+                                flexDirection: 'column',
+                            }}
+                        >
+                            <NavigationBar />
+                            <Box
+                                sx={{
+                                    flexGrow: 1,
+                                    width: '100%',
+                                    maxWidth: '100vw',
+                                    overflowX: 'hidden',
+                                }}
+                            >
+                                <AppRoutes />
+                            </Box>
+                        </Box>
+                    </BrowserRouter>
+                </ThemeProvider>
+            </Provider>
+        </div>
+    );
+};
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
-
-export default App
+export default App;
