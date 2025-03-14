@@ -2,29 +2,37 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
 import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material'; // Added for password toggle
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { loginStart, loginSuccess, loginFailure } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
-import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 import { registerUser } from '../../../services/authService';
 
+/**
+ * RegistrationPage Component
+ * Description: Handles user registration by collecting required fields per the User model,
+ * validating them, and integrating with Redux and the IAM service for authentication.
+ */
 const RegistrationPage = () => {
     const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-        confirmPassword: '',
-        role: '',
+        firstName: 'test',
+        lastName: 'test',
+        email: 'test@test.com',
+        password: 'testtest',
+        confirmPassword: 'testtest',
     });
-    const [showPassword, setShowPassword] = useState(false); // Toggle for password
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Toggle for confirm password
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formErrors, setFormErrors] = useState({});
+
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { loading, error } = useAppSelector((state) => state.auth);
 
     const validateForm = () => {
         const errors = {};
+        if (!formData.firstName.trim()) errors.firstName = 'First name is required';
+        if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
         if (!formData.email.trim()) errors.email = 'Email is required';
         else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email is invalid';
         if (!formData.password.trim()) errors.password = 'Password is required';
@@ -46,11 +54,14 @@ const RegistrationPage = () => {
         dispatch(loginStart());
         try {
             const response = await registerUser({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
                 email: formData.email,
                 password: formData.password,
-                role: formData.role || 'customer',
             });
             dispatch(loginSuccess({ user: response.user, token: response.token }));
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('refreshToken', response.refreshToken);
             navigate('/dashboard');
         } catch (err) {
             dispatch(loginFailure(err.response?.data?.message || 'Registration failed'));
@@ -64,7 +75,7 @@ const RegistrationPage = () => {
     return (
         <Box
             className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100 px-4"
-            sx={{ width: '100vw', overflowX: 'hidden' }} // Prevent overflow
+            sx={{ width: '100vw', overflowX: 'hidden' }}
         >
             <Box
                 className="w-full max-w-md bg-white p-6 rounded-lg shadow-md"
@@ -89,7 +100,34 @@ const RegistrationPage = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Email Field */}
+                    <TextField
+                        label="First Name"
+                        name="firstName"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        error={!!formErrors.firstName}
+                        helperText={formErrors.firstName}
+                        disabled={loading}
+                        InputProps={{ className: 'bg-gray-50' }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                    />
+
+                    <TextField
+                        label="Last Name"
+                        name="lastName"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                        fullWidth
+                        variant="outlined"
+                        error={!!formErrors.lastName}
+                        helperText={formErrors.lastName}
+                        disabled={loading}
+                        InputProps={{ className: 'bg-gray-50' }}
+                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                    />
+
                     <TextField
                         label="Email"
                         name="email"
@@ -100,13 +138,10 @@ const RegistrationPage = () => {
                         error={!!formErrors.email}
                         helperText={formErrors.email}
                         disabled={loading}
-                        InputProps={{
-                            className: 'bg-gray-50',
-                        }}
+                        InputProps={{ className: 'bg-gray-50' }}
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
 
-                    {/* Password Field with Toggle */}
                     <TextField
                         label="Password"
                         name="password"
@@ -135,7 +170,6 @@ const RegistrationPage = () => {
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
 
-                    {/* Confirm Password Field with Toggle */}
                     <TextField
                         label="Confirm Password"
                         name="confirmPassword"
@@ -164,7 +198,6 @@ const RegistrationPage = () => {
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
 
-                    {/* Submit Button */}
                     <ActionButton
                         label="Register"
                         onClick={handleSubmit}
@@ -179,7 +212,6 @@ const RegistrationPage = () => {
                         }}
                     />
 
-                    {/* Login Link */}
                     <Typography
                         variant="body2"
                         align="center"
@@ -198,14 +230,6 @@ const RegistrationPage = () => {
                         </MuiLink>
                     </Typography>
                 </form>
-
-                {loading && (
-                    <LoadingIndicator
-                        size={30}
-                        message="Registering..."
-                        sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}
-                    />
-                )}
             </Box>
         </Box>
     );

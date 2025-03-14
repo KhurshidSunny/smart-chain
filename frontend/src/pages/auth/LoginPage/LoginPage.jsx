@@ -2,18 +2,23 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
 import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material'; // Added for password toggle
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { loginStart, loginSuccess, loginFailure } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
-import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 import { loginUser } from '../../../services/authService';
 
+/**
+ * LoginPage Component
+ * Description: Handles user login by collecting credentials, validating them, 
+ * and integrating with Redux for state management and the IAM service for authentication.
+ */
 const LoginPage = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false); // Added for password visibility
+    const [email, setEmail] = useState('test@test.com');
+    const [password, setPassword] = useState('testtest');
+    const [showPassword, setShowPassword] = useState(false);
     const [formErrors, setFormErrors] = useState({});
+
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const { loading, error } = useAppSelector((state) => state.auth);
@@ -35,6 +40,8 @@ const LoginPage = () => {
         try {
             const response = await loginUser({ email, password });
             dispatch(loginSuccess({ user: response.user, token: response.token }));
+            localStorage.setItem('token', response.token);
+            localStorage.setItem('refreshToken', response.refreshToken);
             navigate('/dashboard');
         } catch (err) {
             dispatch(loginFailure(err.response?.data?.message || 'Login failed'));
@@ -48,7 +55,7 @@ const LoginPage = () => {
     return (
         <Box
             className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100 px-4"
-            sx={{ width: '100vw', overflowX: 'hidden' }} // Prevent overflow
+            sx={{ width: '100vw', overflowX: 'hidden' }}
         >
             <Box
                 className="w-full max-w-md bg-white p-6 rounded-lg shadow-md"
@@ -73,7 +80,6 @@ const LoginPage = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* Email Field */}
                     <TextField
                         label="Email"
                         value={email}
@@ -89,7 +95,6 @@ const LoginPage = () => {
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
 
-                    {/* Password Field with Toggle */}
                     <TextField
                         label="Password"
                         type={showPassword ? 'text' : 'password'}
@@ -117,7 +122,6 @@ const LoginPage = () => {
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
 
-                    {/* Submit Button */}
                     <ActionButton
                         label="Login"
                         onClick={handleSubmit}
@@ -132,7 +136,6 @@ const LoginPage = () => {
                         }}
                     />
 
-                    {/* Register Link */}
                     <Typography
                         variant="body2"
                         align="center"
@@ -151,14 +154,6 @@ const LoginPage = () => {
                         </MuiLink>
                     </Typography>
                 </form>
-
-                {loading && (
-                    <LoadingIndicator
-                        size={30}
-                        message="Logging in..."
-                        sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}
-                    />
-                )}
             </Box>
         </Box>
     );

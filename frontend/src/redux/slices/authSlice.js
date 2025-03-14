@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const authSlice = createSlice({
     name: 'auth',
     initialState: {
-        user: null, // Will hold user data like { role: 'admin' }
+        user: {role: 'warehouse_manager'}, // Will hold user data like { role: 'admin' }
         token: null,
         loading: false,
         error: null,
@@ -23,7 +23,7 @@ const authSlice = createSlice({
             state.loading = false;
         },
         logout(state) {
-            state.user = null;
+            state.user = {role: ''};
             state.token = null;
             state.loading = false;
             state.error = null;

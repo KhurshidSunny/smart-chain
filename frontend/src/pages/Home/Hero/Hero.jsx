@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Package, TrendingUp, Truck, BarChart2, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 /**
  * HeroSection Component
@@ -84,9 +85,9 @@ const HeroSection = () => {
                             Transform your supply chain with our comprehensive, AI-powered management system. From inventory to logistics, Smart-Chain brings everything together.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center">
+                            <Link to="/login" className="bg-blue-500 hover:bg-blue-600 hover:text-gray-900 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center" >
                                 Get Started <ArrowRight className="ml-2" size={20} />
-                            </button>
+                            </Link>
                             <button className="bg-transparent border-2 border-blue-400 text-blue-100 hover:bg-blue-800 hover:border-blue-300 font-bold py-3 px-6 rounded-lg transition-all">
                                 Schedule Demo
                             </button>

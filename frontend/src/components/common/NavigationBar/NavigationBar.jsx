@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAppSelector, useAppDispatch } from '../../../redux/hooks';
+import { useAppSelector } from '../../../redux/hooks';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     AppBar,
@@ -22,23 +22,16 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import PeopleIcon from '@mui/icons-material/People';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
-import { logout } from '../../../redux/slices/authSlice';
 import SearchBar from '../../../components/common/SearchBar/SearchBar';
+import LogoutButton from '../../../components/common/LogoutButton/LogoutButton'; // Import the new component
 
 /**
  * NavigationBar Component
- * 
- * A responsive navigation bar for the Smart-Chain application, providing role-based navigation links,
- * a search functionality, and logout option. It features a hamburger menu with search for mobile views
- * and a horizontal layout for desktop views where the search bar is next to the logo, and navigation
- * buttons are aligned to the far right, filling leftward.
+ * - Responsive navigation bar for Smart-Chain with role-based links, search, and logout
  */
-
 const NavigationBar = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const { user } = useAppSelector((state) => state.auth);
-    const dispatch = useAppDispatch();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -99,11 +92,6 @@ const NavigationBar = () => {
         setDrawerOpen(false);
     };
 
-    const handleLogout = () => {
-        dispatch(logout());
-        navigate('/login');
-    };
-
     const handleSearch = (query) => {
         navigate(`/search?q=${encodeURIComponent(query)}`);
         setDrawerOpen(false); // Close drawer on search in mobile
@@ -134,11 +122,8 @@ const NavigationBar = () => {
                     </ListItem>
                 ))}
                 {user && (
-                    <ListItem onClick={handleLogout} sx={{ cursor: 'pointer' }}>
-                        <ListItemIcon>
-                            <ExitToAppIcon />
-                        </ListItemIcon>
-                        <ListItemText primary="Logout" />
+                    <ListItem sx={{ cursor: 'pointer' }}>
+                        <LogoutButton variant="text" color="inherit" sx={{ width: '100%', justifyContent: 'flex-start' }} />
                     </ListItem>
                 )}
             </List>
@@ -177,11 +162,6 @@ const NavigationBar = () => {
                             justifyContent: 'flex-end',
                         }}
                     >
-                        {user && (
-                            <Button color="inherit" onClick={handleLogout} sx={{ mx: 1 }}>
-                                Logout
-                            </Button>
-                        )}
                         {navItems.map((item) => (
                             <Button
                                 key={item.text}
@@ -197,6 +177,7 @@ const NavigationBar = () => {
                                 {item.text}
                             </Button>
                         ))}
+                        {user && <LogoutButton variant="outlined" color="inherit" sx={{ mx: 1 }} />}
                     </Box>
                 </Toolbar>
             </AppBar>
