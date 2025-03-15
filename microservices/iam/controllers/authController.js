@@ -17,7 +17,7 @@ exports.login = async (req, res) => {
         user.lastLogin = Date.now();
         await user.save();
 
-        res.json({ token, refreshToken, user: { id: user._id, email: user.email, role: user.roleId.name } });
+        res.json({ token, refreshToken, user: { id: user._id, email: user.email, role: user.roleId.name, firstName: user.firstName, lastName: user.lastName } });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -60,7 +60,7 @@ exports.register = async (req, res) => {
 
         const token = generateToken(user);
         const refreshToken = generateRefreshToken(user);
-        res.status(201).json({ token, refreshToken, user: { id: user._id, email: user.email, role: role.name } });
+        res.status(201).json({ token, refreshToken, user: { id: user._id, email: user.email, role: role.name, firstName: user.firstName, lastName: user.lastName } });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }

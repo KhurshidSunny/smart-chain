@@ -8,6 +8,7 @@ import {
     Card,
     CardContent,
     CardActions,
+    Button,
 } from '@mui/material';
 import ActionButton from '../../components/common/ActionButton/ActionButton';
 import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator';
@@ -118,6 +119,49 @@ const MainDashboard = () => {
         console.log('Dashboard search:', query);
         navigate(`/search?q=${encodeURIComponent(query)}`);
     };
+
+    if (!user) {
+        return (
+            <Box
+                sx={{
+                    p: 3,
+                    bgcolor: 'grey.50',
+                    minHeight: 'calc(100vh - 64px)',
+                    width: '100vw',
+                    overflowX: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                <Typography variant="h4" gutterBottom className="text-gray-800 font-semibold">
+                    Welcome to Smart-Chain
+                </Typography>
+                <Typography variant="h6" color="textSecondary" gutterBottom sx={{ mb: 4 }}>
+                    Please log in or register to access your dashboard.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() => navigate('/login')}
+                        sx={{ px: 4, py: 1.5, bgcolor: 'blue.600', '&:hover': { bgcolor: 'blue.700' } }}
+                    >
+                        Login
+                    </Button>
+                    <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={() => navigate('/register')}
+                        sx={{ px: 4, py: 1.5, borderColor: 'blue.600', color: 'blue.600', '&:hover': { borderColor: 'blue.700', color: 'blue.700' } }}
+                    >
+                        Register
+                    </Button>
+                </Box>
+            </Box>
+        )
+    }
 
     return (
         <Box

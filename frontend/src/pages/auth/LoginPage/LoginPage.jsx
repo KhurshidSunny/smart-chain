@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
 import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { loginStart, loginSuccess, loginFailure } from '../../../redux/slices/authSlice';
+import { loginStart, loginSuccess, loginFailure, clearError } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
 import { loginUser } from '../../../services/authService';
@@ -42,6 +42,7 @@ const LoginPage = () => {
             dispatch(loginSuccess({ user: response.user, token: response.token }));
             localStorage.setItem('token', response.token);
             localStorage.setItem('refreshToken', response.refreshToken);
+            localStorage.setItem('user', JSON.stringify(response.user));
             navigate('/dashboard');
         } catch (err) {
             dispatch(loginFailure(err.response?.data?.message || 'Login failed'));
@@ -49,8 +50,7 @@ const LoginPage = () => {
     };
 
     const handleRegisterClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+        dispatch(clearError());
         navigate('/register');
     };
 

@@ -24,7 +24,6 @@ const validateLogin = (req, res, next) => {
  * Middleware to validate logout request body
  */
 const validateLogout = (req, res, next) => {
-    console.log(req.body)
     const schema = Joi.object({
         refreshToken: Joi.string().required(),
     });

@@ -39,9 +39,6 @@ export const logoutUser = async (dispatch, navigate) => {
     }
     // Clear Redux state
     dispatch(logout());
-    // Clear localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
     // Redirect to login page
     navigate('/login');
 };
