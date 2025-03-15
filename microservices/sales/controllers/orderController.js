@@ -37,11 +37,11 @@ const getOrders = async (req, res) => {
     try {
         const { status } = req.query;
         const userId = req.user.sub;
-        const userRole = req.user.role; // Assume role in JWT payload (e.g., "Customer")
+        const userRole = req.user.role; // role in JWT payload (e.g., "Customer")
 
         let query = {};
         if (status) query.status = status;
-        if (userRole === 'Customer') query.customerId = userId; // Customers see only their orders
+        if (userRole === 'customer') query.customerId = userId; // Customers see only their orders
 
         const orders = await Order.find(query);
         res.json(orders);
@@ -57,7 +57,7 @@ const getOrderById = async (req, res) => {
 
         const userId = req.user.sub;
         const userRole = req.user.role;
-        if (userRole === 'Customer' && order.customerId.toString() !== userId) {
+        if (userRole === 'customer' && order.customerId.toString() !== userId) {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
@@ -74,10 +74,10 @@ const updateOrderStatus = async (req, res) => {
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         const userRole = req.user.role;
-        if (userRole === 'Customer' && status !== 'Cancelled') {
+        if (userRole === 'customer' && status !== 'cancelled') {
             return res.status(403).json({ message: 'Customers can only cancel orders' });
         }
-        if (order.status === 'Shipped' || order.status === 'Delivered') {
+        if (order.status === 'shipped' || order.status === 'delivered') {
             return res.status(400).json({ message: 'Cannot update status after Shipped' });
         }
 

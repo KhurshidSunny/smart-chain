@@ -13,7 +13,7 @@ app.use(passport.initialize());
 
 // Connect to DB and RabbitMQ
 connectDB();
-// connectRabbitMQ();
+connectRabbitMQ();
 
 // Routes
 app.use('/', orderRoutes);

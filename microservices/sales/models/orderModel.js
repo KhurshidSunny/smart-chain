@@ -13,8 +13,8 @@ const orderSchema = new Schema({
     totalAmount: { type: Number, required: true, min: 0 },
     status: {
         type: String,
-        enum: ['Pending', 'Confirmed', 'Packed', 'Shipped', 'Delivered', 'Cancelled'],
-        default: 'Pending',
+        enum: ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled'],
+        default: 'pending',
     },
     shippingAddress: {
         addressId: { type: Schema.Types.ObjectId, required: false }, // Optional IAM Address reference
