@@ -14,7 +14,10 @@ const tokenBlacklistSchema = new mongoose.Schema({
     expiresAt: {
         type: Date,
         required: true,
-        index: { expires: '0s' }, // TTL index to auto-remove expired tokens
+
+        // TTL index to auto-remove expired tokens. This tells MongoDB 
+        // to automatically delete documents when the timestamp in the expiresAt field passes. 
+        index: { expires: '0s' }, 
     },
 }, {
     timestamps: true, // Adds createdAt and updatedAt fields

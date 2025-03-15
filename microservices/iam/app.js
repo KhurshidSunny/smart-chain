@@ -31,9 +31,6 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints
 app.use('/users', userRoutes); // User management endpoints
-app.get('/test', (req, res) => {
-    res.send("hello")
-})
 
 
 

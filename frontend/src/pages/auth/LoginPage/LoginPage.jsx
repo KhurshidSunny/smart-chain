@@ -48,7 +48,9 @@ const LoginPage = () => {
         }
     };
 
-    const handleRegisterClick = () => {
+    const handleRegisterClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         navigate('/register');
     };
 
@@ -145,6 +147,7 @@ const LoginPage = () => {
                         Don’t have an account?{' '}
                         <MuiLink
                             component="button"
+                            type="button"
                             onClick={handleRegisterClick}
                             underline="hover"
                             disabled={loading}

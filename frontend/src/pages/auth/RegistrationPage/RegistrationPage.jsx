@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
-import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
+import { Box, Typography, TextField, Link as MuiLink, Grid } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { loginStart, loginSuccess, loginFailure } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
@@ -99,104 +99,115 @@ const RegistrationPage = () => {
                     />
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <TextField
-                        label="First Name"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleChange}
-                        fullWidth
-                        variant="outlined"
-                        error={!!formErrors.firstName}
-                        helperText={formErrors.firstName}
-                        disabled={loading}
-                        InputProps={{ className: 'bg-gray-50' }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                    />
-
-                    <TextField
-                        label="Last Name"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleChange}
-                        fullWidth
-                        variant="outlined"
-                        error={!!formErrors.lastName}
-                        helperText={formErrors.lastName}
-                        disabled={loading}
-                        InputProps={{ className: 'bg-gray-50' }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                    />
-
-                    <TextField
-                        label="Email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        fullWidth
-                        variant="outlined"
-                        error={!!formErrors.email}
-                        helperText={formErrors.email}
-                        disabled={loading}
-                        InputProps={{ className: 'bg-gray-50' }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                    />
-
-                    <TextField
-                        label="Password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={formData.password}
-                        onChange={handleChange}
-                        fullWidth
-                        variant="outlined"
-                        error={!!formErrors.password}
-                        helperText={formErrors.password}
-                        disabled={loading}
-                        InputProps={{
-                            className: 'bg-gray-50',
-                            endAdornment: (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                <form onSubmit={handleSubmit}>
+                    <Box sx={{ mb: 3 }}>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="First Name"
+                                    name="firstName"
+                                    value={formData.firstName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    variant="outlined"
+                                    error={!!formErrors.firstName}
+                                    helperText={formErrors.firstName}
                                     disabled={loading}
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                >
-                                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                                </button>
-                            ),
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                    />
-
-                    <TextField
-                        label="Confirm Password"
-                        name="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={formData.confirmPassword}
-                        onChange={handleChange}
-                        fullWidth
-                        variant="outlined"
-                        error={!!formErrors.confirmPassword}
-                        helperText={formErrors.confirmPassword}
-                        disabled={loading}
-                        InputProps={{
-                            className: 'bg-gray-50',
-                            endAdornment: (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                                    InputProps={{ className: 'bg-gray-50' }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    label="Last Name"
+                                    name="lastName"
+                                    value={formData.lastName}
+                                    onChange={handleChange}
+                                    fullWidth
+                                    variant="outlined"
+                                    error={!!formErrors.lastName}
+                                    helperText={formErrors.lastName}
                                     disabled={loading}
-                                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                                >
-                                    {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                                </button>
-                            ),
-                        }}
-                        sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
-                    />
+                                    InputProps={{ className: 'bg-gray-50' }}
+                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                />
+                            </Grid>
+                        </Grid>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                        <TextField
+                            label="Email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="outlined"
+                            error={!!formErrors.email}
+                            helperText={formErrors.email}
+                            disabled={loading}
+                            InputProps={{ className: 'bg-gray-50' }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' }, mb: 2 }}
+                        />
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                        <TextField
+                            label="Password"
+                            name="password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={formData.password}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="outlined"
+                            error={!!formErrors.password}
+                            helperText={formErrors.password}
+                            disabled={loading}
+                            InputProps={{
+                                className: 'bg-gray-50',
+                                endAdornment: (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                                        disabled={loading}
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    </button>
+                                ),
+                            }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' }, mb: 2 }}
+                        />
+
+                        <TextField
+                            label="Confirm Password"
+                            name="confirmPassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            fullWidth
+                            variant="outlined"
+                            error={!!formErrors.confirmPassword}
+                            helperText={formErrors.confirmPassword}
+                            disabled={loading}
+                            InputProps={{
+                                className: 'bg-gray-50',
+                                endAdornment: (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
+                                        disabled={loading}
+                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                    </button>
+                                ),
+                            }}
+                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                        />
+                    </Box>
 
                     <ActionButton
                         label="Register"
@@ -221,6 +232,7 @@ const RegistrationPage = () => {
                         Already have an account?{' '}
                         <MuiLink
                             component="button"
+                            type="button"
                             onClick={handleLoginClick}
                             underline="hover"
                             disabled={loading}

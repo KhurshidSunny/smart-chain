@@ -16,12 +16,12 @@ const Role = require('../models/roleModel');
  * - Responds with `401 Unauthorized` if the token is missing or invalid.
  */
 const authenticate = async (req, res, next) => {
-    const token = req.headers.authorization?.split('Bearer ')[1]; // Extract token from header
+    const token = req.headers.authorization?.split('Bearer ')[1];
     if (!token) return res.status(401).json({ message: 'No token provided' });
 
     try {
         const decoded = verifyToken(token);
-        req.user = decoded; // Attach user info to request
+        req.user = decoded; // { sub: userId, role: roleName }
         next();
     } catch (err) {
         res.status(401).json({ message: 'Invalid or expired token' });
@@ -40,7 +40,7 @@ const authenticate = async (req, res, next) => {
  */
 const authorize = (requiredPermission) => async (req, res, next) => {
     try {
-        const role = await Role.findById(req.user.role);
+        const role = await Role.findOne({ name: req.user.role }); // Use role name
         if (!role || !role.permissions.includes(requiredPermission)) {
             return res.status(403).json({ message: 'Insufficient permissions' });
         }

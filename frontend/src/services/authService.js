@@ -2,7 +2,7 @@ import axios from 'axios';
 import { logout } from '../redux/slices/authSlice';
 
 const apiClient = axios.create({
-    baseURL: import.meta.env.VITE_IAM_SERVICE_URL || 'http://localhost:3001', // IAM service URL
+    baseURL: import.meta.env.VITE_IAM_SERVICE_URL || 'http://localhost:3000', // IAM service URL
     headers: { 'Content-Type': 'application/json' },
 });
 

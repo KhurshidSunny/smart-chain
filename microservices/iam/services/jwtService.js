@@ -14,9 +14,9 @@ require('dotenv').config();
  */
 const generateToken = (user) => {
     return jwt.sign(
-        { id: user._id, email: user.email, role: user.roleId },
+        { sub: user._id, role: user.roleId.name }, // Role name for Sales
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRY }
+        { expiresIn: '1h' }
     );
 };
 
@@ -29,17 +29,17 @@ const generateToken = (user) => {
 const generateRefreshToken = (user) => {
     return jwt.sign(
         { id: user._id },
-        process.env.REFRESH_TOKEN_SECRET,
-        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY }
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRY || '7d' }
     );
 };
 
 const verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET); // Throws error if invalid
+    return jwt.verify(token, process.env.JWT_SECRET); // Synchronous for simplicity
 };
 
 const verifyRefreshToken = (token) => {
-    return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET); // Throws error if invalid
+    return jwt.verify(token, process.env.JWT_SECRET); // Synchronous for simplicity
 };
 
 module.exports = { generateToken, generateRefreshToken, verifyToken, verifyRefreshToken };

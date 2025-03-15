@@ -24,6 +24,7 @@ const validateLogin = (req, res, next) => {
  * Middleware to validate logout request body
  */
 const validateLogout = (req, res, next) => {
+    console.log(req.body)
     const schema = Joi.object({
         refreshToken: Joi.string().required(),
     });
@@ -35,10 +36,10 @@ const validateLogout = (req, res, next) => {
 };
 
 // Routes
-router.post('/login', validateLogin, authController.login);
+router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.post('/assign-role', authenticate, authorize('users:write'), authController.assignRole);
 router.post('/refresh', authController.refreshToken);
-router.post('/logout', validateLogout, authController.logout); // New logout route
+router.post('/logout', validateLogout, authController.logout);
 
 module.exports = router;
