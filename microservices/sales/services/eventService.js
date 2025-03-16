@@ -26,12 +26,12 @@ const connectRabbitMQ = async () => {
     // We store it in the 'channel' variable so it can be reused across the app.
     channel = await connection.createChannel();
 
-    // Define the exchange name, pulling it from RABBITMQ_EXCHANGE in .env if set.
+    // Define the exchange name
     // An exchange is like a "router" that directs messages to queues based on routing keys.
     // Fallback to 'smartchain_exchange' if not specified, ensuring it always works even without .env setup.
     const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
 
-    // Define a prefix for queue names from RABBITMQ_QUEUE_PREFIX in .env, with a fallback.
+    // Define a prefix for queue names from RABBITMQ_QUEUE_PREFIX.
     // Queues hold messages until they're consumed. The prefix (e.g., 'smart-chain-') helps organize
     // queues by app name, avoiding conflicts if multiple apps use the same RabbitMQ instance.
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
@@ -55,22 +55,20 @@ const connectRabbitMQ = async () => {
     // This tells RabbitMQ: "Send messages with routing keys like 'sales.order.created' or
     // 'sales.order.updated' to this queue." The '*' is a wildcard for one word.
     // This setup allows the sales service to listen for all order-related events.
-    await channel.bindQueue(queue, exchange, 'sales.order.*');
-
+    await channel.bindQueue(queue, exchange, 'inventory.reserved');
+    await channel.bindQueue(queue, exchange, 'warehouse.order.packed');
+    await channel.bindQueue(queue, exchange, 'logistics.shipment.dispatched');
+    await channel.bindQueue(queue, exchange, 'logistics.order.delivered');
     // Log a success message to confirm the connection worked.
     // Helpful for debugging during development to know the service is ready to send/receive messages.
     console.log('RabbitMQ Connected for Sales Service');
 
     // Log the binding details for clarity. This shows what queue is listening to what exchange
     // and with which routing key pattern, making it easier to troubleshoot message flow.
-    console.log(`Queue ${queue} bound to ${exchange} with routing key 'sales.order.*'`);
+    console.log('RabbitMQ Connected for Sales Service');
+    console.log(`Queue ${queue} bound to ${exchange} with routing keys: inventory.reserved, warehouse.order.packed, logistics.shipment.*, logistics.order.delivered`);
   } catch (error) {
-    // If anything fails (e.g., wrong URL, network issue), log the error for debugging.
-    // This helps you see what went wrong—like an invalid RABBITMQ_URL or RabbitMQ being down.
     console.error('RabbitMQ Connection Error:', error);
-
-    // Re-throw the error so the caller (e.g., app.js) can handle it, like retrying or shutting down.
-    // Without this, the error would be silently swallowed, which could hide problems.
     throw error;
   }
 };
@@ -101,6 +99,31 @@ const publishEvent = (routingKey, message) => {
   console.log(`Event Published: ${routingKey}`, message);
 };
 
+
+const subscribeToEvents = (eventHandlers) => {
+  if (!channel) throw new Error('RabbitMQ channel not initialized');
+  const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}sales_events`;
+
+  channel.consume(queue, (msg) => {
+    if (msg !== null) {
+      const routingKey = msg.fields.routingKey;
+      const message = JSON.parse(msg.content.toString());
+      const handler = eventHandlers[routingKey];
+      console.log(routingKey, message);
+
+      if (handler) {
+        handler(message);
+        channel.ack(msg);
+      } else {
+        console.warn(`No handler for routing key: ${routingKey}`);
+        channel.nack(msg, false, true);
+      }
+    }
+  }, { noAck: false });
+
+  console.log(`Subscribed to events on queue ${queue}`);
+};
+
 // Export the two functions so other parts of the sales service (e.g., orderController.js)
 // can use them to connect to RabbitMQ and publish events like 'OrderCreated'.
-module.exports = { connectRabbitMQ, publishEvent };
+module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents };

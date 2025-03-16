@@ -1,8 +1,10 @@
 const express = require('express');
 const passport = require('passport');
 const connectDB = require('./config/db');
-const { connectRabbitMQ } = require('./services/eventService');
+const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
 const orderRoutes = require('./routes/orderRoutes');
+const eventHandlerController = require('./controllers/events/eventHandlerController');
+
 require('dotenv').config();
 
 const app = express();
@@ -13,7 +15,15 @@ app.use(passport.initialize());
 
 // Connect to DB and RabbitMQ
 connectDB();
-connectRabbitMQ();
+connectRabbitMQ().then(() => {
+  const eventHandlers = {
+    'inventory.reserved': eventHandlerController.handleInventoryReserved,
+    'warehouse.order.packed': eventHandlerController.handleOrderPacked,
+    'logistics.shipment.dispatched': eventHandlerController.handleShipmentDispatched,
+    'logistics.order.delivered': eventHandlerController.handleOrderDelivered,
+  };
+  subscribeToEvents(eventHandlers);
+});
 
 // Routes
 app.use('/', orderRoutes);

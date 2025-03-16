@@ -5,7 +5,7 @@ const { publishEvent } = require('../../services/eventService');
 
 exports.handleOrderCreated = async (message) => {
     try {
-        const { orderId, items } = message;
+        const { orderId, items, customerId } = message;
 
         for (const item of items) {
             const product = await Product.findById(item.productId);
@@ -25,10 +25,10 @@ exports.handleOrderCreated = async (message) => {
 
             await new InventoryTransaction({
                 productId: item.productId,
-                type: 'Reserved',
+                type: 'reserved',
                 quantity: item.quantity,
                 orderId,
-                performedBy: 'system',
+                performedBy: customerId,
             }).save();
 
             if (product.stockLevel <= product.reorderPoint) {
@@ -60,7 +60,7 @@ exports.handleOrderCancelled = async (message) => {
 
             await new InventoryTransaction({
                 productId: item.productId,
-                type: 'Released',
+                type: 'released',
                 quantity: item.quantity,
                 orderId,
                 performedBy: 'system',
@@ -86,7 +86,7 @@ exports.handleOrderPacked = async (message) => {
         for (const item of reservation.items) {
             await new InventoryTransaction({
                 productId: item.productId,
-                type: 'Sold',
+                type: 'sold',
                 quantity: item.quantity,
                 orderId,
                 performedBy: 'system',

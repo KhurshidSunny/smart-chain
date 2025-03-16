@@ -35,7 +35,7 @@ const generateRefreshToken = (user) => {
 };
 
 const verifyToken = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET); // Synchronous for simplicity
+    return jwt.verify(token, process.env.JWT_SECRET);
 };
 
 const verifyRefreshToken = (token) => {

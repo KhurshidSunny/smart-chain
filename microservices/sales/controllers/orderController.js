@@ -1,12 +1,12 @@
 const Order = require('../models/orderModel');
-const { publishEvent } = require('../services/eventService');
+const { publishOrderCreated } = require('./events/eventHandlerController');
 
 const generateOrderNumber = () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-const createOrder = async (req, res) => {
+exports.createOrder = async (req, res) => {
     try {
         const { items, shippingAddress, notes } = req.body;
-        const customerId = req.user.sub; // From JWT (customer or staff)
+        const customerId = req.user.sub; // From JWT
         const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
         const orderNumber = generateOrderNumber();
 
@@ -15,33 +15,28 @@ const createOrder = async (req, res) => {
             customerId,
             items,
             totalAmount,
-            shippingAddress, // Includes addressId or full address
+            shippingAddress,
             createdBy: req.user.sub,
             notes,
         });
 
         await order.save();
-        publishEvent('sales.order.created', {
-            orderId: order._id,
-            customerId,
-            items: items.map(item => ({ productId: item.productId, quantity: item.quantity })),
-        });
-
+        publishOrderCreated(order); // Event publishing moved to eventHandlerController
         res.status(201).json(order);
     } catch (error) {
         res.status(500).json({ message: 'Error creating order', error: error.message });
     }
 };
 
-const getOrders = async (req, res) => {
+exports.getOrders = async (req, res) => {
     try {
         const { status } = req.query;
         const userId = req.user.sub;
-        const userRole = req.user.role; // role in JWT payload (e.g., "Customer")
+        const userRole = req.user.role;
 
         let query = {};
         if (status) query.status = status;
-        if (userRole === 'customer') query.customerId = userId; // Customers see only their orders
+        if (userRole === 'customer') query.customerId = userId;
 
         const orders = await Order.find(query);
         res.json(orders);
@@ -50,7 +45,7 @@ const getOrders = async (req, res) => {
     }
 };
 
-const getOrderById = async (req, res) => {
+exports.getOrderById = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -67,7 +62,7 @@ const getOrderById = async (req, res) => {
     }
 };
 
-const updateOrderStatus = async (req, res) => {
+exports.updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
         const order = await Order.findById(req.params.id);
@@ -89,5 +84,3 @@ const updateOrderStatus = async (req, res) => {
         res.status(500).json({ message: 'Error updating order status', error: error.message });
     }
 };
-
-module.exports = { createOrder, getOrders, getOrderById, updateOrderStatus };
