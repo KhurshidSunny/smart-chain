@@ -1,5 +1,6 @@
 const Order = require('../../models/orderModel');
 const { publishEvent } = require('../../services/eventService');
+const QRCode = require('qrcode'); // Import QRCode library
 
 exports.publishOrderCreated = async (order) => {
     try {
@@ -21,6 +22,13 @@ exports.handleInventoryReserved = async (message) => {
         const order = await Order.findById(orderId);
         if (!order) return console.warn(`Order ${orderId} not found`);
 
+        // Generate QR code with orderId
+        const qrCodeData = await QRCode.toString(order._id.toString(), { type: 'utf8' });
+        order.qrCode = qrCodeData; 
+        console.log(`QR code generated for order ${order.qrCode}`);
+
+
+        // Update order status
         order.status = 'confirmed';
         order.updatedAt = Date.now();
         await order.save();

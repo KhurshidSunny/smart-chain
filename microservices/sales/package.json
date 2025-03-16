@@ -18,7 +18,8 @@
     "express-validator": "^7.2.1",
     "mongoose": "^8.12.1",
     "passport": "^0.7.0",
-    "passport-jwt": "^4.0.1"
+    "passport-jwt": "^4.0.1",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
