@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Quagga from 'quagga';
 import {
     Box,
@@ -15,7 +15,6 @@ const QRCodeScanner = ({ onScan, onError }) => {
     const [error, setError] = useState(null);
     const videoRef = useRef(null);
 
-    // Initialize Quagga scanner
     useEffect(() => {
         if (isScanning) {
             Quagga.init(
@@ -27,11 +26,11 @@ const QRCodeScanner = ({ onScan, onError }) => {
                         constraints: {
                             width: 640,
                             height: 480,
-                            facingMode: 'environment', // Use rear camera if available
+                            facingMode: 'environment',
                         },
                     },
                     decoder: {
-                        readers: ['code_128_reader', 'ean_reader', 'qr_code_reader'], // Add more as needed
+                        readers: ['code_128_reader', 'ean_reader', 'qr_code_reader'],
                     },
                     locator: {
                         patchSize: 'medium',
@@ -58,12 +57,9 @@ const QRCodeScanner = ({ onScan, onError }) => {
                 setIsScanning(false);
             });
 
-            Quagga.onProcessed((result) => {
-                // Optional: Add visual feedback (e.g., bounding box) if needed
-            });
+            Quagga.onProcessed((result) => {});
         }
 
-        // Cleanup on unmount or stop
         return () => {
             if (isScanning) {
                 Quagga.stop();
@@ -109,7 +105,7 @@ const QRCodeScanner = ({ onScan, onError }) => {
                     width: '100%',
                     maxWidth: 640,
                     height: 480,
-                    border: '2px solid grey',
+                    border: '2px solid neutral-light',
                     borderRadius: 1,
                     overflow: 'hidden',
                     mb: 2,
@@ -123,7 +119,7 @@ const QRCodeScanner = ({ onScan, onError }) => {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            border: '2px dashed red',
+                            border: '2px dashed error',
                             width: '50%',
                             height: '50%',
                             pointerEvents: 'none',

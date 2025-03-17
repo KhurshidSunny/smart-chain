@@ -1,27 +1,34 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { loginStart, loginSuccess, loginFailure, clearError } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
 import { loginUser } from '../../../services/authService';
 
-/**
- * LoginPage Component
- * Description: Handles user login by collecting credentials, validating them, 
- * and integrating with Redux for state management and the IAM service for authentication.
- */
 const LoginPage = () => {
     const [email, setEmail] = useState('admin@test.com');
     const [password, setPassword] = useState('12345678');
     const [showPassword, setShowPassword] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { loading, error } = useAppSelector((state) => state.auth);
+    const queryClient = useQueryClient();
+
+    const loginMutation = useMutation({
+        mutationFn: loginUser,
+        onSuccess: (data) => {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            queryClient.setQueryData(['authUser'], data.user);
+            navigate('/dashboard');
+        },
+        onError: (error) => {
+            setFormErrors({ server: error.response?.data?.message || 'Login failed' });
+        },
+    });
 
     const validateForm = () => {
         const errors = {};
@@ -32,49 +39,37 @@ const LoginPage = () => {
         return Object.keys(errors).length === 0;
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (!validateForm()) return;
-
-        dispatch(loginStart());
-        try {
-            const response = await loginUser({ email, password });
-            dispatch(loginSuccess({ user: response.user, token: response.token }));
-            localStorage.setItem('token', response.token);
-            localStorage.setItem('refreshToken', response.refreshToken);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            navigate('/dashboard');
-        } catch (err) {
-            dispatch(loginFailure(err.response?.data?.message || 'Login failed'));
-        }
+        loginMutation.mutate({ email, password });
     };
 
-    const handleRegisterClick = (e) => {
-        dispatch(clearError());
+    const handleRegisterClick = () => {
         navigate('/register');
     };
 
     return (
         <Box
-            className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100 px-4"
+            className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-background-default px-4"
             sx={{ width: '100vw', overflowX: 'hidden' }}
         >
             <Box
-                className="w-full max-w-md bg-white p-6 rounded-lg shadow-md"
-                sx={{ border: '1px solid', borderColor: 'grey.300' }}
+                className="w-full max-w-md bg-background-white p-6 rounded-lg shadow-md"
+                sx={{ border: '1px solid', borderColor: 'neutral-light' }}
             >
                 <Typography
                     variant="h5"
                     align="center"
                     gutterBottom
-                    className="text-gray-800 font-semibold"
+                    className="text-text-primary font-semibold"
                 >
                     Login to Smart-Chain
                 </Typography>
 
-                {error && (
+                {loginMutation.isError && (
                     <ErrorMessage
-                        message={error}
+                        message={formErrors.server}
                         onRetry={handleSubmit}
                         retryText="Try Again"
                         sx={{ mb: 3 }}
@@ -90,9 +85,9 @@ const LoginPage = () => {
                         variant="outlined"
                         error={!!formErrors.email}
                         helperText={formErrors.email}
-                        disabled={loading}
+                        disabled={loginMutation.isLoading}
                         InputProps={{
-                            className: 'bg-gray-50',
+                            className: 'bg-background-light',
                         }}
                         sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                     />
@@ -106,15 +101,15 @@ const LoginPage = () => {
                         variant="outlined"
                         error={!!formErrors.password}
                         helperText={formErrors.password}
-                        disabled={loading}
+                        disabled={loginMutation.isLoading}
                         InputProps={{
-                            className: 'bg-gray-50',
+                            className: 'bg-background-light',
                             endAdornment: (
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
-                                    disabled={loading}
+                                    className="p-1 text-text-muted hover:text-text-hover disabled:text-text-disabled"
+                                    disabled={loginMutation.isLoading}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -128,20 +123,20 @@ const LoginPage = () => {
                         label="Login"
                         onClick={handleSubmit}
                         fullWidth
-                        loading={loading}
-                        disabled={loading}
+                        loading={loginMutation.isLoading}
+                        disabled={loginMutation.isLoading}
                         sx={{
                             mt: 2,
                             py: 1.5,
-                            bgcolor: 'blue.600',
-                            '&:hover': { bgcolor: 'blue.700' },
+                            bgcolor: 'primary',
+                            '&:hover': { bgcolor: 'primary-dark' },
                         }}
                     />
 
                     <Typography
                         variant="body2"
                         align="center"
-                        className="text-gray-600"
+                        className="text-text-secondary"
                         sx={{ mt: 2 }}
                     >
                         Don’t have an account?{' '}
@@ -150,8 +145,8 @@ const LoginPage = () => {
                             type="button"
                             onClick={handleRegisterClick}
                             underline="hover"
-                            disabled={loading}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            disabled={loginMutation.isLoading}
+                            className="text-primary hover:text-primary-dark font-medium"
                         >
                             Register
                         </MuiLink>

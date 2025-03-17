@@ -3,7 +3,7 @@ import { CircularProgress, Box, Typography } from '@mui/material';
 import PropTypes from 'prop-types';
 
 const LoadingIndicator = ({
-    size = 40,
+    size = 50,
     message = 'Loading...',
     fullScreen = false,
     color = 'primary',
@@ -15,7 +15,9 @@ const LoadingIndicator = ({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: 2,
+                width: '100%',
             }}
         >
             <CircularProgress
@@ -44,8 +46,8 @@ const LoadingIndicator = ({
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.2)', // Slight overlay
-                    zIndex: 1300, // Above most content
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent dark overlay
+                    zIndex: 1300, // Ensures it appears above other content
                 }}
             >
                 {content}

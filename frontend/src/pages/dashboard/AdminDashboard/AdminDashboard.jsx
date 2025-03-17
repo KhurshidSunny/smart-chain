@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { useAppSelector, useAppDispatch } from '../../../redux/hooks';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box,
     Typography,
@@ -19,101 +19,44 @@ import StatusIndicator from '../../../components/common/StatusIndicator/StatusIn
 import SearchBar from '../../../components/common/SearchBar/SearchBar';
 import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
-import {
-    fetchOrdersStart,
-    fetchOrdersSuccess,
-    fetchOrdersFailure,
-} from '../../../redux/slices/orderSlice';
-import {
-    fetchUsersStart,
-    fetchUsersSuccess,
-    fetchUsersFailure,
-} from '../../../redux/slices/userSlice';
 import apiClient from '../../../services/apiClient';
 
-/**
- * AdminDashboard Component
- * 
- * This component serves as the central dashboard for users with the 'admin' role in the Smart-Chain application.
- * It provides an overview of system statistics, quick administrative actions, and a table of recent users.
- * Features include:
- * - System Stats: Displays total orders, pending orders, and active users with status indicators, calculated from fetched data.
- * - Quick Actions: Offers buttons to manage users, inventory, and view system logs, with navigation to respective pages.
- * - Recent Users Table: Shows the 5 most recent users with their email, role, and status, with an option to view all users.
- * - Search Functionality: Includes a search bar to query the dashboard (navigates to a search results page).
- * - Data Fetching: Uses Redux to fetch orders and users via API calls, with loading and error states handled gracefully.
- * - Responsive Design: Utilizes Material-UI Grid for a layout that adapts to different screen sizes without overflow.
- * - Role Protection: Redirects non-admin users to the main dashboard (currently commented out, assumes ProtectedRoute handles this).
- */
-
 const AdminDashboard = () => {
-    const { user } = useAppSelector((state) => state.auth);
-    const { orders, loading: ordersLoading, error: ordersError } = useAppSelector((state) => state.orders);
-    const { users, loading: usersLoading, error: usersError } = useAppSelector((state) => state.users);
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
 
-    // Ensure only admins can access this page (redundant with ProtectedRoute, but good practice)
-    // if (user?.role !== 'admin') {
-    //     navigate('/dashboard'); // Redirect non-admins to MainDashboard
-    //     return null;
-    // }
+    const { data: orders, isLoading: ordersLoading, error: ordersError } = useQuery({
+        queryKey: ['orders'],
+        queryFn: () => apiClient.get('/orders').then(res => res.data),
+    });
 
-    useEffect(() => {
-        const fetchAdminData = async () => {
-            // Fetch Orders
-            dispatch(fetchOrdersStart());
-            try {
-                const ordersResponse = await apiClient.get('/orders');
-                dispatch(fetchOrdersSuccess(ordersResponse.data));
-            } catch (err) {
-                dispatch(fetchOrdersFailure(err.message || 'Failed to fetch orders'));
-            }
-
-            // Fetch Users
-            dispatch(fetchUsersStart());
-            try {
-                const usersResponse = await apiClient.get('/users');
-                dispatch(fetchUsersSuccess(usersResponse.data));
-            } catch (err) {
-                dispatch(fetchUsersFailure(err.message || 'Failed to fetch users'));
-            }
-        };
-        fetchAdminData();
-    }, [dispatch]);
+    const { data: users, isLoading: usersLoading, error: usersError } = useQuery({
+        queryKey: ['users'],
+        queryFn: () => apiClient.get('/users').then(res => res.data),
+    });
 
     const handleSearch = (query) => {
         console.log('Admin search:', query);
         navigate(`/search?q=${encodeURIComponent(query)}`);
     };
 
-    const handleManageUsers = () => {
-        navigate('/users');
-    };
+    const handleManageUsers = () => navigate('/users');
+    const handleManageInventory = () => navigate('/inventory');
+    const handleViewLogs = () => navigate('/logs');
 
-    const handleManageInventory = () => {
-        navigate('/inventory');
-    };
-
-    const handleViewLogs = () => {
-        navigate('/logs'); // Placeholder for system logs page
-    };
-
-    // Calculate stats from fetched data
     const stats = [
         {
             title: 'Total Orders',
-            value: orders.length ? orders.filter(o => o.status === 'completed').length : 'N/A',
+            value: orders ? orders.filter(o => o.status === 'completed').length : 'N/A',
             status: 'completed',
         },
         {
             title: 'Pending Orders',
-            value: orders.length ? orders.filter(o => o.status === 'pending').length : 'N/A',
+            value: orders ? orders.filter(o => o.status === 'pending').length : 'N/A',
             status: 'pending',
         },
         {
             title: 'Active Users',
-            value: users.length || 'N/A',
+            value: users?.length || 'N/A',
             status: 'completed',
         },
     ];
@@ -128,13 +71,13 @@ const AdminDashboard = () => {
         <Box
             sx={{
                 p: 3,
-                bgcolor: 'grey.50',
-                minHeight: 'calc(100vh - 64px)', // Adjust for NavigationBar height
+                bgcolor: 'background-light',
+                minHeight: 'calc(100vh - 64px)',
                 width: '100vw',
-                overflowX: 'hidden', // Prevent horizontal overflow
+                overflowX: 'hidden',
             }}
         >
-            <Typography variant="h4" gutterBottom className="text-gray-800 font-semibold">
+            <Typography variant="h4" gutterBottom className="text-text-primary font-semibold">
                 Admin Dashboard
             </Typography>
             <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -150,31 +93,26 @@ const AdminDashboard = () => {
             )}
             {(ordersError || usersError) && (
                 <ErrorMessage
-                    message={ordersError || usersError}
-                    onRetry={() => {
-                        if (ordersError) dispatch(fetchOrdersStart());
-                        if (usersError) dispatch(fetchUsersStart());
-                    }}
+                    message={ordersError?.message || usersError?.message}
                     sx={{ mb: 3 }}
                 />
             )}
 
             {!ordersLoading && !usersLoading && !ordersError && !usersError && (
                 <Grid container spacing={3}>
-                    {/* Stats Section */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-gray-700">
+                        <Typography variant="h6" gutterBottom className="text-text-hover">
                             System Stats
                         </Typography>
                         <Grid container spacing={2}>
                             {stats.map((stat, index) => (
                                 <Grid item xs={12} sm={6} md={4} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'grey.300' }}>
+                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
                                         <CardContent>
-                                            <Typography variant="subtitle1" className="text-gray-600">
+                                            <Typography variant="subtitle1" className="text-text-secondary">
                                                 {stat.title}
                                             </Typography>
-                                            <Typography variant="h5" className="text-gray-800">
+                                            <Typography variant="h5" className="text-text-primary">
                                                 {stat.value}
                                             </Typography>
                                             <StatusIndicator status={stat.status} />
@@ -185,17 +123,16 @@ const AdminDashboard = () => {
                         </Grid>
                     </Grid>
 
-                    {/* Quick Actions Section */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-gray-700">
+                        <Typography variant="h6" gutterBottom className="text-text-hover">
                             Administrative Actions
                         </Typography>
                         <Grid container spacing={2}>
                             {actions.map((action, index) => (
                                 <Grid item xs={12} sm={6} md={4} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'grey.300' }}>
+                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
                                         <CardContent>
-                                            <Typography variant="subtitle1" className="text-gray-600">
+                                            <Typography variant="subtitle1" className="text-text-secondary">
                                                 {action.label}
                                             </Typography>
                                         </CardContent>
@@ -204,7 +141,7 @@ const AdminDashboard = () => {
                                                 label="Go"
                                                 onClick={action.onClick}
                                                 size="small"
-                                                sx={{ bgcolor: 'blue.600', '&:hover': { bgcolor: 'blue.700' } }}
+                                                sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
                                             />
                                         </CardActions>
                                     </Card>
@@ -213,12 +150,11 @@ const AdminDashboard = () => {
                         </Grid>
                     </Grid>
 
-                    {/* Recent Users Section */}
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-gray-700">
+                        <Typography variant="h6" gutterBottom className="text-text-hover">
                             Recent Users
                         </Typography>
-                        <Card sx={{ border: '1px solid', borderColor: 'grey.300' }}>
+                        <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
                             <CardContent>
                                 <Table>
                                     <TableHead>
@@ -229,7 +165,7 @@ const AdminDashboard = () => {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {users.slice(0, 5).map((user) => (
+                                        {users?.slice(0, 5).map((user) => (
                                             <TableRow key={user.id}>
                                                 <TableCell>{user.email}</TableCell>
                                                 <TableCell>{user.role}</TableCell>
@@ -246,7 +182,7 @@ const AdminDashboard = () => {
                                     label="View All Users"
                                     onClick={handleManageUsers}
                                     size="small"
-                                    sx={{ bgcolor: 'blue.600', '&:hover': { bgcolor: 'blue.700' } }}
+                                    sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
                                 />
                             </CardActions>
                         </Card>

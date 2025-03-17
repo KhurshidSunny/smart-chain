@@ -94,34 +94,36 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
                 InputProps={{
                     startAdornment: (
                         <InputAdornment position="start">
-                            <SearchIcon />
+                            <SearchIcon className="text-text-muted" />
                         </InputAdornment>
                     ),
                     endAdornment: query && (
                         <InputAdornment position="end">
                             <IconButton size="small" onClick={handleClear} aria-label="clear search">
-                                <ClearIcon />
+                                <ClearIcon className="text-text-muted hover:text-text-hover" />
                             </IconButton>
                         </InputAdornment>
                     ),
+                    className: 'bg-background-light',
                 }}
+                sx={{ '& .MuiOutlinedInput-root': { borderColor: 'neutral-light' } }}
             />
             <Popper open={open} anchorEl={anchorEl} placement="bottom-start" sx={{ zIndex: 1300 }}>
-                <Paper elevation={3} sx={{ width: anchorEl?.offsetWidth, maxHeight: 300, overflowY: 'auto' }}>
+                <Paper elevation={3} sx={{ width: anchorEl?.offsetWidth, maxHeight: 300, overflowY: 'auto', bgcolor: 'background-white' }}>
                     {filteredSuggestions.length > 0 && (
                         <>
-                            <Typography variant="caption" sx={{ p: 1, color: 'grey.600' }}>
+                            <Typography variant="caption" sx={{ p: 1, color: 'neutral-muted' }}>
                                 Suggestions
                             </Typography>
                             <List dense>
                                 {filteredSuggestions.map((suggestion, index) => (
                                     <ListItem
                                         key={index}
-                                        component="button" // Replace deprecated 'button' prop
+                                        component="button"
                                         onClick={() => handleSuggestionClick(suggestion)}
-                                        sx={{ width: '100%' }}
+                                        sx={{ width: '100%', '&:hover': { bgcolor: 'neutral-bg' } }}
                                     >
-                                        <ListItemText primary={suggestion} />
+                                        <ListItemText primary={suggestion} primaryTypographyProps={{ className: 'text-text-secondary' }} />
                                     </ListItem>
                                 ))}
                             </List>
@@ -129,18 +131,18 @@ const SearchBar = ({ onSearch, placeholder = 'Search...', suggestions = [] }) =>
                     )}
                     {recentSearches.length > 0 && !query.trim() && (
                         <>
-                            <Typography variant="caption" sx={{ p: 1, color: 'grey.600' }}>
+                            <Typography variant="caption" sx={{ p: 1, color: 'neutral-muted' }}>
                                 Recent Searches
                             </Typography>
                             <List dense>
                                 {recentSearches.map((search, index) => (
                                     <ListItem
                                         key={index}
-                                        component="button" // Replace deprecated 'button' prop
+                                        component="button"
                                         onClick={() => handleSearch(search)}
-                                        sx={{ width: '100%' }}
+                                        sx={{ width: '100%', '&:hover': { bgcolor: 'neutral-bg' } }}
                                     >
-                                        <ListItemText primary={search} />
+                                        <ListItemText primary={search} primaryTypographyProps={{ className: 'text-text-secondary' }} />
                                     </ListItem>
                                 ))}
                             </List>

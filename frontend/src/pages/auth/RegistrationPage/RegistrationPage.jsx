@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../../../redux/hooks';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Typography, TextField, Link as MuiLink, Grid } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { loginStart, loginSuccess, loginFailure, clearError } from '../../../redux/slices/authSlice';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
 import { registerUser } from '../../../services/authService';
 
-/**
- * RegistrationPage Component
- * Description: Handles user registration by collecting required fields per the User model,
- * validating them, and integrating with Redux and the IAM service for authentication.
- */
 const RegistrationPage = () => {
     const [formData, setFormData] = useState({
         firstName: 'admin',
@@ -25,9 +19,23 @@ const RegistrationPage = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { loading, error } = useAppSelector((state) => state.auth);
+    const queryClient = useQueryClient();
+
+    const registerMutation = useMutation({
+        mutationFn: registerUser,
+        onSuccess: (data) => {
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('refreshToken', data.refreshToken);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            queryClient.setQueryData(['authUser'], data.user);
+            navigate('/dashboard');
+        },
+        onError: (error) => {
+            setFormErrors({ server: error.response?.data?.message || 'Registration failed' });
+            console.log('er')
+        },
+    });
 
     const validateForm = () => {
         const errors = {};
@@ -47,54 +55,42 @@ const RegistrationPage = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (!validateForm()) return;
-
-        dispatch(loginStart());
-        try {
-            const response = await registerUser({
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                email: formData.email,
-                password: formData.password,
-            });
-            dispatch(loginSuccess({ user: response.user, token: response.token }));
-            localStorage.setItem('token', response.token);
-            localStorage.setItem('refreshToken', response.refreshToken);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            navigate('/dashboard');
-        } catch (err) {
-            dispatch(loginFailure(err.response?.data?.message || 'Registration failed'));
-        }
+        registerMutation.mutate({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            password: formData.password,
+        });
     };
 
     const handleLoginClick = () => {
-        dispatch(clearError())
         navigate('/login');
     };
 
     return (
         <Box
-            className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-100 px-4"
+            className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-background-default px-4"
             sx={{ width: '100vw', overflowX: 'hidden' }}
         >
             <Box
-                className="w-full max-w-md bg-white p-6 rounded-lg shadow-md"
-                sx={{ border: '1px solid', borderColor: 'grey.300' }}
+                className="w-full max-w-md bg-background-white p-6 rounded-lg shadow-md"
+                sx={{ border: '1px solid', borderColor: 'neutral-light' }}
             >
                 <Typography
                     variant="h5"
                     align="center"
                     gutterBottom
-                    className="text-gray-800 font-semibold"
+                    className="text-text-primary font-semibold"
                 >
                     Register for Smart-Chain
                 </Typography>
 
-                {error && (
+                {registerMutation.isError && (
                     <ErrorMessage
-                        message={error}
+                        message={formErrors.server}
                         onRetry={handleSubmit}
                         retryText="Try Again"
                         sx={{ mb: 3 }}
@@ -114,8 +110,8 @@ const RegistrationPage = () => {
                                     variant="outlined"
                                     error={!!formErrors.firstName}
                                     helperText={formErrors.firstName}
-                                    disabled={loading}
-                                    InputProps={{ className: 'bg-gray-50' }}
+                                    disabled={registerMutation.isLoading}
+                                    InputProps={{ className: 'bg-background-light' }}
                                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                 />
                             </Grid>
@@ -129,8 +125,8 @@ const RegistrationPage = () => {
                                     variant="outlined"
                                     error={!!formErrors.lastName}
                                     helperText={formErrors.lastName}
-                                    disabled={loading}
-                                    InputProps={{ className: 'bg-gray-50' }}
+                                    disabled={registerMutation.isLoading}
+                                    InputProps={{ className: 'bg-background-light' }}
                                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                                 />
                             </Grid>
@@ -147,8 +143,8 @@ const RegistrationPage = () => {
                             variant="outlined"
                             error={!!formErrors.email}
                             helperText={formErrors.email}
-                            disabled={loading}
-                            InputProps={{ className: 'bg-gray-50' }}
+                            disabled={registerMutation.isLoading}
+                            InputProps={{ className: 'bg-background-light' }}
                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' }, mb: 2 }}
                         />
                     </Box>
@@ -164,15 +160,15 @@ const RegistrationPage = () => {
                             variant="outlined"
                             error={!!formErrors.password}
                             helperText={formErrors.password}
-                            disabled={loading}
+                            disabled={registerMutation.isLoading}
                             InputProps={{
-                                className: 'bg-gray-50',
+                                className: 'bg-background-light',
                                 endAdornment: (
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
-                                        disabled={loading}
+                                        className="p-1 text-text-muted hover:text-text-hover disabled:text-text-disabled"
+                                        disabled={registerMutation.isLoading}
                                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                                     >
                                         {showPassword ? <VisibilityOff /> : <Visibility />}
@@ -192,15 +188,15 @@ const RegistrationPage = () => {
                             variant="outlined"
                             error={!!formErrors.confirmPassword}
                             helperText={formErrors.confirmPassword}
-                            disabled={loading}
+                            disabled={registerMutation.isLoading}
                             InputProps={{
-                                className: 'bg-gray-50',
+                                className: 'bg-background-light',
                                 endAdornment: (
                                     <button
                                         type="button"
                                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="p-1 text-gray-500 hover:text-gray-700 disabled:text-gray-300"
-                                        disabled={loading}
+                                        className="p-1 text-text-muted hover:text-text-hover disabled:text-text-disabled"
+                                        disabled={registerMutation.isLoading}
                                         aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                     >
                                         {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
@@ -215,20 +211,20 @@ const RegistrationPage = () => {
                         label="Register"
                         onClick={handleSubmit}
                         fullWidth
-                        loading={loading}
-                        disabled={loading}
+                        loading={registerMutation.isLoading}
+                        disabled={registerMutation.isLoading}
                         sx={{
                             mt: 2,
                             py: 1.5,
-                            bgcolor: 'blue.600',
-                            '&:hover': { bgcolor: 'blue.700' },
+                            bgcolor: 'primary',
+                            '&:hover': { bgcolor: 'primary-dark' },
                         }}
                     />
 
                     <Typography
                         variant="body2"
                         align="center"
-                        className="text-gray-600"
+                        className="text-text-secondary"
                         sx={{ mt: 2 }}
                     >
                         Already have an account?{' '}
@@ -237,8 +233,8 @@ const RegistrationPage = () => {
                             type="button"
                             onClick={handleLoginClick}
                             underline="hover"
-                            disabled={loading}
-                            className="text-blue-600 hover:text-blue-800 font-medium"
+                            disabled={registerMutation.isLoading}
+                            className="text-primary hover:text-primary-dark font-medium"
                         >
                             Login
                         </MuiLink>

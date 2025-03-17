@@ -2,13 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Package, TrendingUp, Truck, BarChart2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-/**
- * HeroSection Component
- * 
- * A visually engaging hero section for the Smart-Chain home page, featuring a gradient background,
- * animated feature showcase, and call-to-action buttons to highlight key functionalities.
- */
-
 const HeroSection = () => {
     const [activeFeature, setActiveFeature] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -52,14 +45,13 @@ const HeroSection = () => {
     ];
 
     return (
-        <div className="relative bg-gradient-to-br from-indigo-900 via-blue-800 to-blue-900 overflow-hidden">
-            {/* Animated background elements */}
+        <div className="relative bg-background-gradient overflow-hidden">
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-full opacity-10">
                     {Array.from({ length: 10 }).map((_, i) => (
                         <div
                             key={i}
-                            className="absolute rounded-full bg-white"
+                            className="absolute rounded-full bg-background-white"
                             style={{
                                 width: `${Math.random() * 400 + 100}px`,
                                 height: `${Math.random() * 400 + 100}px`,
@@ -76,48 +68,48 @@ const HeroSection = () => {
             <div className="container mx-auto px-6 py-20 relative z-10">
                 <div className="flex flex-col lg:flex-row items-center justify-between">
                     <div className={`lg:w-1/2 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}`}>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-indigo-300">Smart-Chain</span>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-text-light leading-tight mb-6">
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-light to-indigo-deep">Smart-Chain</span>
                             <br />
                             <span>Intelligent Supply Chain Management</span>
                         </h1>
-                        <p className="text-blue-100 text-lg md:text-xl mb-8 max-w-lg">
+                        <p className="text-text-light text-lg md:text-xl mb-8 max-w-lg">
                             Transform your supply chain with our comprehensive, AI-powered management system. From inventory to logistics, Smart-Chain brings everything together.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Link to="/login" className="bg-blue-500 hover:bg-blue-600 hover:text-gray-900 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center" >
+                            <Link to="/login" className="bg-highlight hover:bg-primary-dark hover:text-text-primary text-text-light font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center">
                                 Get Started <ArrowRight className="ml-2" size={20} />
                             </Link>
-                            <button className="bg-transparent border-2 border-blue-400 text-blue-100 hover:bg-blue-800 hover:border-blue-300 font-bold py-3 px-6 rounded-lg transition-all">
+                            <button className="bg-transparent border-2 border-primary-light text-text-light hover:bg-primary-accent hover:border-primary font-bold py-3 px-6 rounded-lg transition-all">
                                 Schedule Demo
                             </button>
                         </div>
                     </div>
 
                     <div className={`lg:w-1/2 mt-12 lg:mt-0 transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'} delay-300`}>
-                        <div className="bg-white/10 backdrop-blur-lg p-8 rounded-2xl border border-white/20 shadow-2xl">
-                            <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-xl p-6 shadow-inner">
+                        <div className="bg-background-white/10 backdrop-blur-lg p-8 rounded-2xl border border-text-light/20 shadow-2xl">
+                            <div className="bg-gradient-to-br from-primary-deep to-indigo-deep rounded-xl p-6 shadow-inner">
                                 <div className="flex justify-between mb-6">
                                     <div className="flex gap-2">
-                                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                        <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                        <div className="w-3 h-3 rounded-full bg-error"></div>
+                                        <div className="w-3 h-3 rounded-full bg-warning"></div>
+                                        <div className="w-3 h-3 rounded-full bg-success"></div>
                                     </div>
-                                    <div className="text-blue-300 text-sm">Smart-Chain Dashboard</div>
+                                    <div className="text-indigo-light text-sm">Smart-Chain Dashboard</div>
                                 </div>
 
                                 <div className="space-y-6">
                                     {features.map((feature, index) => (
                                         <div
                                             key={index}
-                                            className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-300 ${activeFeature === index ? 'bg-blue-700/50 border border-blue-400/30' : 'bg-blue-800/20'}`}
+                                            className={`flex items-center gap-4 p-4 rounded-lg transition-all duration-300 ${activeFeature === index ? 'bg-primary-dark/50 border border-primary-light/30' : 'bg-primary-accent/20'}`}
                                         >
-                                            <div className={`p-3 rounded-full ${activeFeature === index ? 'bg-blue-500' : 'bg-blue-800'}`}>
+                                            <div className={`p-3 rounded-full ${activeFeature === index ? 'bg-highlight' : 'bg-primary-accent'}`}>
                                                 {feature.icon}
                                             </div>
                                             <div>
-                                                <h3 className="text-white font-bold">{feature.title}</h3>
-                                                <p className="text-blue-200 text-sm">{feature.description}</p>
+                                                <h3 className="text-text-light font-bold">{feature.title}</h3>
+                                                <p className="text-indigo-light text-sm">{feature.description}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -128,7 +120,6 @@ const HeroSection = () => {
                 </div>
             </div>
 
-            {/* Wave effect at bottom */}
             <div className="absolute bottom-0 left-0 w-full overflow-hidden">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto">
                     <path fill="#ffffff" fillOpacity="0.07" d="M0,128L48,144C96,160,192,192,288,192C384,192,480,160,576,149.3C672,139,768,149,864,170.7C960,192,1056,224,1152,229.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
@@ -136,6 +127,6 @@ const HeroSection = () => {
             </div>
         </div>
     );
-}
+};
 
 export default HeroSection;

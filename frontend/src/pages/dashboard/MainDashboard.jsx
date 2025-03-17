@@ -1,6 +1,6 @@
 import React from 'react';
-import { useAppSelector } from '../../redux/hooks';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     Box,
     Typography,
@@ -13,20 +13,17 @@ import {
 import ActionButton from '../../components/common/ActionButton/ActionButton';
 import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator';
 import SearchBar from '../../components/common/SearchBar/SearchBar';
-
-/**
- * MainDashboard Component
- * 
- * A role-based dashboard for Smart-Chain users, displaying quick stats and actions tailored to the user's role.
- * Built with Material-UI Box and Grid for responsive layout, ensuring full viewport width usage and no horizontal overflow.
- */
+import { getCurrentUser } from '../../services/authService';
 
 const MainDashboard = () => {
-    const { user } = useAppSelector((state) => state.auth);
     const navigate = useNavigate();
+    const { data: user, isLoading } = useQuery({
+        queryKey: ['authUser'],
+        queryFn: getCurrentUser,
+    });
+
     const role = user?.role || 'customer';
 
-    // Role-specific dashboard content
     const getDashboardContent = () => {
         const commonActions = [
             { label: 'View Orders', path: '/orders', status: 'inProgress' },
@@ -120,12 +117,16 @@ const MainDashboard = () => {
         navigate(`/search?q=${encodeURIComponent(query)}`);
     };
 
+    if (isLoading) {
+        return <div className="flex items-center justify-center h-screen bg-background-light">Loading...</div>;
+    }
+
     if (!user) {
         return (
             <Box
                 sx={{
                     p: 3,
-                    bgcolor: 'grey.50',
+                    bgcolor: 'background-light',
                     minHeight: 'calc(100vh - 64px)',
                     width: '100vw',
                     overflowX: 'hidden',
@@ -135,7 +136,7 @@ const MainDashboard = () => {
                     justifyContent: 'center',
                 }}
             >
-                <Typography variant="h4" gutterBottom className="text-gray-800 font-semibold">
+                <Typography variant="h4" gutterBottom className="text-text-primary font-semibold">
                     Welcome to Smart-Chain
                 </Typography>
                 <Typography variant="h6" color="textSecondary" gutterBottom sx={{ mb: 4 }}>
@@ -144,36 +145,34 @@ const MainDashboard = () => {
                 <Box sx={{ display: 'flex', gap: 2 }}>
                     <Button
                         variant="contained"
-                        color="primary"
                         onClick={() => navigate('/login')}
-                        sx={{ px: 4, py: 1.5, bgcolor: 'blue.600', '&:hover': { bgcolor: 'blue.700' } }}
+                        sx={{ px: 4, py: 1.5, bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
                     >
                         Login
                     </Button>
                     <Button
                         variant="outlined"
-                        color="primary"
                         onClick={() => navigate('/register')}
-                        sx={{ px: 4, py: 1.5, borderColor: 'blue.600', color: 'blue.600', '&:hover': { borderColor: 'blue.700', color: 'blue.700' } }}
+                        sx={{ px: 4, py: 1.5, borderColor: 'primary', color: 'primary', '&:hover': { borderColor: 'primary-dark', color: 'primary-dark' } }}
                     >
                         Register
                     </Button>
                 </Box>
             </Box>
-        )
+        );
     }
 
     return (
         <Box
             sx={{
                 p: 3,
-                bgcolor: 'grey.50',
-                minHeight: 'calc(100vh - 64px)', // Adjust for NavigationBar height (64px default)
+                bgcolor: 'background-light',
+                minHeight: 'calc(100vh - 64px)',
                 width: '100vw',
-                overflowX: 'hidden', // Prevent horizontal overflow
+                overflowX: 'hidden',
             }}
         >
-            <Typography variant="h4" gutterBottom className="text-gray-800 font-semibold">
+            <Typography variant="h4" gutterBottom className="text-text-primary font-semibold">
                 Welcome to Smart-Chain Dashboard
             </Typography>
             <Typography variant="h6" color="textSecondary" gutterBottom>
@@ -185,21 +184,20 @@ const MainDashboard = () => {
             </Box>
 
             <Grid container spacing={3} sx={{ width: '100%' }}>
-                {/* Stats Section */}
                 {stats.length > 0 && (
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-gray-700">
+                        <Typography variant="h6" gutterBottom className="text-text-hover">
                             Quick Stats
                         </Typography>
                         <Grid container spacing={2}>
                             {stats.map((stat, index) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'grey.300', width: '100%' }}>
+                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light', width: '100%' }}>
                                         <CardContent>
-                                            <Typography variant="subtitle1" className="text-gray-600">
+                                            <Typography variant="subtitle1" className="text-text-secondary">
                                                 {stat.title}
                                             </Typography>
-                                            <Typography variant="h5" className="text-gray-800">
+                                            <Typography variant="h5" className="text-text-primary">
                                                 {stat.value}
                                             </Typography>
                                             <StatusIndicator status={stat.status} />
@@ -211,18 +209,17 @@ const MainDashboard = () => {
                     </Grid>
                 )}
 
-                {/* Actions Section */}
                 {actions.length > 0 && (
                     <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-gray-700">
+                        <Typography variant="h6" gutterBottom className="text-text-hover">
                             Quick Actions
                         </Typography>
                         <Grid container spacing={2}>
                             {actions.map((action, index) => (
                                 <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'grey.300', width: '100%' }}>
+                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light', width: '100%' }}>
                                         <CardContent>
-                                            <Typography variant="subtitle1" className="text-gray-600">
+                                            <Typography variant="subtitle1" className="text-text-secondary">
                                                 {action.label}
                                             </Typography>
                                             {action.status && <StatusIndicator status={action.status} />}
@@ -232,7 +229,7 @@ const MainDashboard = () => {
                                                 label="Go"
                                                 onClick={() => navigate(action.path)}
                                                 size="small"
-                                                sx={{ bgcolor: 'blue.600', '&:hover': { bgcolor: 'blue.700' } }}
+                                                sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
                                             />
                                         </CardActions>
                                     </Card>

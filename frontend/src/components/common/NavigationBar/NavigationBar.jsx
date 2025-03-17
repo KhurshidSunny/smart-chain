@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAppSelector } from '../../../redux/hooks';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
     AppBar,
     Toolbar,
@@ -22,22 +22,22 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import FeedbackIcon from '@mui/icons-material/Feedback';
 import PeopleIcon from '@mui/icons-material/People';
-import SearchBar from '../../../components/common/SearchBar/SearchBar';
-import LogoutButton from '../../../components/common/LogoutButton/LogoutButton'; // Import the new component
+import SearchBar from '../SearchBar/SearchBar';
+import LogoutButton from '../LogoutButton/LogoutButton';
+import { getCurrentUser } from '../../../services/authService';
 
-/**
- * NavigationBar Component
- * - Responsive navigation bar for Smart-Chain with role-based links, search, and logout when logged in
- * - Shows only Login/Register buttons when not logged in
- */
 const NavigationBar = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const { user } = useAppSelector((state) => state.auth);
     const location = useLocation();
     const navigate = useNavigate();
 
+    const { data: user } = useQuery({
+        queryKey: ['authUser'],
+        queryFn: getCurrentUser,
+    });
+
     const getNavItems = () => {
-        if (!user) return []; // Return empty array if not logged in
+        if (!user) return [];
 
         const role = user?.role || '';
         const commonItems = [
@@ -97,7 +97,7 @@ const NavigationBar = () => {
 
     const handleSearch = (query) => {
         navigate(`/search?q=${encodeURIComponent(query)}`);
-        setDrawerOpen(false); // Close drawer on search in mobile
+        setDrawerOpen(false);
     };
 
     const drawerContent = (
@@ -110,33 +110,31 @@ const NavigationBar = () => {
             </Box>
             <Divider />
             <List>
-                {
-                    user ?
-                        navItems.map((item) => (
-                            <ListItem
-                                key={item.text}
-                                onClick={() => handleNavigation(item.path)}
-                                selected={location.pathname === item.path}
-                                sx={{
-                                    bgcolor: location.pathname === item.path ? 'grey.200' : 'inherit',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <ListItemIcon>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.text} />
-                            </ListItem>
-                        ))
-                        :
-                        <>
-                            <ListItem onClick={() => handleNavigation('/login')} sx={{ cursor: 'pointer' }}>
-                                <ListItemText primary="Login" />
-                            </ListItem>
-                            <ListItem onClick={() => handleNavigation('/register')} sx={{ cursor: 'pointer' }}>
-                                <ListItemText primary="Register" />
-                            </ListItem>
-                        </>
-                }
-
+                {user ? (
+                    navItems.map((item) => (
+                        <ListItem
+                            key={item.text}
+                            onClick={() => handleNavigation(item.path)}
+                            selected={location.pathname === item.path}
+                            sx={{
+                                bgcolor: location.pathname === item.path ? 'neutral-bg' : 'inherit',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <ListItemIcon>{item.icon}</ListItemIcon>
+                            <ListItemText primary={item.text} />
+                        </ListItem>
+                    ))
+                ) : (
+                    <>
+                        <ListItem onClick={() => handleNavigation('/login')} sx={{ cursor: 'pointer' }}>
+                            <ListItemText primary="Login" />
+                        </ListItem>
+                        <ListItem onClick={() => handleNavigation('/register')} sx={{ cursor: 'pointer' }}>
+                            <ListItemText primary="Register" />
+                        </ListItem>
+                    </>
+                )}
                 {user && (
                     <ListItem sx={{ cursor: 'pointer' }}>
                         <LogoutButton variant="text" color="inherit" sx={{ width: '100%', justifyContent: 'flex-start' }} />
@@ -150,7 +148,6 @@ const NavigationBar = () => {
         <Box sx={{ flexGrow: 1, width: '100%', maxWidth: '100vw' }}>
             <AppBar position="static" sx={{ width: '100%', maxWidth: '100vw' }}>
                 <Toolbar sx={{ flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    {/* Left Section: Menu, Title, and Search */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <IconButton
                             color="inherit"
@@ -168,7 +165,6 @@ const NavigationBar = () => {
                         </Box>
                     </Box>
 
-                    {/* Right Section: Navigation Links and Logout (Desktop) */}
                     <Box
                         sx={{
                             display: { xs: 'none', sm: 'flex' },
@@ -178,45 +174,39 @@ const NavigationBar = () => {
                             justifyContent: 'flex-end',
                         }}
                     >
-
-                        {
-                            user
-                                ?
-
-                                navItems.map((item) => (
-                                    <Button
-                                        key={item.text}
-                                        color="inherit"
-                                        onClick={() => handleNavigation(item.path)}
-                                        sx={{
-                                            mx: 1,
-                                            borderBottom:
-                                                location.pathname === item.path ? '2px solid white' : 'none',
-                                            whiteSpace: 'nowrap',
-                                        }}
-                                    >
-                                        {item.text}
-                                    </Button>
-                                ))
-                                :
-                                <>
-                                    <Button
-                                        color="inherit"
-                                        onClick={() => handleNavigation('/login')}
-                                        sx={{ mx: 1, whiteSpace: 'nowrap' }}
-                                    >
-                                        Login
-                                    </Button>
-                                    <Button
-                                        color="inherit"
-                                        onClick={() => handleNavigation('/register')}
-                                        sx={{ mx: 1, whiteSpace: 'nowrap' }}
-                                    >
-                                        Register
-                                    </Button>
-                                </>
-
-                        }
+                        {user ? (
+                            navItems.map((item) => (
+                                <Button
+                                    key={item.text}
+                                    color="inherit"
+                                    onClick={() => handleNavigation(item.path)}
+                                    sx={{
+                                        mx: 1,
+                                        borderBottom: location.pathname === item.path ? '2px solid white' : 'none',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {item.text}
+                                </Button>
+                            ))
+                        ) : (
+                            <>
+                                <Button
+                                    color="inherit"
+                                    onClick={() => handleNavigation('/login')}
+                                    sx={{ mx: 1, whiteSpace: 'nowrap' }}
+                                >
+                                    Login
+                                </Button>
+                                <Button
+                                    color="inherit"
+                                    onClick={() => handleNavigation('/register')}
+                                    sx={{ mx: 1, whiteSpace: 'nowrap' }}
+                                >
+                                    Register
+                                </Button>
+                            </>
+                        )}
                         {user && <LogoutButton variant="outlined" color="inherit" sx={{ mx: 1 }} />}
                     </Box>
                 </Toolbar>
