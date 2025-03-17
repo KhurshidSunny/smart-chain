@@ -67,10 +67,31 @@ const connectRabbitMQ = async () => {
     // and with which routing key pattern, making it easier to troubleshoot message flow.
     console.log('RabbitMQ Connected for Sales Service');
     console.log(`Queue ${queue} bound to ${exchange} with routing keys: inventory.reserved, warehouse.order.packed, logistics.shipment.*, logistics.order.delivered`);
+
+    // Handle connection errors
+    connection.on('error', (err) => {
+      console.error('RabbitMQ Connection Error:', err);
+      reconnectRabbitMQ();
+    });
+
+    connection.on('close', () => {
+      console.log('RabbitMQ Connection Closed');
+      reconnectRabbitMQ();
+    });
   } catch (error) {
     console.error('RabbitMQ Connection Error:', error);
     throw error;
   }
+};
+
+
+const reconnectRabbitMQ = async () => {
+  console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
+  setTimeout(async () => {
+    channel = null; // Reset channel
+    await connectRabbitMQ();
+    subscribeToEvents(require('../controllers/events/eventHandlerController')); // Re-subscribe
+  }, 5000);
 };
 
 // Define a function to publish events (messages) to RabbitMQ.
