@@ -7,237 +7,228 @@ import {
     Grid,
     Card,
     CardContent,
-    CardActions,
     Button,
+    Divider,
+    List,
+    ListItem,
+    ListItemText,
+    Badge,
+    Chip,
 } from '@mui/material';
-import ActionButton from '../../components/common/ActionButton/ActionButton';
-import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator';
-import SearchBar from '../../components/common/SearchBar/SearchBar';
-import { getCurrentUser } from '../../services/authService';
+import {
+    Timeline,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineConnector,
+    TimelineContent,
+    TimelineDot,
+} from '@mui/lab';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ShoppingCart, LocalShipping, Feedback } from '@mui/icons-material';
+import toast from 'react-hot-toast';
+import ActionButton from '../../components/common/ActionButton/ActionButton.jsx';
+import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator.jsx';
+import SearchBar from '../../components/common/SearchBar/SearchBar.jsx';
+import LoadingIndicator from '../../components/common/LoadingIndicator/LoadingIndicator.jsx';
+import { getCurrentUser } from './../../services/authService.js';
 
 const MainDashboard = () => {
     const navigate = useNavigate();
-    const { data: user, isLoading } = useQuery({
+
+    const { data: user, isLoading: userLoading } = useQuery({
         queryKey: ['authUser'],
         queryFn: getCurrentUser,
     });
 
-    const role = user?.role || 'customer';
+    const { data: dashboardData, isLoading: dataLoading } = useQuery({
+        queryKey: ['customerDashboard'],
+        // queryFn: getCustomerDashboardData,
+        enabled: !!user,
+        onError: () => toast.error('Failed to load dashboard data'),
+    });
 
-    const getDashboardContent = () => {
-        const commonActions = [
-            { label: 'View Orders', path: '/orders', status: 'inProgress' },
-        ];
-
-        const roleSpecificContent = {
-            admin: {
-                stats: [
-                    { title: 'Total Orders', value: '1,234', status: 'completed' },
-                    { title: 'Pending Shipments', value: '56', status: 'pending' },
-                    { title: 'Users', value: '89', status: 'completed' },
-                ],
-                actions: [
-                    { label: 'Manage Inventory', path: '/inventory' },
-                    { label: 'View Warehouse', path: '/warehouse' },
-                    { label: 'Check Feedback', path: '/feedback' },
-                ],
-            },
-            warehouse_manager: {
-                stats: [
-                    { title: 'Items in Stock', value: '5,678', status: 'completed' },
-                    { title: 'Pending Tasks', value: '12', status: 'pending' },
-                ],
-                actions: [
-                    { label: 'Scan QR Code', path: '/qr-scanner' },
-                    { label: 'Update Inventory', path: '/inventory' },
-                ],
-            },
-            warehouse_staff: {
-                stats: [
-                    { title: 'Tasks Today', value: '8', status: 'inProgress' },
-                ],
-                actions: [
-                    { label: 'Scan QR Code', path: '/qr-scanner' },
-                ],
-            },
-            inventory_manager: {
-                stats: [
-                    { title: 'Low Stock Items', value: '15', status: 'warning' },
-                ],
-                actions: [
-                    { label: 'Update Inventory', path: '/inventory' },
-                ],
-            },
-            sales_manager: {
-                stats: [
-                    { title: 'Customer Feedback', value: '45', status: 'completed' },
-                ],
-                actions: [
-                    { label: 'View Feedback', path: '/feedback' },
-                ],
-            },
-            logistics_manager: {
-                stats: [
-                    { title: 'Shipments Today', value: '23', status: 'inProgress' },
-                ],
-                actions: [
-                    { label: 'Track Logistics', path: '/logistics' },
-                ],
-            },
-            customer_service: {
-                stats: [
-                    { title: 'Open Tickets', value: '10', status: 'pending' },
-                ],
-                actions: [
-                    { label: 'View Feedback', path: '/feedback' },
-                ],
-            },
-            customer: {
-                stats: [
-                    { title: 'Your Orders', value: '3', status: 'completed' },
-                ],
-                actions: [
-                    { label: 'Track Order', path: '/tracking' },
-                    { label: 'Submit Feedback', path: '/feedback' },
-                ],
-            },
-        };
-
-        const content = {
-            stats: [...(roleSpecificContent[role]?.stats || [])],
-            actions: [...commonActions, ...(roleSpecificContent[role]?.actions || [])],
-        };
-        return content;
+    const sampleData = {
+        stats: [
+            { title: 'Your Orders', value: '5', status: 'completed', icon: <ShoppingCart />, bgColor: '#e3f2fd' },
+            { title: 'Pending Deliveries', value: '2', status: 'inProgress', icon: <LocalShipping />, bgColor: '#fff3e0' },
+            { title: 'Feedback Submitted', value: '3', status: 'completed', icon: <Feedback />, bgColor: '#e8f5e9' },
+        ],
+        timeline: [
+            { event: 'Order #1234 placed', date: '2025-03-17', status: 'completed' },
+            { event: 'Order #1235 shipped', date: '2025-03-18', status: 'inProgress' },
+            { event: 'Order #1233 delivered', date: '2025-03-16', status: 'completed' },
+        ],
+        notifications: [
+            { message: 'Order #1235 out for delivery', unread: true },
+            { message: 'Rate your recent delivery', unread: true },
+            { message: 'Order #1233 delivered', unread: false },
+        ],
+        chartData: [
+            { name: 'Mon', orders: 1 },
+            { name: 'Tue', orders: 3 },
+            { name: 'Wed', orders: 2 },
+            { name: 'Thu', orders: 4 },
+            { name: 'Fri', orders: 1 },
+        ],
     };
 
-    const { stats, actions } = getDashboardContent();
+    const { stats, timeline, notifications, chartData } = dashboardData || sampleData;
+    const role = user?.role || 'customer';
 
     const handleSearch = (query) => {
-        console.log('Dashboard search:', query);
+        toast(`Searching for: ${query}`);
         navigate(`/search?q=${encodeURIComponent(query)}`);
     };
 
-    if (isLoading) {
-        return <div className="flex items-center justify-center h-screen bg-background-light">Loading...</div>;
-    }
+    const handleAction = (path) => {
+        navigate(path);
+        toast.success(`Navigating to ${path}`);
+    };
 
-    if (!user) {
-        return (
-            <Box
-                sx={{
-                    p: 3,
-                    bgcolor: 'background-light',
-                    minHeight: 'calc(100vh - 64px)',
-                    width: '100vw',
-                    overflowX: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                <Typography variant="h4" gutterBottom className="text-text-primary font-semibold">
-                    Welcome to Smart-Chain
-                </Typography>
-                <Typography variant="h6" color="textSecondary" gutterBottom sx={{ mb: 4 }}>
-                    Please log in or register to access your dashboard.
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Button
-                        variant="contained"
-                        onClick={() => navigate('/login')}
-                        sx={{ px: 4, py: 1.5, bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
-                    >
-                        Login
-                    </Button>
-                    <Button
-                        variant="outlined"
-                        onClick={() => navigate('/register')}
-                        sx={{ px: 4, py: 1.5, borderColor: 'primary', color: 'primary', '&:hover': { borderColor: 'primary-dark', color: 'primary-dark' } }}
-                    >
-                        Register
-                    </Button>
-                </Box>
-            </Box>
-        );
+    const handleNotificationClick = (message, unread) => {
+        toast(message, { duration: unread ? 6000 : 4000 });
+    };
+
+    if (userLoading || dataLoading) {
+        return <LoadingIndicator fullScreen message="Loading your dashboard..." />;
     }
 
     return (
-        <Box
-            sx={{
-                p: 3,
-                bgcolor: 'background-light',
-                minHeight: 'calc(100vh - 64px)',
-                width: '100vw',
-                overflowX: 'hidden',
-            }}
-        >
-            <Typography variant="h4" gutterBottom className="text-text-primary font-semibold">
-                Welcome to Smart-Chain Dashboard
+        <Box sx={{ p: 3, bgcolor: 'background-light', minHeight: 'calc(100vh - 64px)', width: '100%' }}>
+            <Typography variant="h4" className="text-text-primary font-semibold" gutterBottom>
+                Welcome, {user?.firstName || 'Customer'}!
             </Typography>
             <Typography variant="h6" color="textSecondary" gutterBottom>
-                Hello, {role.replace('_', ' ').toUpperCase()}!
+                Your Smart-Chain Dashboard
             </Typography>
-
-            <Box sx={{ maxWidth: 400, mb: 4, width: '100%' }}>
-                <SearchBar onSearch={handleSearch} placeholder={`Search ${role} dashboard...`} />
+            <Box sx={{ maxWidth: 400, mb: 4 }}>
+                <SearchBar onSearch={handleSearch} placeholder="Search your orders..." />
             </Box>
 
-            <Grid container spacing={3} sx={{ width: '100%' }}>
-                {stats.length > 0 && (
-                    <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-text-hover">
-                            Quick Stats
-                        </Typography>
-                        <Grid container spacing={2}>
-                            {stats.map((stat, index) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light', width: '100%' }}>
-                                        <CardContent>
+            <Grid container spacing={3}>
+                {/* Quick Stats */}
+                <Grid item xs={12} md={6}>
+                    <Typography variant="h6" className="text-text-hover" gutterBottom>
+                        Quick Stats
+                    </Typography>
+                    <Grid container spacing={2}>
+                        {stats.map((stat, index) => (
+                            <Grid item xs={12} sm={6} key={index}>
+                                <Card sx={{ border: '1px solid', borderColor: 'neutral-light', backgroundColor: stat.bgColor }}>
+                                    <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            {React.cloneElement(stat.icon, { sx: { fontSize: 30, color: 'text-primary' } })}
+                                        </Box>
+                                        <Box>
                                             <Typography variant="subtitle1" className="text-text-secondary">
                                                 {stat.title}
                                             </Typography>
                                             <Typography variant="h5" className="text-text-primary">
                                                 {stat.value}
                                             </Typography>
-                                            <StatusIndicator status={stat.status} />
-                                        </CardContent>
-                                    </Card>
-                                </Grid>
-                            ))}
-                        </Grid>
+                                            <StatusIndicator status={stat.status} /> {/* Removed backgroundColor="black" */}
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        ))}
                     </Grid>
-                )}
+                </Grid>
 
-                {actions.length > 0 && (
-                    <Grid item xs={12}>
-                        <Typography variant="h6" gutterBottom className="text-text-hover">
-                            Quick Actions
-                        </Typography>
-                        <Grid container spacing={2}>
-                            {actions.map((action, index) => (
-                                <Grid item xs={12} sm={6} md={4} lg={3} key={index}>
-                                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light', width: '100%' }}>
-                                        <CardContent>
-                                            <Typography variant="subtitle1" className="text-text-secondary">
-                                                {action.label}
-                                            </Typography>
-                                            {action.status && <StatusIndicator status={action.status} />}
-                                        </CardContent>
-                                        <CardActions>
-                                            <ActionButton
-                                                label="Go"
-                                                onClick={() => navigate(action.path)}
-                                                size="small"
-                                                sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }}
-                                            />
-                                        </CardActions>
-                                    </Card>
-                                </Grid>
-                            ))}
+                {/* Quick Actions */}
+                <Grid item xs={12} md={6}>
+                    <Typography variant="h6" className="text-text-hover" gutterBottom>
+                        Quick Actions
+                    </Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12} sm={6}>
+                            <ActionButton label="Track Order" onClick={() => handleAction('/tracking')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <ActionButton label="Submit Feedback" onClick={() => handleAction('/feedback')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <ActionButton label="View Orders" onClick={() => handleAction('/orders')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
                         </Grid>
                     </Grid>
-                )}
+                </Grid>
+
+                {/* Activity Timeline */}
+                <Grid item xs={12} md={6}>
+                    <Typography variant="h6" className="text-text-hover" gutterBottom>
+                        Recent Activity
+                    </Typography>
+                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
+                        <CardContent>
+                            <Timeline>
+                                {timeline.map((item, index) => (
+                                    <TimelineItem key={index}>
+                                        <TimelineSeparator>
+                                            <TimelineDot color={item.status === 'completed' ? 'success' : 'warning'} />
+                                            {index < timeline.length - 1 && <TimelineConnector />}
+                                        </TimelineSeparator>
+                                        <TimelineContent>
+                                            <Typography variant="body1" className="text-text-primary">
+                                                {item.event}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                {item.date}
+                                            </Typography>
+                                        </TimelineContent>
+                                    </TimelineItem>
+                                ))}
+                            </Timeline>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Notifications */}
+                <Grid item xs={12} md={6}>
+                    <Typography variant="h6" className="text-text-hover" gutterBottom>
+                        Notifications
+                        <Chip label={notifications.filter((n) => n.unread).length} color="primary" size="small" sx={{ ml: 1 }} />
+                    </Typography>
+                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
+                        <CardContent>
+                            <List dense>
+                                {notifications.map((notif, index) => (
+                                    <React.Fragment key={index}>
+                                        <ListItem button onClick={() => handleNotificationClick(notif.message, notif.unread)}>
+                                            <ListItemText
+                                                primary={
+                                                    <Typography variant="body1" className={notif.unread ? 'text-text-primary font-bold' : 'text-text-secondary'}>
+                                                        {notif.message}
+                                                    </Typography>
+                                                }
+                                            />
+                                            {notif.unread && <Badge color="primary" variant="dot" />}
+                                        </ListItem>
+                                        {index < notifications.length - 1 && <Divider />}
+                                    </React.Fragment>
+                                ))}
+                            </List>
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                {/* Order Trends Graph */}
+                <Grid item xs={12}>
+                    <Typography variant="h6" className="text-text-hover" gutterBottom>
+                        Order Trends (This Week)
+                    </Typography>
+                    <Card sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <BarChart data={chartData}>
+                                    <XAxis dataKey="name" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Bar dataKey="orders" fill="#3b82f6" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </Grid>
             </Grid>
         </Box>
     );

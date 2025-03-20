@@ -15,14 +15,15 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/dashboard" element={<MainDashboard />} />
-            <Route
+            {/* <Route
                 path="/admin-dashboard"
                 element={
                     <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                     </ProtectedRoute>
                 }
-            />
+            /> */}
+            <Route path="/admin-dashboard" element={<AdminDashboard />}  />
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
         </Routes>
     );
