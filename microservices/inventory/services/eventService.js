@@ -6,6 +6,7 @@ let channel;
 const connectRabbitMQ = async () => {
     try {
         const connection = await amqp.connect(process.env.RABBITMQ_URL);
+        console.log('Connected to RabbitMQ'); // Connection successful!
         channel = await connection.createChannel();
         const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
         const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
@@ -21,10 +22,31 @@ const connectRabbitMQ = async () => {
 
         console.log('RabbitMQ Connected for Inventory Service');
         console.log(`Queue ${queue} bound to ${exchange} with routing keys 'sales.order.*', 'warehouse.order.packed'`);
+
+
+        // Handle connection errors
+        connection.on('error', (err) => {
+            console.error('RabbitMQ Connection Error:', err);
+            reconnectRabbitMQ();
+        });
+
+        connection.on('close', () => {
+            console.log('RabbitMQ Connection Closed');
+            reconnectRabbitMQ();
+        });
     } catch (error) {
         console.error('RabbitMQ Connection Error:', error);
         throw error;
     }
+};
+
+const reconnectRabbitMQ = async () => {
+    console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
+    setTimeout(async () => {
+        channel = null; // Reset channel
+        await connectRabbitMQ();
+        subscribeToEvents(require('../controllers/events/eventHandlerController')); // Re-subscribe
+    }, 5000);
 };
 
 const publishEvent = (routingKey, message) => {
