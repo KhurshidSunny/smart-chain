@@ -15,11 +15,11 @@ import { registerUser } from '../../../services/authService';
  */
 const RegistrationPage = () => {
     const [formData, setFormData] = useState({
-        firstName: 'admin',
-        lastName: 'someone',
-        email: 'admin@test.com',
-        password: '12345678',
-        confirmPassword: '12345678',
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
