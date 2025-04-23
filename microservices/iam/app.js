@@ -10,7 +10,7 @@ const app = express();
 
 app.use(express.json()); // Parse JSON bodies
 
-const allowedOrigins = ['http://localhost:5173'];
+const allowedOrigins = ['http://localhost:5173', 'https://smart-chain.tasawuur.shop'];
 
 app.use(cors({
     origin: (origin, callback) => {

@@ -15,7 +15,7 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(helmet());
-app.use(morgan('combined'));
+// app.use(morgan('combined'));
 app.use(express.json());
 
 // Connect to MongoDB

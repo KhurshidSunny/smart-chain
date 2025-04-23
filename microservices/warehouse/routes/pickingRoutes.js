@@ -19,40 +19,40 @@ const pickingSchema = {
 // Routes
 router.post(
   '/',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   validate(pickingSchema),
   pickingController.generatePickingList
 );
 
 router.get(
   '/',
-  authMiddleware(['WarehouseManager', 'WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'warehouse_staff', 'admin']),
   pickingController.listPickingLists
 );
 
 router.get(
   '/:id',
-  authMiddleware(['WarehouseManager', 'WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'warehouse_staff', 'admin']),
   pickingController.getPickingList
 );
 
 router.put(
   '/:id/status',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   validate({ status: 'required|string|in:Pending,InProgress,Completed,Cancelled' }),
   pickingController.updatePickingListStatus
 );
 
 router.put(
   '/:id/assign',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   validate({ assignedTo: 'required|string' }),
   pickingController.assignPickingList
 );
 
 router.put(
   '/:id/items/:itemId',
-  authMiddleware(['WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_staff', 'admin']),
   validate({ picked: 'required|numeric|min:0' }),
   pickingController.updatePickedQuantity
 );

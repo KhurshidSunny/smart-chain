@@ -65,6 +65,7 @@ const RegistrationPage = () => {
             localStorage.setItem('user', JSON.stringify(response.user));
             navigate('/dashboard');
         } catch (err) {
+            console.log(err)
             dispatch(loginFailure(err.response?.data?.message || 'Registration failed'));
         }
     };

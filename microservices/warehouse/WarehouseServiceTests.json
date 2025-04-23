@@ -1,0 +1,902 @@
+{
+    "info": {
+        "name": "Warehouse Service API Tests",
+        "_postman_id": "b4e6f7a2-8b9f-4d8e-9c3b-7e2a4f5b6c1d",
+        "description": "Test cases for Warehouse Service API endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Picking Lists",
+            "item": [
+                {
+                    "name": "POST /picking-lists - Create Picking List",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"orderId\": \"{{ORDER_ID}}\",\n  \"orderNumber\": \"ORD-{{ORDER_ID}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{PRODUCT_ID}}\",\n      \"sku\": \"SKU123\",\n      \"name\": \"Test Product\",\n      \"quantity\": 2,\n      \"location\": \"Aisle 1\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('Response has pickingListId', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData._id).to.be.a('string');",
+                                    "    pm.collectionVariables.set('pickingListId', jsonData._id);",
+                                    "    pm.collectionVariables.set('itemId', jsonData.items[0]._id);",
+                                    "});",
+                                    "pm.test('Response matches schema', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.orderId).to.equal('{{ORDER_ID}}');",
+                                    "    pm.expect(jsonData.orderNumber).to.equal('ORD-{{ORDER_ID}}');",
+                                    "    pm.expect(jsonData.status).to.equal('Pending');",
+                                    "    pm.expect(jsonData.items).to.be.an('array').that.has.lengthOf(1);",
+                                    "    pm.expect(jsonData.items[0].sku).to.equal('SKU123');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /picking-lists - List Picking Lists",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists?page=1&limit=10",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has pickingLists array', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.pickingLists).to.be.an('array');",
+                                    "    pm.expect(jsonData.totalPages).to.be.a('number');",
+                                    "    pm.expect(jsonData.currentPage).to.equal('1');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /picking-lists/:id - Get Picking List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists/{{pickingListId}}",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists",
+                                "{{pickingListId}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has correct pickingListId', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData._id).to.equal(pm.collectionVariables.get('pickingListId'));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT /picking-lists/:id/status - Update Status",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"status\": \"InProgress\"}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists/{{pickingListId}}/status",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists",
+                                "{{pickingListId}}",
+                                "status"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Status updated to InProgress', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.equal('InProgress');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT /picking-lists/:id/assign - Assign Picking List",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"assignedTo\": \"67ff453355dc346ae50e4568\"}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists/{{pickingListId}}/assign",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists",
+                                "{{pickingListId}}",
+                                "assign"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Assigned correctly', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.assignedTo).to.equal('67ff453355dc346ae50e4568');",
+                                    "    pm.expect(jsonData.status).to.equal('InProgress');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT /picking-lists/:id/items/:itemId - Update Picked Quantity",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"picked\": 1}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists/{{pickingListId}}/items/{{itemId}}",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists",
+                                "{{pickingListId}}",
+                                "items",
+                                "{{itemId}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Picked quantity updated', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    var item = jsonData.items.find(i => i._id === pm.collectionVariables.get('itemId'));",
+                                    "    pm.expect(item.picked).to.equal(1);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /picking-lists - Invalid Data (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"orderId\": \"{{ORDER_ID}}\", \"orderNumber\": \"\", \"items\": []}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 400', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "pm.test('Response has error messages', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.errors).to.be.an('array');",
+                                    "    pm.expect(jsonData.errors).to.include('\"orderNumber\" is not allowed to be empty');",
+                                    "    pm.expect(jsonData.errors).to.include('\"items\" must contain at least 1 items');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Packages",
+            "item": [
+                {
+                    "name": "POST /packages - Create Package",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"orderId\": \"{{ORDER_ID}}\",\n  \"packagingType\": \"Box\",\n  \"dimensions\": {\n    \"width\": 10,\n    \"height\": 10,\n    \"depth\": 10,\n    \"weight\": 5\n  },\n  \"packedBy\": \"67ff453355dc346ae50e4568\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/packages",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('Response has packageId and qrCode', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData._id).to.be.a('string');",
+                                    "    pm.expect(jsonData.qrCode).to.be.a('string');",
+                                    "    pm.collectionVariables.set('packageId', jsonData._id);",
+                                    "    pm.collectionVariables.set('qrCode', jsonData.qrCode);",
+                                    "});",
+                                    "pm.test('Response matches schema', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.orderId).to.equal('{{ORDER_ID}}');",
+                                    "    pm.expect(jsonData.packagingType).to.equal('Box');",
+                                    "    pm.expect(jsonData.dimensions.weight).to.equal(5);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /packages - List Packages",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/packages?page=1&limit=10",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has packages array', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.packages).to.be.an('array');",
+                                    "    pm.expect(jsonData.totalPages).to.be.a('number');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /packages/:id - Get Package",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/packages/{{packageId}}",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{packageId}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has correct packageId', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData._id).to.equal(pm.collectionVariables.get('packageId'));",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "PUT /packages/:id - Update Package",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"packagingType\": \"Crate\"}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/packages/{{packageId}}",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "packages",
+                                "{{packageId}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Packaging type updated', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.packagingType).to.equal('Crate');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /packages - Invalid Data (400)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"orderId\": \"{{ORDER_ID}}\", \"packagingType\": \"\", \"dimensions\": {}}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/packages",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "packages"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 400', function () {",
+                                    "    pm.response.to.have.status(400);",
+                                    "});",
+                                    "pm.test('Response has error messages', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.errors).to.be.an('array');",
+                                    "    pm.expect(jsonData.errors).to.include('\"packagingType\" is not allowed to be empty');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "QR Codes",
+            "item": [
+                {
+                    "name": "POST /qr-codes - Generate QR Code",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"entityType\": \"Order\", \"entityId\": \"{{ORDER_ID}}\"}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/qr-codes",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "qr-codes"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 201', function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "pm.test('Response has qrCode and url', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.code).to.be.a('string');",
+                                    "    pm.expect(jsonData.qrCodeUrl).to.be.a('string');",
+                                    "    pm.collectionVariables.set('qrCode', jsonData.code);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /qr-codes/:code - Get QR Code",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/qr-codes/{{qrCode}}",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "qr-codes",
+                                "{{qrCode}}"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has correct qrCode', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.code).to.equal(pm.collectionVariables.get('qrCode'));",
+                                    "    pm.expect(jsonData.entityType).to.equal('Order');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "POST /qr-codes/:code/scan - Record QR Code Scan",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"location\": \"Shipping Dock\", \"scannedBy\": \"67ff453355dc346ae50e4568\"}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/qr-codes/{{qrCode}}/scan",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "qr-codes",
+                                "{{qrCode}}",
+                                "scan"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Scan recorded', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.scanHistory).to.be.an('array').that.has.lengthOf(1);",
+                                    "    pm.expect(jsonData.scanHistory[0].location).to.equal('Shipping Dock');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /qr-codes/:code/history - Get QR Code History",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/qr-codes/{{qrCode}}/history",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "qr-codes",
+                                "{{qrCode}}",
+                                "history"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 200', function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "pm.test('Response has scan history', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array').that.has.lengthOf(1);",
+                                    "    pm.expect(jsonData[0].location).to.equal('Shipping Dock');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "GET /qr-codes/:code - Invalid Code (404)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{JWT_TOKEN}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/qr-codes/INVALID_CODE",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "qr-codes",
+                                "INVALID_CODE"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 404', function () {",
+                                    "    pm.response.to.have.status(404);",
+                                    "});",
+                                    "pm.test('Response has error message', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.message).to.equal('QR Code not found');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "POST /picking-lists - Unauthorized (401)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"orderId\": \"{{ORDER_ID}}\",\n  \"orderNumber\": \"ORD-{{ORDER_ID}}\",\n  \"items\": [\n    {\n      \"productId\": \"{{PRODUCT_ID}}\",\n      \"sku\": \"SKU123\",\n      \"name\": \"Test Product\",\n      \"quantity\": 2,\n      \"location\": \"Aisle 1\"\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{WAREHOUSE_SERVICE_URL}}/picking-lists",
+                            "host": [
+                                "{{WAREHOUSE_SERVICE_URL}}"
+                            ],
+                            "path": [
+                                "picking-lists"
+                            ]
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status code is 401', function () {",
+                                    "    pm.response.to.have.status(401);",
+                                    "});",
+                                    "pm.test('Response has error message', function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.message).to.equal('No token provided');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "pickingListId",
+            "value": ""
+        },
+        {
+            "key": "itemId",
+            "value": ""
+        },
+        {
+            "key": "packageId",
+            "value": ""
+        },
+        {
+            "key": "qrCode",
+            "value": ""
+        }
+    ]
+}

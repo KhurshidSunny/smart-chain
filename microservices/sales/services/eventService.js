@@ -2,9 +2,6 @@
 // This allows us to connect to RabbitMQ, create channels, and send/receive messages.
 const amqp = require('amqplib');
 
-// Load environment variables from a .env file into process.env using 'dotenv'.
-// This is a best practice to keep sensitive data (like RabbitMQ URL) out of the codebase
-// and make configuration flexible for different environments (dev, prod, etc.).
 require('dotenv').config();
 
 // Declare a variable to hold the RabbitMQ channel, which we'll use to send and receive messages.
@@ -12,13 +9,8 @@ require('dotenv').config();
 // Initially null; we'll set it when we connect.
 let channel;
 
-// Define an async function to establish a connection to RabbitMQ and set up messaging.
-// 'async' is used because connecting and setting up channels involves network calls that return promises.
 const connectRabbitMQ = async () => {
   try {
-    // Attempt to connect to RabbitMQ using the URL from the environment variable RABBITMQ_URL.
-    // process.env.RABBITMQ_URL comes from the .env file (e.g., amqps://user:pass@host/vhost).
-    // This makes the connection portable—change the URL in .env, and it works anywhere without code changes.
     const connection = await amqp.connect(process.env.RABBITMQ_URL);
 
     // Create a channel on the connection. A channel is a lightweight "session" over the connection
@@ -28,10 +20,8 @@ const connectRabbitMQ = async () => {
 
     // Define the exchange name
     // An exchange is like a "router" that directs messages to queues based on routing keys.
-    // Fallback to 'smartchain_exchange' if not specified, ensuring it always works even without .env setup.
     const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
 
-    // Define a prefix for queue names from RABBITMQ_QUEUE_PREFIX.
     // Queues hold messages until they're consumed. The prefix (e.g., 'smart-chain-') helps organize
     // queues by app name, avoiding conflicts if multiple apps use the same RabbitMQ instance.
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
@@ -48,7 +38,6 @@ const connectRabbitMQ = async () => {
 
     // Assert (create or verify) the queue exists.
     // Queues store messages until a consumer processes them. 'durable: true' ensures the queue
-    // persists through restarts, and messages aren’t lost (if also marked persistent).
     await channel.assertQueue(queue, { durable: true });
 
     // Bind the queue to the exchange with a routing key pattern 'sales.order.*'.
@@ -59,9 +48,6 @@ const connectRabbitMQ = async () => {
     await channel.bindQueue(queue, exchange, 'warehouse.order.packed');
     await channel.bindQueue(queue, exchange, 'logistics.shipment.dispatched');
     await channel.bindQueue(queue, exchange, 'logistics.order.delivered');
-    // Log a success message to confirm the connection worked.
-    // Helpful for debugging during development to know the service is ready to send/receive messages.
-    console.log('RabbitMQ Connected for Sales Service');
 
     // Log the binding details for clarity. This shows what queue is listening to what exchange
     // and with which routing key pattern, making it easier to troubleshoot message flow.

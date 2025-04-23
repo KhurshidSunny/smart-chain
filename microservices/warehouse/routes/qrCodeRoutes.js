@@ -13,20 +13,20 @@ const qrCodeSchema = {
 // Routes
 router.post(
   '/',
-  authMiddleware(['WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_staff', 'admin']),
   validate(qrCodeSchema),
   qrCodeController.generateQRCode
 );
 
 router.get(
   '/:code',
-  authMiddleware(['WarehouseManager', 'WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'warehouse_staff', 'admin']),
   qrCodeController.getQRCode
 );
 
 router.post(
   '/:code/scan',
-  authMiddleware(['WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_staff', 'admin']),
   validate({
     location: 'required|string',
     scannedBy: 'required|string',
@@ -36,7 +36,7 @@ router.post(
 
 router.get(
   '/:code/history',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   qrCodeController.getQRCodeHistory
 );
 

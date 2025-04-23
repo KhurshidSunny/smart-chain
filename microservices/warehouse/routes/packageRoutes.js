@@ -18,26 +18,26 @@ const packageSchema = {
 // Routes
 router.post(
   '/',
-  authMiddleware(['WarehouseStaff', 'SystemAdmin']),
+  authMiddleware(['warehouse_staff', 'admin']),
   validate(packageSchema),
   packageController.createPackage
 );
 
 router.get(
   '/',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   packageController.listPackages
 );
 
 router.get(
   '/:id',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   packageController.getPackage
 );
 
 router.put(
   '/:id',
-  authMiddleware(['WarehouseManager', 'SystemAdmin']),
+  authMiddleware(['warehouse_manager', 'admin']),
   validate({
     packagingType: 'string',
     'dimensions.width': 'numeric|min:0',
