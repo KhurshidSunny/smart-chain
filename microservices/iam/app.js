@@ -31,7 +31,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints
 app.use('/users', userRoutes); // User management endpoints
-app.use('/welcome', (req, res)=> {res.send('Welcome to IAM service!')})
+app.use('/welcome', (req, res)=> {res.send('Welcome to IAM!')})
 
 
 
