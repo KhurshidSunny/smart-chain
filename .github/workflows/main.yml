@@ -55,7 +55,7 @@ jobs:
       - name: Deploy to EC2
         run: |
           # Pull latest changes
-          ssh ubuntu@${{ secrets.EC2_HOST }} "cd ~/smart-chain && git pull"
+          ssh ubuntu@${{ secrets.EC2_HOST }} "eval \"\$(ssh-agent -s)\" && ssh-add ~/.ssh/git-key && cd ~/smart-chain && git pull"
           
           # Install dependencies and restart services for changed microservices
           for service in ${{ env.CHANGED_SERVICES }}; do
