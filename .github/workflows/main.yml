@@ -50,18 +50,18 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H 65.0.72.131 >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
       
       - name: Deploy to EC2
         run: |
           # Pull latest changes
-          ssh ubuntu@65.0.72.131 "cd ~/smart-chain && git pull"
+          ssh ubuntu@${{ secrets.EC2_HOST }} "cd ~/smart-chain && git pull"
           
           # Install dependencies and restart services for changed microservices
           for service in ${{ env.CHANGED_SERVICES }}; do
             echo "Deploying $service microservice..."
-            ssh ubuntu@65.0.72.131 "cd ~/smart-chain/microservices/$service && npm ci && pm2 restart $service"
+            ssh ubuntu@${{ secrets.EC2_HOST }} "cd ~/smart-chain/microservices/$service && npm ci && pm2 restart $service"
           done
           
           # Check service status
-          ssh ubuntu@65.0.72.131 "pm2 status"
+          ssh ubuntu@${{ secrets.EC2_HOST }} "pm2 status"
