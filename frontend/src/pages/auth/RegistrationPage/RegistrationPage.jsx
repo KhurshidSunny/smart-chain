@@ -1,133 +1,77 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from "react-hook-form";
 import { Box, Typography, TextField, Link as MuiLink, Grid } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
-import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
 import { registerUser } from '../../../services/authService';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 
 const RegistrationPage = () => {
-    const [formData, setFormData] = useState({
-        firstName: 'admin',
-        lastName: 'someone',
-        email: 'admin@test.com',
-        password: '12345678',
-        confirmPassword: '12345678',
-    });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [formErrors, setFormErrors] = useState({});
+    
+    const { register, handleSubmit, watch, formState: { errors } } = useForm();
 
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const navigate = useNavigate()
 
-    const registerMutation = useMutation({
-        mutationFn: registerUser,
+    const {mutate: registerMutation, isPending} = useMutation({
+        mutationFn: (data) =>  registerUser(data),
         onSuccess: (data) => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
             queryClient.setQueryData(['authUser'], data.user);
+            toast.success(`You are logged in`);
             navigate('/dashboard');
         },
         onError: (error) => {
-            setFormErrors({ server: error.response?.data?.message || 'Registration failed' });
-            console.log('er')
-        },
-    });
+            toast.error(`Registration failed: Please try again`)
+            console.log(`Registration failed: ${error.message}`)
+            
+        }
+    })
+   
+    console.log(isPending)
 
-    const validateForm = () => {
-        const errors = {};
-        if (!formData.firstName.trim()) errors.firstName = 'First name is required';
-        if (!formData.lastName.trim()) errors.lastName = 'Last name is required';
-        if (!formData.email.trim()) errors.email = 'Email is required';
-        else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = 'Email is invalid';
-        if (!formData.password.trim()) errors.password = 'Password is required';
-        else if (formData.password.length < 6) errors.password = 'Password must be at least 6 characters';
-        if (formData.password !== formData.confirmPassword) errors.confirmPassword = 'Passwords do not match';
-        setFormErrors(errors);
-        return Object.keys(errors).length === 0;
-    };
+    async function onSubmit(data) {
+        console.log(data)
+         registerMutation(data)
+    }
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!validateForm()) return;
-        registerMutation.mutate({
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            password: formData.password,
-        });
-    };
-
-    const handleLoginClick = () => {
-        navigate('/login');
-    };
+    if(isPending) return <LoadingIndicator />
 
     return (
-        <Box
-            className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-background-default px-4"
-            sx={{ width: '100vw', overflowX: 'hidden' }}
-        >
-            <Box
-                className="w-full max-w-md bg-background-white p-6 rounded-lg shadow-md"
-                sx={{ border: '1px solid', borderColor: 'neutral-light' }}
-            >
-                <Typography
-                    variant="h5"
-                    align="center"
-                    gutterBottom
-                    className="text-text-primary font-semibold"
-                >
+        <Box className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-background-default px-4" sx={{ width: '100vw', overflowX: 'hidden' }}>
+            <Box className="w-full max-w-md bg-background-white p-6 rounded-lg shadow-md" sx={{ border: '1px solid', borderColor: 'neutral-light' }}>
+                <Typography variant="h5" align="center" gutterBottom className="text-text-primary font-semibold">
                     Register for Smart-Chain
                 </Typography>
 
-                {registerMutation.isError && (
-                    <ErrorMessage
-                        message={formErrors.server}
-                        onRetry={handleSubmit}
-                        retryText="Try Again"
-                        sx={{ mb: 3 }}
-                    />
-                )}
-
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit)}>
                     <Box sx={{ mb: 3 }}>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     label="First Name"
-                                    name="firstName"
-                                    value={formData.firstName}
-                                    onChange={handleChange}
+                                    {...register('firstName', { required: 'First name is required' })}
                                     fullWidth
                                     variant="outlined"
-                                    error={!!formErrors.firstName}
-                                    helperText={formErrors.firstName}
-                                    disabled={registerMutation.isLoading}
-                                    InputProps={{ className: 'bg-background-light' }}
-                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    error={!!errors.firstName}
+                                    helperText={errors.firstName?.message}
                                 />
                             </Grid>
                             <Grid item xs={12} sm={6}>
                                 <TextField
                                     label="Last Name"
-                                    name="lastName"
-                                    value={formData.lastName}
-                                    onChange={handleChange}
+                                    {...register('lastName', { required: 'Last name is required' })}
                                     fullWidth
                                     variant="outlined"
-                                    error={!!formErrors.lastName}
-                                    helperText={formErrors.lastName}
-                                    disabled={registerMutation.isLoading}
-                                    InputProps={{ className: 'bg-background-light' }}
-                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
+                                    error={!!errors.lastName}
+                                    helperText={errors.lastName?.message}
                                 />
                             </Grid>
                         </Grid>
@@ -136,106 +80,61 @@ const RegistrationPage = () => {
                     <Box sx={{ mb: 3 }}>
                         <TextField
                             label="Email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
+                            {...register('email', { required: 'Email is required', pattern: { value: /\S+@\S+\.\S+/, message: 'Invalid email' } })}
                             fullWidth
                             variant="outlined"
-                            error={!!formErrors.email}
-                            helperText={formErrors.email}
-                            disabled={registerMutation.isLoading}
-                            InputProps={{ className: 'bg-background-light' }}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' }, mb: 2 }}
+                            error={!!errors.email}
+                            helperText={errors.email?.message}
                         />
                     </Box>
 
                     <Box sx={{ mb: 3 }}>
                         <TextField
                             label="Password"
-                            name="password"
                             type={showPassword ? 'text' : 'password'}
-                            value={formData.password}
-                            onChange={handleChange}
+                            {...register('password', { required: 'Password is required', minLength: { value: 6, message: 'Password must be at least 6 characters' } })}
                             fullWidth
                             variant="outlined"
-                            error={!!formErrors.password}
-                            helperText={formErrors.password}
-                            disabled={registerMutation.isLoading}
+                            error={!!errors.password}
+                            helperText={errors.password?.message}
                             InputProps={{
-                                className: 'bg-background-light',
                                 endAdornment: (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="p-1 text-text-muted hover:text-text-hover disabled:text-text-disabled"
-                                        disabled={registerMutation.isLoading}
-                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                    >
+                                    <button className='text-primary bg-transparent hover:border-none' type="button" onClick={() => setShowPassword(!showPassword)}>
                                         {showPassword ? <VisibilityOff /> : <Visibility />}
                                     </button>
                                 ),
                             }}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' }, mb: 2 }}
                         />
+                    </Box>
 
+                    <Box sx={{ mb: 3 }}>
                         <TextField
                             label="Confirm Password"
-                            name="confirmPassword"
                             type={showConfirmPassword ? 'text' : 'password'}
-                            value={formData.confirmPassword}
-                            onChange={handleChange}
+                            {...register('confirmPassword', 
+                                { required: 'Confirm password is required',
+                                    validate: (value) => value === watch('password') || 'Password do not match'
+                                 })}
                             fullWidth
                             variant="outlined"
-                            error={!!formErrors.confirmPassword}
-                            helperText={formErrors.confirmPassword}
-                            disabled={registerMutation.isLoading}
+                            error={!!errors.confirmPassword}
+                            helperText={errors.confirmPassword?.message}
                             InputProps={{
-                                className: 'bg-background-light',
                                 endAdornment: (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="p-1 text-text-muted hover:text-text-hover disabled:text-text-disabled"
-                                        disabled={registerMutation.isLoading}
-                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                                    >
+                                    <button className='text-primary bg-transparent outline-none hover:border-none' type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                                         {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                                     </button>
                                 ),
                             }}
-                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px' } }}
                         />
                     </Box>
 
-                    <ActionButton
-                        label="Register"
-                        onClick={handleSubmit}
-                        fullWidth
-                        loading={registerMutation.isLoading}
-                        disabled={registerMutation.isLoading}
-                        sx={{
-                            mt: 2,
-                            py: 1.5,
-                            bgcolor: 'primary',
-                            '&:hover': { bgcolor: 'primary-dark' },
-                        }}
-                    />
+                  
+                            <button className='mt-2 py-2 bg-primary hover:bg-primary-dark w-full outline-none '>register</button>
 
-                    <Typography
-                        variant="body2"
-                        align="center"
-                        className="text-text-secondary"
-                        sx={{ mt: 2 }}
-                    >
+                    <Typography variant="body2" align="center" sx={{ mt: 2 }}>
                         Already have an account?{' '}
-                        <MuiLink
-                            component="button"
-                            type="button"
-                            onClick={handleLoginClick}
-                            underline="hover"
-                            disabled={registerMutation.isLoading}
-                            className="text-primary hover:text-primary-dark font-medium"
-                        >
+                        <MuiLink component="button" type="button" underline="hover" className="text-primary hover:text-primary-dark font-medium">
                             Login
                         </MuiLink>
                     </Typography>

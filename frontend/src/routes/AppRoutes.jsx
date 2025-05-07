@@ -7,6 +7,18 @@ import AdminDashboard from '../pages/dashboard/AdminDashboard/AdminDashboard';
 import ProtectedRoute from './ProtectedRoute';
 import Home from '../pages/Home/Home';
 import NotFound from "./../pages/NotFound/NotFound"; // New import
+import NewOrder from '../pages/order management/NewOrder';
+import OrderList from '../pages/order management/OrderList';
+import OrderDetail from '../pages/order management/OrderDetail';
+import ProductCatalog from '../pages/inventory management/ProductCatalog';
+import InventoryDashboard from '../pages/inventory management/InventoryDashboard';
+import ProductDetail from '../pages/inventory management/ProductDetail';
+import OrderPickingDashboard from '../pages/warehouse management/OrderPickingDashboard';
+import PickingListDetail from '../pages/warehouse management/PickingListDetail';
+import ManageOrderPacking from '../pages/warehouse management/ManageOrderPacking';
+import ShipmentDashboard from '../pages/logistic management/ShipmentDashboard';
+import ShipmentDetail from '../pages/logistic management/ShipmentDetail';
+import CustomerTracking from '../pages/logistic management/CustomerTracking';
 
 const AppRoutes = () => {
     return (
@@ -24,6 +36,28 @@ const AppRoutes = () => {
                 }
             /> */}
             <Route path="/admin-dashboard" element={<AdminDashboard />}  />
+
+            {/* Order management routes  */}
+            <Route path="/new-order" element={<NewOrder />} />
+            <Route path="/order-list" element={<OrderList />} />
+            <Route path='/orders/:id' element={<OrderDetail />} />
+
+            {/* inventory management routes  */}
+            <Route path="/product-catalog" element={<ProductCatalog />} />
+            <Route path='/inventory-dashboard' element={<InventoryDashboard />} />
+            <Route path='/products/:id' element={<ProductDetail />} />
+
+            {/* warehouse management routes */}
+            <Route path='/order-picking-dashboard' element={<OrderPickingDashboard />} />
+            <Route path='/picking/:orderId' element={<PickingListDetail />} />
+            <Route path='/packing' element={<ManageOrderPacking />} />
+
+
+            {/* Logistic management routes  */}
+            <Route path='/shipments' element={<ShipmentDashboard />} />
+            <Route path='/shipments/:shipmentId' element={<ShipmentDetail />} />
+            <Route path='/track' element={<CustomerTracking />} />
+
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
         </Routes>
     );

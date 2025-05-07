@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Box, Typography, TextField, Link as MuiLink } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { DoNotDisturbOnTotalSilenceTwoTone, Visibility, VisibilityOff } from '@mui/icons-material';
 import ActionButton from '../../../components/common/ActionButton/ActionButton';
 import ErrorMessage from '../../../components/common/ErrorMessage/ErrorMessage';
 import { loginUser } from '../../../services/authService';
+import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('admin@test.com');
@@ -16,13 +17,14 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    const loginMutation = useMutation({
-        mutationFn: loginUser,
+    const {mutate: loginMutation, isPending} = useMutation({
+        mutationFn: (data) =>  loginUser(data),
         onSuccess: (data) => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('user', JSON.stringify(data.user));
             queryClient.setQueryData(['authUser'], data.user);
+            
             navigate('/dashboard');
         },
         onError: (error) => {
@@ -42,12 +44,14 @@ const LoginPage = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!validateForm()) return;
-        loginMutation.mutate({ email, password });
+        loginMutation({ email, password });
     };
 
     const handleRegisterClick = () => {
         navigate('/register');
     };
+
+    if(isPending) return <LoadingIndicator />
 
     return (
         <Box
