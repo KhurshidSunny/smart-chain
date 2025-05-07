@@ -10,7 +10,7 @@ const app = express();
 
 app.use(express.json()); // Parse JSON bodies
 
-const allowedOrigins = ['http://localhost:5173'];
+const allowedOrigins = ['http://localhost:5173', 'https://smart-chain.tasawuur.shop'];
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -31,6 +31,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints
 app.use('/users', userRoutes); // User management endpoints
+app.use('/welcome', (req, res)=> {res.send('Welcome to IAM service!')})
 
 
 

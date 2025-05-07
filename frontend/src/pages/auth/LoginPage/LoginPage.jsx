@@ -9,8 +9,8 @@ import { loginUser } from '../../../services/authService';
 import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 
 const LoginPage = () => {
-    const [email, setEmail] = useState('admin@test.com');
-    const [password, setPassword] = useState('12345678');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 

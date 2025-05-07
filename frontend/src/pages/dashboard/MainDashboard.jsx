@@ -142,7 +142,7 @@ const MainDashboard = () => {
                     </Typography>
                     <Grid container spacing={2}>
                         <Grid item xs={12} sm={6}>
-                            <ActionButton label="Track Order" onClick={() => handleAction('/tracking')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
+                            <ActionButton label="Track Order" onClick={() => handleAction('/track')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
                         </Grid>
                         <Grid item xs={12} sm={6}>
                             <ActionButton label="Submit Feedback" onClick={() => handleAction('/feedback')} fullWidth sx={{ bgcolor: 'primary', '&:hover': { bgcolor: 'primary-dark' } }} />
