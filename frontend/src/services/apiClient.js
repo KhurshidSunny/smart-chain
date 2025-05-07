@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-    baseURL: 'http://127.0.0.1:3000', // Adjust based on your backend
+    baseURL: 'https://iam.tasawuur.shop', // Adjust based on your backend
     timeout: 10000,
 });
 

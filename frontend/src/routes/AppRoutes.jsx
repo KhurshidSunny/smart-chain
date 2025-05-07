@@ -27,35 +27,35 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/dashboard" element={<MainDashboard />} />
-            {/* <Route
+            <Route
                 path="/admin-dashboard"
                 element={
                     <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                     </ProtectedRoute>
                 }
-            /> */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />}  />
+            />
+            {/* <Route path="/admin-dashboard" element={<AdminDashboard />}  /> */}
 
             {/* Order management routes  */}
+            <Route path="/orders" element={<OrderList />} />
             <Route path="/new-order" element={<NewOrder />} />
-            <Route path="/order-list" element={<OrderList />} />
             <Route path='/orders/:id' element={<OrderDetail />} />
 
             {/* inventory management routes  */}
+            <Route path='/inventory' element={<InventoryDashboard />} />
             <Route path="/product-catalog" element={<ProductCatalog />} />
-            <Route path='/inventory-dashboard' element={<InventoryDashboard />} />
             <Route path='/products/:id' element={<ProductDetail />} />
 
             {/* warehouse management routes */}
-            <Route path='/order-picking-dashboard' element={<OrderPickingDashboard />} />
+            <Route path='/warehouse' element={<OrderPickingDashboard />} />
             <Route path='/picking/:orderId' element={<PickingListDetail />} />
-            <Route path='/packing' element={<ManageOrderPacking />} />
+            <Route path='/pack' element={<ManageOrderPacking />} />
 
 
             {/* Logistic management routes  */}
-            <Route path='/shipments' element={<ShipmentDashboard />} />
-            <Route path='/shipments/:shipmentId' element={<ShipmentDetail />} />
+            <Route path='/logistics' element={<ShipmentDashboard />} />
+            <Route path='/logistics/:shipmentId' element={<ShipmentDetail />} />
             <Route path='/track' element={<CustomerTracking />} />
 
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
