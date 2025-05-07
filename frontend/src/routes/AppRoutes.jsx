@@ -27,15 +27,15 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/dashboard" element={<MainDashboard />} />
-            {/* <Route
+            <Route
                 path="/admin-dashboard"
                 element={
                     <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                     </ProtectedRoute>
                 }
-            /> */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />}  />
+            />
+            {/* <Route path="/admin-dashboard" element={<AdminDashboard />}  /> */}
 
             {/* Order management routes  */}
             <Route path="/orders" element={<OrderList />} />
@@ -50,7 +50,7 @@ const AppRoutes = () => {
             {/* warehouse management routes */}
             <Route path='/warehouse' element={<OrderPickingDashboard />} />
             <Route path='/picking/:orderId' element={<PickingListDetail />} />
-            <Route path='/packing' element={<ManageOrderPacking />} />
+            <Route path='/pack' element={<ManageOrderPacking />} />
 
 
             {/* Logistic management routes  */}
