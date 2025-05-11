@@ -6,6 +6,7 @@ const productRoutes = require('./routes/productRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const { eventHandlerController } = require('./controllers');
 require('dotenv').config();
+const cors = require('cors');
 
 const app = express();
 
@@ -23,6 +24,12 @@ connectRabbitMQ().then(() => {
     };
     subscribeToEvents(eventHandlers);
 });
+
+app.use(cors({
+  origin: '*',  // Allows any origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Routes
 app.use('/', productRoutes);
