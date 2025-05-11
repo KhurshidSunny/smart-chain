@@ -1,3 +1,6 @@
+// Load environment variables first
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,8 +10,7 @@ const connectDB = require('./config/db');
 const pickingRoutes = require('./routes/pickingRoutes');
 const packageRoutes = require('./routes/packageRoutes');
 const qrCodeRoutes = require('./routes/qrCodeRoutes');
-require('dotenv').config();
-
+const eventService = require('./services/eventService');
 
 const app = express();
 
@@ -19,7 +21,20 @@ app.use(helmet());
 app.use(express.json());
 
 // Connect to MongoDB
-connectDB();
+connectDB()
+  .then(() => {
+    console.log('MongoDB connected successfully');
+
+    // Initialize RabbitMQ connection only after MongoDB is connected
+    return eventService.connectRabbitMQ()
+      .then(() => {
+        // Initialize event subscriptions
+        eventService.initSubscriptions();
+      });
+  })
+  .catch(err => {
+    console.error('Error during initialization:', err);
+  });
 
 // Routes
 app.use('/picking-lists', pickingRoutes);
