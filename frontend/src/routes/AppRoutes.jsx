@@ -19,6 +19,10 @@ import ManageOrderPacking from '../pages/warehouse management/ManageOrderPacking
 import ShipmentDashboard from '../pages/logistic management/ShipmentDashboard';
 import ShipmentDetail from '../pages/logistic management/ShipmentDetail';
 import CustomerTracking from '../pages/logistic management/CustomerTracking';
+import FeedbackDashboard from '../pages/feedback management/FeedbackDashboard';
+import FeedbackDetail from '../pages/feedback management/FeedbackDetail';
+import Users from '../pages/user management/Users';
+import UserDetail from '../pages/user management/UserDetail';
 
 const AppRoutes = () => {
     return (
@@ -27,15 +31,15 @@ const AppRoutes = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegistrationPage />} />
             <Route path="/dashboard" element={<MainDashboard />} />
-            {/* <Route
+            <Route
                 path="/admin-dashboard"
                 element={
                     <ProtectedRoute requiredRole="admin">
                         <AdminDashboard />
                     </ProtectedRoute>
                 }
-            /> */}
-            <Route path="/admin-dashboard" element={<AdminDashboard />}  />
+            />
+            {/* <Route path="/admin-dashboard" element={<AdminDashboard />}  /> */}
 
             {/* Order management routes  */}
             <Route path="/orders" element={<OrderList />} />
@@ -50,13 +54,27 @@ const AppRoutes = () => {
             {/* warehouse management routes */}
             <Route path='/warehouse' element={<OrderPickingDashboard />} />
             <Route path='/picking/:orderId' element={<PickingListDetail />} />
-            <Route path='/packing' element={<ManageOrderPacking />} />
+            <Route path='/pack' element={<ManageOrderPacking />} />
 
 
             {/* Logistic management routes  */}
             <Route path='/logistics' element={<ShipmentDashboard />} />
             <Route path='/logistics/:shipmentId' element={<ShipmentDetail />} />
+<<<<<<< HEAD
             <Route path='/track' element={<CustomerTracking />} />
+=======
+            <Route path='/tracking' element={<CustomerTracking />} />
+
+
+            {/* Feedback Mangement  */}
+            <Route path='/feedback' element={<FeedbackDashboard />} />
+            <Route path='/feedback/:feedbackId' element={<FeedbackDetail />} />
+
+
+            {/* User management  */}
+            <Route path='/users' element={<Users />} />
+            <Route path='/users/:userId' element={<UserDetail />} />
+>>>>>>> khurshid/dev
 
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
         </Routes>
