@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/authRoutes');
@@ -9,35 +10,30 @@ const app = express();
 
 app.use(express.json()); // Parse JSON bodies
 
-<<<<<<< HEAD
+// Define allowed origins for CORS
 const allowedOrigins = ['http://localhost:5173', 'https://smart-chain.tasawuur.shop'];
 
-=======
-// Allow CORS for all origins
->>>>>>> khurshid/dev
 app.use(cors({
-    origin: true, // Allows all origins
-    credentials: true // If you need to support credentials (e.g., cookies, auth headers)
-}));
-    origin: true, // Allows all origins
-    credentials: true // If you need to support credentials (e.g., cookies, auth headers)
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g., mobile apps, curl) or from allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true // Support credentials (e.g., cookies, auth headers)
 }));
 
+// Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints
 app.use('/users', userRoutes); // User management endpoints
-<<<<<<< HEAD
-app.use('/welcome', (req, res)=> {res.send('Welcome to IAM service!')})
-
-
-
-=======
 app.use('/welcome', (req, res) => { res.send('Welcome to IAM service!') });
->>>>>>> khurshid/dev
 
 const PORT = process.env.PORT || 3001; // Fallback port for local dev
 app.listen(PORT, () => console.log(`IAM service running on port ${PORT}`));

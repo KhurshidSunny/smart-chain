@@ -10,8 +10,6 @@ import toast from 'react-hot-toast';
 import LoadingIndicator from '../../../components/common/LoadingIndicator/LoadingIndicator';
 
 const RegistrationPage = () => {
-<<<<<<< HEAD
-=======
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -19,7 +17,6 @@ const RegistrationPage = () => {
         password: '',
         confirmPassword: '',
     });
->>>>>>> bc5b8243e6c6cfdbd6a66b21b95223435bc7bf08
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     
@@ -37,18 +34,12 @@ const RegistrationPage = () => {
             queryClient.setQueryData(['authUser'], data.user);
             toast.success(`You are logged in`);
             navigate('/dashboard');
-<<<<<<< HEAD
         },
         onError: (error) => {
             toast.error(`Registration failed: Please try again`)
             console.log(`Registration failed: ${error.message}`)
             
-=======
-        } catch (err) {
-            console.log(err)
-            dispatch(loginFailure(err.response?.data?.message || 'Registration failed'));
->>>>>>> bc5b8243e6c6cfdbd6a66b21b95223435bc7bf08
-        }
+        } 
     })
    
     console.log(isPending)

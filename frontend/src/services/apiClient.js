@@ -1,24 +1,18 @@
+
 import axios from 'axios';
 
-// Base URLs for each module
-const BASE_URLS = {
-  iam: 'https://iam.tasawuur.shop',
-  inventory: 'https://inventory.tasawuur.shop',
-  sales: 'https://sales.tasawuur.shop',
-  warehouse: 'https://warehouse.tasawuur.shop',
-};
-
 // Factory function to create Axios instance for a specific module
-const createApiClient = (module) => {
-  if (!BASE_URLS[module]) {
-    throw new Error(`Invalid module: ${module}. Available modules: ${Object.keys(BASE_URLS).join(', ')}`);
+const createApiClient = (module, baseURL) => {
+  if (!baseURL) {
+    throw new Error(`Base URL for module "${module}" is not defined in .env`);
   }
 
   const client = axios.create({
-    baseURL: BASE_URLS[module],
+    baseURL,
     timeout: 10000,
   });
 
+  // Request interceptor to add JWT token to all requests
   client.interceptors.request.use(
     (config) => {
       const token = localStorage.getItem('token');
@@ -27,17 +21,20 @@ const createApiClient = (module) => {
       }
       return config;
     },
-    (error) => Promise.reject(error)
+    (error) => {
+      console.error(`Request error for ${module}:`, error);
+      return Promise.reject(error);
+    }
   );
 
   return client;
 };
 
-// Export module-specific clients
-export const iamApiClient = createApiClient('iam');
-export const inventoryApiClient = createApiClient('inventory');
-export const salesApiClient = createApiClient('sales');
-export const warehouseApiClient = createApiClient('warehouse');
+// Create module-specific clients using .env URLs
+export const iamApiClient = createApiClient('iam', import.meta.env.VITE_IAM_SERVICE_URL);
+export const inventoryApiClient = createApiClient('inventory', import.meta.env.VITE_INVENTORY_SERVICE_URL);
+export const salesApiClient = createApiClient('sales', import.meta.env.VITE_SALES_SERVICE_URL);
+export const warehouseApiClient = createApiClient('warehouse', import.meta.env.VITE_WAREHOUSE_SERVICE_URL);
 
 // Default export for backward compatibility (IAM module)
 export default iamApiClient;

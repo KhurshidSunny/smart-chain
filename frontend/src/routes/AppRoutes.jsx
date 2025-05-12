@@ -60,9 +60,6 @@ const AppRoutes = () => {
             {/* Logistic management routes  */}
             <Route path='/logistics' element={<ShipmentDashboard />} />
             <Route path='/logistics/:shipmentId' element={<ShipmentDetail />} />
-<<<<<<< HEAD
-            <Route path='/track' element={<CustomerTracking />} />
-=======
             <Route path='/tracking' element={<CustomerTracking />} />
 
 
@@ -74,7 +71,6 @@ const AppRoutes = () => {
             {/* User management  */}
             <Route path='/users' element={<Users />} />
             <Route path='/users/:userId' element={<UserDetail />} />
->>>>>>> khurshid/dev
 
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
         </Routes>
