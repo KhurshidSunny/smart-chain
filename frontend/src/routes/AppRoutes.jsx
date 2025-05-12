@@ -19,6 +19,10 @@ import ManageOrderPacking from '../pages/warehouse management/ManageOrderPacking
 import ShipmentDashboard from '../pages/logistic management/ShipmentDashboard';
 import ShipmentDetail from '../pages/logistic management/ShipmentDetail';
 import CustomerTracking from '../pages/logistic management/CustomerTracking';
+import FeedbackDashboard from '../pages/feedback management/FeedbackDashboard';
+import FeedbackDetail from '../pages/feedback management/FeedbackDetail';
+import Users from '../pages/user management/Users';
+import UserDetail from '../pages/user management/UserDetail';
 
 const AppRoutes = () => {
     return (
@@ -56,7 +60,17 @@ const AppRoutes = () => {
             {/* Logistic management routes  */}
             <Route path='/logistics' element={<ShipmentDashboard />} />
             <Route path='/logistics/:shipmentId' element={<ShipmentDetail />} />
-            <Route path='/track' element={<CustomerTracking />} />
+            <Route path='/tracking' element={<CustomerTracking />} />
+
+
+            {/* Feedback Mangement  */}
+            <Route path='/feedback' element={<FeedbackDashboard />} />
+            <Route path='/feedback/:feedbackId' element={<FeedbackDetail />} />
+
+
+            {/* User management  */}
+            <Route path='/users' element={<Users />} />
+            <Route path='/users/:userId' element={<UserDetail />} />
 
             <Route path="*" element={<NotFound />} /> {/* Catch-all route for 404 */}
         </Routes>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import HeroSection from './Hero/Hero.jsx';
+import Hero from './Hero/Hero.jsx';
 
-const HomePage = () => {
+const Home = () => {
     return (
         <Box
             sx={{
@@ -13,9 +13,9 @@ const HomePage = () => {
                 bgcolor: 'background-light',
             }}
         >
-            <HeroSection />
+            <Hero />
         </Box>
     );
 };
 
-export default HomePage;
+export default Home;

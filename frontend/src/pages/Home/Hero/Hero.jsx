@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, Package, TrendingUp, Truck, BarChart2, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const HeroSection = () => {
+const Hero = () => {
     const [activeFeature, setActiveFeature] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
 
@@ -161,4 +161,4 @@ const HeroSection = () => {
     );
 };
 
-export default HeroSection;
+export default Hero;
