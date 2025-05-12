@@ -3,11 +3,17 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const qrCodeController = require('../controllers/qrCodeController');
+const Joi = require('joi');
 
-// Validation schema
+// Validation schemas using Joi
 const qrCodeSchema = {
-  entityType: 'required|string|in:Order,Package,Product',
-  entityId: 'required|string',
+  entityType: Joi.string().valid('Order', 'Package', 'Product').required(),
+  entityId: Joi.string().required()
+};
+
+const scanSchema = {
+  location: Joi.string().required(),
+  scannedBy: Joi.string().required()
 };
 
 // Routes
@@ -27,10 +33,7 @@ router.get(
 router.post(
   '/:code/scan',
   authMiddleware(['warehouse_staff', 'admin']),
-  validate({
-    location: 'required|string',
-    scannedBy: 'required|string',
-  }),
+  validate(scanSchema),
   qrCodeController.recordQRCodeScan
 );
 

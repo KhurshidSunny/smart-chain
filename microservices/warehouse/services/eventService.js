@@ -1,9 +1,12 @@
+require('dotenv').config();
 const amqp = require('amqplib');
+const PickingList = require('../models/pickingListModel')
 
 let channel = null;
 
 const connectRabbitMQ = async () => {
   try {
+    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}`);
     const connection = await amqp.connect(process.env.RABBITMQ_URL);
     channel = await connection.createChannel();
     await channel.assertExchange('warehouse_events', 'topic', { durable: true });
@@ -14,8 +17,8 @@ const connectRabbitMQ = async () => {
   }
 };
 
-// Initialize connection on service start
-connectRabbitMQ();
+// Don't immediately connect - we'll connect when needed
+// connectRabbitMQ();
 
 const publishEvent = async (eventName, payload) => {
   if (!channel) {
@@ -43,39 +46,45 @@ const subscribeToEvents = async (eventName, handler) => {
   });
 };
 
-// Subscribe to relevant events
-subscribeToEvents('InventoryReserved', async (payload) => {
-  const { orderId, items } = payload;
-  const pickingList = new PickingList({
-    orderId,
-    orderNumber: `ORD-${orderId}`,
-    items: items.map(item => ({
-      productId: item.productId,
-      sku: item.sku,
-      name: item.name,
-      quantity: item.quantity,
-      location: item.location || 'Unknown',
-    })),
-    status: 'Pending',
-  });
-  await pickingList.save();
-  await publishEvent('PickingStarted', {
-    pickingListId: pickingList._id,
-    orderId,
-    assignedTo: null,
-  });
-});
-
-subscribeToEvents('OrderCancelled', async (payload) => {
-  const { orderId } = payload;
-  const pickingList = await PickingList.findOne({ orderId });
-  if (pickingList && pickingList.status === 'Pending') {
-    pickingList.status = 'Cancelled';
-    await pickingList.save();
-  }
-});
-
+// Export first to avoid circular dependencies
 module.exports = {
   publishEvent,
   subscribeToEvents,
+  connectRabbitMQ // Export this so we can explicitly connect when ready
 };
+
+// Subscribe to relevant events - moved to a function that can be called after models are initialized
+const initSubscriptions = () => {
+  subscribeToEvents('InventoryReserved', async (payload) => {
+    const { orderId, items } = payload;
+    const pickingList = new PickingList({
+      orderId,
+      orderNumber: `ORD-${orderId}`,
+      items: items.map(item => ({
+        productId: item.productId,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        location: item.location || 'Unknown',
+      })),
+      status: 'Pending',
+    });
+    await pickingList.save();
+    await publishEvent('PickingStarted', {
+      pickingListId: pickingList._id,
+      orderId,
+      assignedTo: null,
+    });
+  });
+
+  subscribeToEvents('OrderCancelled', async (payload) => {
+    const { orderId } = payload;
+    const pickingList = await PickingList.findOne({ orderId });
+    if (pickingList && pickingList.status === 'Pending') {
+      pickingList.status = 'Cancelled';
+      await pickingList.save();
+    }
+  });
+};
+
+module.exports.initSubscriptions = initSubscriptions;

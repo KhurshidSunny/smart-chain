@@ -3,17 +3,33 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const pickingController = require('../controllers/pickingController');
+const Joi = require('joi');
 
-// Validation schemas
+// Validation schemas using Joi
 const pickingSchema = {
-  orderId: 'required|string',
-  orderNumber: 'required|string',
-  items: 'required|array',
-  'items.*.productId': 'required|string',
-  'items.*.sku': 'required|string',
-  'items.*.name': 'required|string',
-  'items.*.quantity': 'required|numeric|min:1',
-  'items.*.location': 'required|string',
+  orderId: Joi.string().required(),
+  orderNumber: Joi.string().required(),
+  items: Joi.array().items(
+    Joi.object({
+      productId: Joi.string().required(),
+      sku: Joi.string().required(),
+      name: Joi.string().required(),
+      quantity: Joi.number().min(1).required(),
+      location: Joi.string().required()
+    })
+  ).required()
+};
+
+const statusSchema = {
+  status: Joi.string().valid('Pending', 'InProgress', 'Completed', 'Cancelled').required()
+};
+
+const assignSchema = {
+  assignedTo: Joi.string().required()
+};
+
+const pickedQuantitySchema = {
+  picked: Joi.number().min(0).required()
 };
 
 // Routes
@@ -39,21 +55,21 @@ router.get(
 router.put(
   '/:id/status',
   authMiddleware(['warehouse_manager', 'admin']),
-  validate({ status: 'required|string|in:Pending,InProgress,Completed,Cancelled' }),
+  validate(statusSchema),
   pickingController.updatePickingListStatus
 );
 
 router.put(
   '/:id/assign',
   authMiddleware(['warehouse_manager', 'admin']),
-  validate({ assignedTo: 'required|string' }),
+  validate(assignSchema),
   pickingController.assignPickingList
 );
 
 router.put(
   '/:id/items/:itemId',
   authMiddleware(['warehouse_staff', 'admin']),
-  validate({ picked: 'required|numeric|min:0' }),
+  validate(pickedQuantitySchema),
   pickingController.updatePickedQuantity
 );
 

@@ -3,16 +3,29 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const validate = require('../middleware/validate');
 const packageController = require('../controllers/packageController');
+const Joi = require('joi');
 
-// Validation schema
+// Validation schemas using Joi
 const packageSchema = {
-  orderId: 'required|string',
-  packagingType: 'required|string',
-  'dimensions.width': 'required|numeric|min:0',
-  'dimensions.height': 'required|numeric|min:0',
-  'dimensions.depth': 'required|numeric|min:0',
-  'dimensions.weight': 'required|numeric|min:0',
-  packedBy: 'required|string',
+  orderId: Joi.string().required(),
+  packagingType: Joi.string().required(),
+  dimensions: Joi.object({
+    width: Joi.number().min(0).required(),
+    height: Joi.number().min(0).required(),
+    depth: Joi.number().min(0).required(),
+    weight: Joi.number().min(0).required()
+  }).required(),
+  packedBy: Joi.string().required()
+};
+
+const updatePackageSchema = {
+  packagingType: Joi.string().optional(),
+  dimensions: Joi.object({
+    width: Joi.number().min(0).optional(),
+    height: Joi.number().min(0).optional(),
+    depth: Joi.number().min(0).optional(),
+    weight: Joi.number().min(0).optional()
+  }).optional()
 };
 
 // Routes
@@ -38,13 +51,7 @@ router.get(
 router.put(
   '/:id',
   authMiddleware(['warehouse_manager', 'admin']),
-  validate({
-    packagingType: 'string',
-    'dimensions.width': 'numeric|min:0',
-    'dimensions.height': 'numeric|min:0',
-    'dimensions.depth': 'numeric|min:0',
-    'dimensions.weight': 'numeric|min:0',
-  }),
+  validate(updatePackageSchema),
   packageController.updatePackage
 );
 

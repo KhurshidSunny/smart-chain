@@ -19,6 +19,9 @@ app.use(cors({
     origin: true, // Allows all origins
     credentials: true // If you need to support credentials (e.g., cookies, auth headers)
 }));
+    origin: true, // Allows all origins
+    credentials: true // If you need to support credentials (e.g., cookies, auth headers)
+}));
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
