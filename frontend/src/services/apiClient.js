@@ -1,11 +1,5 @@
 import axios from 'axios';
 
-<<<<<<< HEAD
-const apiClient = axios.create({
-    baseURL: 'https://iam.tasawuur.shop', // Adjust based on your backend
-    timeout: 10000,
-});
-=======
 // Base URLs for each module
 const BASE_URLS = {
   iam: 'https://iam.tasawuur.shop',
@@ -13,7 +7,6 @@ const BASE_URLS = {
   sales: 'https://sales.tasawuur.shop',
   warehouse: 'https://warehouse.tasawuur.shop',
 };
->>>>>>> khurshid/dev
 
 // Factory function to create Axios instance for a specific module
 const createApiClient = (module) => {
