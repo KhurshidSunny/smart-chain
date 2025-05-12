@@ -5,24 +5,15 @@ const userRoutes = require('./routes/userRoutes');
 const cors = require('cors');
 require('dotenv').config();
 
-
 const app = express();
 
 app.use(express.json()); // Parse JSON bodies
 
-const allowedOrigins = ['http://localhost:5173'];
-
+// Allow CORS for all origins
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
+    origin: true, // Allows all origins
+    credentials: true // If you need to support credentials (e.g., cookies, auth headers)
 }));
-
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
@@ -31,9 +22,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints
 app.use('/users', userRoutes); // User management endpoints
-
-
-
+app.use('/welcome', (req, res) => { res.send('Welcome to IAM service!') });
 
 const PORT = process.env.PORT || 3001; // Fallback port for local dev
 app.listen(PORT, () => console.log(`IAM service running on port ${PORT}`));
