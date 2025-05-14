@@ -10,6 +10,11 @@ const createApiClient = (module, baseURL) => {
   const client = axios.create({
     baseURL,
     timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+        // Add auth token if required
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
   });
 
   // Request interceptor to add JWT token to all requests
