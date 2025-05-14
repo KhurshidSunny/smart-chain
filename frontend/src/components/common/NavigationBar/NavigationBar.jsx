@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     AppBar,
     Toolbar,
@@ -24,12 +24,13 @@ import FeedbackIcon from '@mui/icons-material/Feedback';
 import PeopleIcon from '@mui/icons-material/People';
 import SearchBar from '../SearchBar/SearchBar';
 import LogoutButton from '../LogoutButton/LogoutButton';
-import { getCurrentUser } from '../../../services/authService';
+import { getCurrentUser, logoutUser } from '../../../services/authService';
 
 const NavigationBar = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const queryClient = useQueryClient()
 
     const { data: user } = useQuery({
         queryKey: ['authUser'],
@@ -99,6 +100,8 @@ const NavigationBar = () => {
         navigate(`/search?q=${encodeURIComponent(query)}`);
         setDrawerOpen(false);
     };
+
+ 
 
     const drawerContent = (
         <Box sx={{ width: 250, maxWidth: '100vw' }}>
@@ -207,7 +210,7 @@ const NavigationBar = () => {
                                 </Button>
                             </>
                         )}
-                        {user && <LogoutButton variant="outlined" color="inherit" sx={{ mx: 1 }} />}
+                        {user && <LogoutButton  variant="outlined" color="inherit" sx={{ mx: 1 }} />}
                     </Box>
                 </Toolbar>
             </AppBar>

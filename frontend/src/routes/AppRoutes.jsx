@@ -60,7 +60,7 @@ const AppRoutes = () => {
             {/* Logistic management routes  */}
             <Route path='/logistics' element={<ShipmentDashboard />} />
             <Route path='/logistics/:shipmentId' element={<ShipmentDetail />} />
-            <Route path='/tracking' element={<CustomerTracking />} />
+            <Route path='/track' element={<CustomerTracking />} />
 
 
             {/* Feedback Mangement  */}
