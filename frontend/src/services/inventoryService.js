@@ -1,8 +1,8 @@
-import apiClient from './apiClient';
+import { inventoryApiClient } from './apiClient';
 
 export const getInventoryItems = async (params = {}) => {
   try {
-    const response = await apiClient.get('/products', { params });
+    const response = await inventoryApiClient.get('/inventory', { params });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -11,9 +11,20 @@ export const getInventoryItems = async (params = {}) => {
   }
 };
 
+export const getInventoryItem = async (id) => {
+  try {
+    const response = await inventoryApiClient.get(`/inventory/${id}`);
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      `Failed to fetch inventory item: ${error.response?.data?.message || error.message}`
+    );
+  }
+};
+
 export const createInventoryItem = async (data) => {
   try {
-    const response = await apiClient.post('/products', data);
+    const response = await inventoryApiClient.post('/products', data);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -24,7 +35,7 @@ export const createInventoryItem = async (data) => {
 
 export const updateInventoryItem = async (id, data) => {
   try {
-    const response = await apiClient.put(`/products/${id}`, data);
+    const response = await inventoryApiClient.put(`/products/${id}`, data);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -35,7 +46,7 @@ export const updateInventoryItem = async (id, data) => {
 
 export const deleteInventoryItem = async (id) => {
   try {
-    const response = await apiClient.delete(`/products/${id}`);
+    const response = await inventoryApiClient.delete(`/products/${id}`);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -46,7 +57,7 @@ export const deleteInventoryItem = async (id) => {
 
 export const reserveInventory = async ({ productId, quantity }) => {
   try {
-    const response = await apiClient.put(`/inventory/reserve`, { productId, quantity });
+    const response = await inventoryApiClient.put(`/inventory/reserve`, { productId, quantity });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -57,7 +68,7 @@ export const reserveInventory = async ({ productId, quantity }) => {
 
 export const releaseInventory = async ({ productId, quantity }) => {
   try {
-    const response = await apiClient.put(`/inventory/release`, { productId, quantity });
+    const response = await inventoryApiClient.put(`/inventory/release`, { productId, quantity });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -68,7 +79,7 @@ export const releaseInventory = async ({ productId, quantity }) => {
 
 export const adjustInventory = async ({ productId, quantity, reason }) => {
   try {
-    const response = await apiClient.put(`/inventory/adjust`, { productId, quantity, reason });
+    const response = await inventoryApiClient.put(`/inventory/adjust`, { productId, quantity, reason });
     return response.data;
   } catch (error) {
     throw new Error(
@@ -79,44 +90,11 @@ export const adjustInventory = async ({ productId, quantity, reason }) => {
 
 export const getInventoryTransactions = async () => {
   try {
-    const response = await apiClient.get('/inventory/transactions');
+    const response = await inventoryApiClient.get('/inventory/transactions');
     return response.data;
   } catch (error) {
     throw new Error(
       `Failed to fetch inventory transactions: ${error.response?.data?.message || error.message}`
-    );
-  }
-};
-
-export const getStockSummary = async () => {
-  try {
-    const response = await apiClient.get('/inventory/summary');
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      `Failed to fetch stock summary: ${error.response?.data?.message || error.message}`
-    );
-  }
-};
-
-export const getLowStockProducts = async () => {
-  try {
-    const response = await apiClient.get('/products', { params: { stock: 'lte:20' } });
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      `Failed to fetch low stock products: ${error.response?.data?.message || error.message}`
-    );
-  }
-};
-
-export const setLowStockThresholds = async (thresholds) => {
-  try {
-    const response = await apiClient.put('/inventory/thresholds', thresholds);
-    return response.data;
-  } catch (error) {
-    throw new Error(
-      `Failed to set low stock thresholds: ${error.response?.data?.message || error.message}`
     );
   }
 };

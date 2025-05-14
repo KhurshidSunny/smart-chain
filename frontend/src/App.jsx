@@ -3,6 +3,7 @@ import { Box, Fade } from '@mui/material';
 import { Toaster } from 'react-hot-toast';
 import NavigationBar from './components/common/NavigationBar/NavigationBar';
 import AppRoutes from './routes/AppRoutes';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
@@ -53,20 +54,20 @@ const App = () => {
           }}
         />
         <NavigationBar />
-        <Box
-          component="main"
-          sx={{
-            flex: 1,
-            p: { xs: 2, sm: 3, md: 4 },
-            width: '100%',
-            maxWidth: '100%',
-            bgcolor: '#f5f5f5',
-          }}
-          role="main"
-          aria-label="Main content"
-        >
-          <AppRoutes />
-        </Box>
+          <Box
+            component="main"
+            sx={{
+              flex: 1,
+              p: { xs: 2, sm: 3, md: 4 },
+              width: '100%',
+              maxWidth: '100%',
+              bgcolor: '#f5f5f5',
+            }}
+            role="main"
+            aria-label="Main content"
+          >
+            <AppRoutes />
+          </Box>
       </Box>
     </Fade>
   );

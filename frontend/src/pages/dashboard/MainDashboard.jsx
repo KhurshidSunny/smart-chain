@@ -26,7 +26,8 @@ import {
 } from '@mui/lab';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { ShoppingCart, LocalShipping, Feedback } from '@mui/icons-material';
-import toast from 'react-hot-toast';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import ActionButton from '../../components/common/ActionButton/ActionButton.jsx';
 import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator.jsx';
 import SearchBar from '../../components/common/SearchBar/SearchBar.jsx';
@@ -45,7 +46,7 @@ const MainDashboard = () => {
     queryKey: ['customerDashboard'],
     // queryFn: getCustomerDashboardData,
     enabled: !!user,
-    onError: () => toast.error('Failed to load dashboard data'),
+    onError: () => toast.error('Failed to load dashboard data', { toastId: 'dashboard-error' }),
   });
 
   const sampleData = {
@@ -75,19 +76,26 @@ const MainDashboard = () => {
 
   const { stats, timeline, notifications, chartData } = dashboardData || sampleData;
   const role = user?.role || 'customer';
+  console.log(user);
+
+  // Colors for bars in the chart
+  const barColors = ['#1976d2', '#42a5f5', '#0288d1', '#4fc3f7', '#81d4fa'];
 
   const handleSearch = (query) => {
-    toast(`Searching for: ${query}`);
+    toast.info(`Searching for: ${query}`, { toastId: 'search-action' });
     navigate(`/search?q=${encodeURIComponent(query)}`);
   };
 
   const handleAction = (path) => {
     navigate(path);
-    toast.success(`Navigating to ${path}`);
+    toast.success(`Navigating to ${path.split('/')[1]}`, { toastId: `navigate-${path}` });
   };
 
   const handleNotificationClick = (message, unread) => {
-    toast(message, { duration: unread ? 6000 : 4000 });
+    toast.info(message, {
+      toastId: `notification-${message}`,
+      autoClose: unread ? 6000 : 4000,
+    });
   };
 
   if (userLoading || dataLoading) {
@@ -118,7 +126,27 @@ const MainDashboard = () => {
         boxSizing: 'border-box',
         overflowX: 'hidden',
       }}
+      role="region"
+      aria-label="Customer dashboard"
     >
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        toastStyle={{
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          fontSize: { xs: '0.875rem', sm: '1rem' },
+          maxWidth: { xs: '90vw', sm: '400px' },
+        }}
+      />
       <Fade in timeout={600}>
         <Box sx={{ mb: 3, textAlign: { xs: 'center', sm: 'left' } }}>
           <Typography
@@ -126,6 +154,7 @@ const MainDashboard = () => {
             className="text-text-primary font-semibold"
             gutterBottom
             sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }, color: '#1976d2' }}
+            aria-label={`Welcome message for ${user?.firstName || 'Customer'}`}
           >
             Welcome, {user?.firstName || 'Customer'}!
           </Typography>
@@ -224,7 +253,7 @@ const MainDashboard = () => {
                 <Grid item xs={12}>
                   <ActionButton
                     label="Track Order"
-                    onClick={() => handleAction('/tracking')}
+                    onClick={() => handleAction('/track')}
                     fullWidth
                     sx={{
                       bgcolor: '#1976d2',
@@ -232,6 +261,7 @@ const MainDashboard = () => {
                       fontSize: { xs: '0.875rem', sm: '1rem' },
                       py: { xs: 1, sm: 1.5 },
                     }}
+                    aria-label="Track order"
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -245,6 +275,7 @@ const MainDashboard = () => {
                       fontSize: { xs: '0.875rem', sm: '1rem' },
                       py: { xs: 1, sm: 1.5 },
                     }}
+                    aria-label="Submit feedback"
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -258,6 +289,7 @@ const MainDashboard = () => {
                       fontSize: { xs: '0.875rem', sm: '1rem' },
                       py: { xs: 1, sm: 1.5 },
                     }}
+                    aria-label="View orders"
                   />
                 </Grid>
               </Grid>
@@ -350,6 +382,7 @@ const MainDashboard = () => {
                           button
                           onClick={() => handleNotificationClick(notif.message, notif.unread)}
                           sx={{ py: { xs: 0.5, sm: 1 } }}
+                          aria-label={`Notification: ${notif.message}`}
                         >
                           <ListItemText
                             primary={
@@ -393,18 +426,48 @@ const MainDashboard = () => {
                   borderRadius: 2,
                 }}
               >
-                <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-                  <ResponsiveContainer width="100%" height={{ xs: 150, sm: 200, md: 250 }}>
-                    <BarChart data={chartData}>
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: { xs: 10, sm: 12, md: 14 } }}
-                      />
-                      <YAxis tick={{ fontSize: { xs: 10, sm: 12, md: 14 } }} />
-                      <Tooltip />
-                      <Bar dataKey="orders" fill="#1976d2" />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <CardContent sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: 200, sm: 250 } }}>
+                  {chartData && chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={250} aspect={2}>
+                      <BarChart data={chartData}>
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: { xs: 10, sm: 12, md: 14 } }}
+                        />
+                        <YAxis
+                          tick={{ fontSize: { xs: 10, sm: 12, md: 14 } }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                            borderRadius: '4px',
+                          }}
+                        />
+                        {chartData.map((entry, index) => (
+                          <Bar
+                            key={entry.name}
+                            dataKey="orders"
+                            fill={barColors[index % barColors.length]}
+                            radius={[4, 4, 0, 0]}
+                          />
+                        ))}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        textAlign: 'center',
+                        color: '#757575',
+                        fontSize: { xs: '0.875rem', sm: '1rem' },
+                        py: 4,
+                      }}
+                      aria-live="polite"
+                    >
+                      No order data available for this week
+                    </Typography>
+                  )}
                 </CardContent>
               </Card>
             </Box>

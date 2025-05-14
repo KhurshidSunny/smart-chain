@@ -38,11 +38,11 @@ export const getCurrentUser = async () => {
 };
 
 /**
- * Logs out the user by clearing localStorage, React Query cache, and notifying the backend
- * - Requires queryClient (from useQueryClient) and navigate (from useNavigate) to be passed
+ * Logs out the user by clearing localStorage and notifying the backend
  * - Backend logout blacklists the refresh token if provided
+ * - Cache clearing and navigation are handled by the calling component (e.g., LogoutButton)
  */
-export const logoutUser = async (queryClient, navigate) => {
+export const logoutUser = async () => {
   try {
     const refreshToken = localStorage.getItem('refreshToken');
     if (refreshToken) {
@@ -56,10 +56,4 @@ export const logoutUser = async (queryClient, navigate) => {
   // Clear localStorage
   localStorage.removeItem('token');
   localStorage.removeItem('refreshToken');
-
-  // Clear React Query cache
-  queryClient.clear();
-
-  // Redirect to login page
-  navigate('/login');
 };
