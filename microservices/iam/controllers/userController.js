@@ -2,6 +2,10 @@ const User = require('../models/userModel');
 const Role = require('../models/roleModel');
 const Address = require('../models/addressModel');
 
+/**
+ * Gets a list of all users in the system with basic information
+ * Requires 'users:read' permission
+ */
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.find({}).populate('roleId', 'name description');
@@ -19,6 +23,49 @@ exports.getUsers = async (req, res) => {
         res.json(userList);
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * Fetches the current authenticated user's profile and information
+ * Available to any authenticated user without additional permissions
+ */
+exports.getCurrentUser = async (req, res) => {
+    try {
+        const userId = req.user.sub;
+
+        // Find user and populate role information
+        const user = await User.findById(userId)
+            .populate('roleId', 'name description')
+            .populate('addresses');
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update last login time
+        user.lastLogin = Date.now();
+        await user.save();
+
+        // Return user profile with relevant information
+        res.json({
+            id: user._id,
+            email: user.email,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role: {
+                name: user.roleId.name,
+                description: user.roleId.description
+            },
+            addresses: user.addresses,
+            isActive: user.isActive,
+            lastLogin: user.lastLogin,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        });
+    } catch (err) {
+        console.error('Error fetching current user:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
 
@@ -119,7 +166,7 @@ exports.deleteUser = async (req, res) => {
     }
 };
 
-// New Address Endpoints
+// Address Endpoints
 exports.getAddresses = async (req, res) => {
     try {
         const userId = req.user.sub;

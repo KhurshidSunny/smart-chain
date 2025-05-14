@@ -8,9 +8,11 @@ router.post('/', authenticate, authorize('users:write'), userController.createUs
 router.put('/:userId', authenticate, authorize('users:write'), userController.updateUser);
 router.delete('/:userId', authenticate, authorize('users:write'), userController.deleteUser);
 
-router.get('/users/me/addresses', authenticate, authorize('addresses:read'), userController.getAddresses);
-router.post('/users/me/addresses', authenticate, authorize('addresses:write'), userController.addAddress);
-router.put('/users/me/addresses/:addressId', authenticate, authorize('addresses:write'), userController.updateAddress);
-router.delete('/users/me/addresses/:addressId', authenticate, authorize('addresses:write'), userController.deleteAddress);
+// Get the current logged in user
+router.get('/me', authenticate, userController.getCurrentUser);
+router.get('/me/addresses', authenticate, authorize('addresses:read'), userController.getAddresses);
+router.post('/me/addresses', authenticate, authorize('addresses:write'), userController.addAddress);
+router.put('/me/addresses/:addressId', authenticate, authorize('addresses:write'), userController.updateAddress);
+router.delete('/me/addresses/:addressId', authenticate, authorize('addresses:write'), userController.deleteAddress);
 
 module.exports = router;
