@@ -12,13 +12,24 @@ import {
 function useProductMutations() {
   const queryClient = useQueryClient();
 
-  const editMutation = useMutation({
-    mutationFn: ({ id, ...data }) =>
-      id ? updateInventoryItem(id, data) : createInventoryItem(data),
-    onSuccess: (data, variables) => {
+  const createMutation = useMutation({
+    mutationFn: (data) => createInventoryItem(data),
+    onSuccess: (data) => {
       queryClient.invalidateQueries(['products']);
-      toast.success(variables.id ? 'Product updated successfully' : 'Product added successfully', {
-        toastId: variables.id ? `edit-product-${variables.id}` : 'add-product',
+      toast.success(`${data.name} added successfully`)
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to create product')
+    }
+  })
+
+  const editMutation = useMutation({
+   
+    mutationFn: ({ id, ...data }) => updateInventoryItem(id, data),
+    onSuccess: (_,   variables) => {
+      queryClient.invalidateQueries(['products']);
+      toast.success('Product updated successfully', {
+        toastId: `edit-product-${variables.id}`,
       });
     },
     onError: (error) => {
@@ -27,6 +38,7 @@ function useProductMutations() {
       });
     },
   });
+
 
   const deleteMutation = useMutation({
     mutationFn: deleteInventoryItem,
@@ -86,6 +98,7 @@ function useProductMutations() {
   });
 
   return {
+    createMutation,
     editMutation,
     deleteMutation,
     reserveMutation,

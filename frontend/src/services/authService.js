@@ -28,9 +28,10 @@ export const registerUser = async ({ firstName, lastName, email, password }) => 
 
 export const getCurrentUser = async () => {
   const token = localStorage.getItem('token');
+  
   if (!token) throw new Error('No token found');
   try {
-    const response = await iamApiClient.get('/me');
+    const response = await iamApiClient.get('/users/me');
     return response.data.user;
   } catch (error) {
     throw new Error(`Failed to fetch user: ${error.response?.data?.message || error.message}`);

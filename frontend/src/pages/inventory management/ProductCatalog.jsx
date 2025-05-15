@@ -9,6 +9,7 @@ import EditProductDialog from './components/EditProductDialog';
 import DeleteConfirmDialog from './components/DeleteConfirmDialog';
 import AddProductDialog from './components/AddProductDialog';
 import useProductCatalog from './hooks/useProductCatalog';
+import useProductMutations from './hooks/useProductMutations';
 
 function ProductCatalog() {
   const {
@@ -31,8 +32,8 @@ function ProductCatalog() {
     handleDeleteConfirm,
     handleReleaseProduct,
     handleAdjustStock,
-    editMutation,
   } = useProductCatalog();
+  const {createMutation} = useProductMutations();
   const [addProductOpen, setAddProductOpen] = useState(false);
 
   const handleAddProduct = () => {
@@ -40,7 +41,7 @@ function ProductCatalog() {
   };
 
   const handleAddProductSubmit = (data) => {
-    editMutation.mutate(data);
+    createMutation.mutate(data);
   };
 
   return (

@@ -23,8 +23,10 @@ export const getInventoryItem = async (id) => {
 };
 
 export const createInventoryItem = async (data) => {
+  console.log(data)
   try {
     const response = await inventoryApiClient.post('/products', data);
+    console.log(response)
     return response.data;
   } catch (error) {
     throw new Error(
@@ -34,6 +36,7 @@ export const createInventoryItem = async (data) => {
 };
 
 export const updateInventoryItem = async (id, data) => {
+  console.log(id, data)
   try {
     const response = await inventoryApiClient.put(`/products/${id}`, data);
     return response.data;
