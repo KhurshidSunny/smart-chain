@@ -63,8 +63,8 @@ function useProductCatalog() {
     setEditProduct(null);
   };
 
-  const handleEditSubmit = (data) => {
-    editMutation.mutate(data);
+  const handleEditSubmit = (id, data) => {
+    editMutation.mutate(id, data);
     setEditProduct(null);
   };
 
@@ -113,7 +113,7 @@ function useProductCatalog() {
     handleDeleteConfirm,
     handleReleaseProduct,
     handleAdjustStock,
-    editMutation,
+   
   };
 }
 

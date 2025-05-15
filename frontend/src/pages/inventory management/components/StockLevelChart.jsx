@@ -18,26 +18,7 @@ import { getInventoryItems } from '../../../services/inventoryService';
 const barColors = ['#0288d1', '#d81b60', '#388e3c', '#f57c00', '#7b1fa2'];
 
 function StockLevelChart() {
-  // Mock data for testing
-  const mockData = [
-    {
-      _id: '68209c01f134db929495a545',
-      name: 'Sample Widget',
-      category: 'Electronics',
-      stockLevel: 107,
-      sku: 'PROD-0011',
-      description: 'A high-quality widget for testing',
-      unitCost: 15.99,
-      reorderPoint: 20,
-      dimensions: { width: 10, height: 5, depth: 3, weight: 0.5 },
-      createdAt: '2025-05-11T12:45:53.528Z',
-      updatedAt: '2025-05-11T12:45:53.528Z',
-      active: true,
-      __v: 0,
-    },
-  ];
-
-  const { data: products = mockData, isLoading } = useQuery({
+  const { data: products = [], isLoading } = useQuery({
     queryKey: ['products'],
     queryFn: getInventoryItems,
     onError: (error) => {
@@ -47,7 +28,7 @@ function StockLevelChart() {
 
   // Aggregate stock by category
   const stockSummary = products.reduce((acc, product) => {
-    const category = product.category || 'Uncategorized';
+    const category = (product.category || 'Uncategorized').toLowerCase(); // Normalize case
     const stockLevel = Number(product.stockLevel) || 0;
     const existing = acc.find((item) => item.category === category);
     if (existing) {
@@ -57,6 +38,15 @@ function StockLevelChart() {
     }
     return acc;
   }, []);
+
+  // Pivot data for bar chart
+  const chartData = [{ name: 'Stock' }];
+  stockSummary.forEach((entry) => {
+    chartData[0][entry.category] = entry.stock;
+  });
+
+  console.log('StockSummary:', stockSummary);
+  console.log('ChartData:', chartData);
 
   return (
     <Card
@@ -98,16 +88,16 @@ function StockLevelChart() {
         ) : (
           <Box sx={{ height: { xs: 250, sm: 300 } }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stockSummary}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis dataKey="category" stroke="#757575" fontSize={{ xs: 12, sm: 14 }} />
+                <XAxis dataKey="name" stroke="#757575" fontSize={{ xs: 12, sm: 14 }} tick={false} />
                 <YAxis stroke="#757575" fontSize={{ xs: 12, sm: 14 }} />
-                <RechartsTooltip />
-                <Legend />
+                <RechartsTooltip formatter={(value, name) => [value, name.charAt(0).toUpperCase() + name.slice(1)]} />
+                <Legend formatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)} />
                 {stockSummary.map((entry, index) => (
                   <Bar
                     key={entry.category}
-                    dataKey="stock"
+                    dataKey={entry.category}
                     name={entry.category}
                     fill={barColors[index % barColors.length]}
                     radius={[4, 4, 0, 0]}

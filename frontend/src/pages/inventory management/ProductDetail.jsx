@@ -38,7 +38,6 @@ import EditProductDialog from './components/EditProductDialog.jsx';
 
 function ProductDetail() {
   const { id } = useParams();
-  console.log(id)
   const navigate = useNavigate();
   const isManager = true; // Replace with auth context
   const [adjustStock, setAdjustStock] = useState(0);
@@ -49,11 +48,15 @@ function ProductDetail() {
   // Fetch product by ID
   const { data: product, isLoading: isProductLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => getInventoryItem(id),
+    queryFn: () => {
+      return getInventoryItem(id)
+    },
     onError: (error) => {
       toast.error(error.message || 'Failed to fetch product', { toastId: 'fetch-product-error' });
     },
   });
+
+  console.log(product)
 
   
 

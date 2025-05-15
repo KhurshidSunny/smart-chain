@@ -9,9 +9,23 @@ import {
   Switch,
   FormControlLabel,
   Grid,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
-import { toast } from 'react-toastify';
+
+// Common categories for supply chain management
+const categories = [
+  'Electronics',
+  'Clothing',
+  'Automotive',
+  'Food & Beverage',
+  'Industrial',
+  'Healthcare',
+  'Consumer Goods',
+];
 
 function AddProductDialog({ open, onClose, onSubmit }) {
   const { control, handleSubmit, reset, formState: { errors } } = useForm({
@@ -74,16 +88,36 @@ function AddProductDialog({ open, onClose, onSubmit }) {
               <Controller
                 name="category"
                 control={control}
-                rules={{ required: 'Category is required' }}
+                rules={{
+                  required: 'Category is required',
+                  validate: (value) => value !== '' || 'Please select a category',
+                }}
                 render={({ field }) => (
-                  <TextField
-                    {...field}
-                    label="Category"
-                    fullWidth
-                    error={!!errors.category}
-                    helperText={errors.category?.message}
-                    aria-label="Category"
-                  />
+                  <FormControl fullWidth error={!!errors.category}>
+                    <InputLabel id="category-label">Category</InputLabel>
+                    <Select
+                      {...field}
+                      labelId="category-label"
+                      label="Category"
+                      value={field.value}
+                      onChange={field.onChange}
+                      aria-label="Category"
+                    >
+                      <MenuItem value="" disabled>
+                        Select Category
+                      </MenuItem>
+                      {categories.map((category) => (
+                        <MenuItem key={category} value={category.toLowerCase()}>
+                          {category}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.category && (
+                      <Typography variant="caption" color="error">
+                        {errors.category.message}
+                      </Typography>
+                    )}
+                  </FormControl>
                 )}
               />
             </Grid>
