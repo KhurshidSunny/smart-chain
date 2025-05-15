@@ -32,8 +32,8 @@ app.use(cors({
 }));
 
 // Routes
-app.use('/', productRoutes);
-app.use('/', inventoryRoutes);
+app.use('/products', productRoutes);
+app.use('/inventory', inventoryRoutes);
 
 // Error Handling
 app.use((err, req, res, next) => {
@@ -41,5 +41,5 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Something went wrong!' });
 });
 
-const PORT = process.env.PORT || 3002;
+const PORT = process.env.PORT || 3003;
 app.listen(PORT, () => console.log(`Inventory Service running on port ${PORT}`));

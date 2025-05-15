@@ -15,7 +15,7 @@ exports.adjustInventory = async (req, res) => {
 
         await new InventoryTransaction({
             productId,
-            type: 'Adjusted',
+            type: 'adjusted',
             quantity,
             reason,
             performedBy: req.user.sub,
@@ -37,6 +37,7 @@ exports.adjustInventory = async (req, res) => {
 
 exports.getTransactions = async (req, res) => {
     try {
+        console.log('transactions')
         const transactions = await InventoryTransaction.find().populate('productId', 'name sku');
         res.json(transactions);
     } catch (err) {
