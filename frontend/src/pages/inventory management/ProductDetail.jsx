@@ -1,91 +1,133 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
   Grid,
   Card,
   CardContent,
-  CardMedia,
   Button,
-  IconButton,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableRow,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   TextField,
   Tooltip,
-  CircularProgress,
+  IconButton,
 } from '@mui/material';
-import { Edit, Add, Remove, Image, Place } from '@mui/icons-material';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { Edit, Place, Remove, Adjust } from '@mui/icons-material';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { getInventoryItem, getInventoryTransactions } from '../../services/inventoryService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getInventoryItem, adjustInventory } from '../../services/inventoryService';
 import StatusIndicator from '../../components/common/StatusIndicator/StatusIndicator.jsx';
 import useProductMutations from './hooks/useProductMutations.js';
 import EditProductDialog from './components/EditProductDialog.jsx';
+import TransactionsTable from './components/TransactionsTable.jsx';
 
 function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isManager = true; // Replace with auth context
-  const [adjustStock, setAdjustStock] = useState(0);
   const [editProduct, setEditProduct] = useState(null);
+  const [locationDialogOpen, setLocationDialogOpen] = useState(false);
+  const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
+  const [newLocation, setNewLocation] = useState('');
+  const [newLocationStock, setNewLocationStock] = useState('');
+  const [adjustQuantity, setAdjustQuantity] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
 
-  const { editMutation, adjustStockMutation } = useProductMutations();
+  const { editMutation } = useProductMutations();
+
+  // Mutation for updating locations (mock, replace with actual API)
+  const updateLocationsMutation = useMutation({
+    mutationFn: async ({ id, locations }) => {
+      console.log('Updating locations for product', id, locations);
+      return { _id: id, locations };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['product', id]);
+      toast.success('Locations updated successfully', { toastId: 'update-locations-success' });
+      setLocationDialogOpen(false);
+      setNewLocation('');
+      setNewLocationStock('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update locations', { toastId: 'update-locations-error' });
+    },
+  });
+
+  // Mutation for adjusting inventory
+  const adjustInventoryMutation = useMutation({
+    mutationFn: ({ productId, quantity, reason }) => adjustInventory({ productId, quantity, reason }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['product', id]);
+      toast.success('Stock adjusted successfully', { toastId: 'adjust-inventory-success' });
+      setAdjustDialogOpen(false);
+      setAdjustQuantity('');
+      setAdjustReason('');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to adjust inventory', { toastId: 'adjust-inventory-error' });
+    },
+  });
 
   // Fetch product by ID
   const { data: product, isLoading: isProductLoading } = useQuery({
     queryKey: ['product', id],
-    queryFn: () => {
-      return getInventoryItem(id)
-    },
+    queryFn: () => getInventoryItem(id),
     onError: (error) => {
       toast.error(error.message || 'Failed to fetch product', { toastId: 'fetch-product-error' });
     },
   });
 
-  console.log(product)
+  // Colors for pie chart
+  const COLORS = ['#0288d1', '#d81b60', '#388e3c', '#f57c00', '#7b1fa2'];
 
-  
+  // Process recentActivity to create stock history
+  const stockHistory = useMemo(() => {
+    if (!product?.recentActivity) return [];
+    
+    let currentStock = 0;
+    const history = product.recentActivity
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map((activity, index) => {
+        if (activity.type === 'received' || activity.type === 'Adjusted' && activity.quantity > 0) {
+          currentStock += activity.quantity;
+        } else {
+          currentStock -= Math.abs(activity.quantity);
+        }
+        currentStock = Math.max(0, currentStock);
+        
+        return {
+          name: new Date(activity.date).toLocaleDateString(),
+          stock: currentStock,
+          color: COLORS[index % COLORS.length],
+        };
+      });
 
-  // Fetch transaction log
-  const { data: transactions = [], isLoading: isTransactionsLoading } = useQuery({
-    queryKey: ['transactions', id],
-    queryFn: getInventoryTransactions,
-    select: (data) => data.filter((t) => t.productId === id),
-  });
+    if (history.length === 0 && product?.stockLevel) {
+      return [
+        {
+          name: new Date().toLocaleDateString(),
+          stock: product.stockLevel,
+          color: COLORS[0],
+        },
+      ];
+    }
 
-  // Mock stock history (replace with API if available)
-  const mockStockHistory = [
-    { date: '2025-04-07', stock: 60 },
-    { date: '2025-04-14', stock: 55 },
-    { date: '2025-04-21', stock: 52 },
-    { date: '2025-04-28', stock: 50 },
-    { date: '2025-05-05', stock: 50 },
-  ];
+    return history;
+  }, [product]);
 
   // Handlers
-  const handleAdjustStock = (action) => {
-    const quantity = parseInt(adjustStock);
-    if (isNaN(quantity) || quantity <= 0) {
-      toast.error('Please enter a valid quantity', { toastId: 'stock-adjust-error' });
-      return;
-    }
-    adjustStockMutation.mutate({ id, quantity, action });
-  };
-
   const handleEditOpen = () => {
     setEditProduct(product);
   };
@@ -99,21 +141,66 @@ function ProductDetail() {
     setEditProduct(null);
   };
 
+  const handleLocationDialogOpen = () => {
+    setLocationDialogOpen(true);
+  };
+
+  const handleLocationDialogClose = () => {
+    setLocationDialogOpen(false);
+    setNewLocation('');
+    setNewLocationStock('');
+  };
+
+  const handleAdjustDialogOpen = () => {
+    setAdjustDialogOpen(true);
+  };
+
+  const handleAdjustDialogClose = () => {
+    setAdjustDialogOpen(false);
+    setAdjustQuantity('');
+    setAdjustReason('');
+  };
+
+  const handleAddLocation = () => {
+    if (!newLocation || !newLocationStock || isNaN(newLocationStock) || newLocationStock <= 0) {
+      toast.error('Please enter a valid location and stock quantity', { toastId: 'add-location-error' });
+      return;
+    }
+    const updatedLocations = [
+      ...(product.locations || []),
+      { location: newLocation, stock: parseInt(newLocationStock) },
+    ];
+    updateLocationsMutation.mutate({ id, locations: updatedLocations });
+  };
+
+  const handleRemoveLocation = (indexToRemove) => {
+    const updatedLocations = (product.locations || []).filter((_, index) => index !== indexToRemove);
+    updateLocationsMutation.mutate({ id, locations: updatedLocations });
+  };
+
+  const handleAdjustInventory = () => {
+    if (!adjustQuantity || isNaN(adjustQuantity) || adjustQuantity === '0' || !adjustReason.trim()) {
+      toast.error('Please enter a valid non-zero quantity and reason', { toastId: 'adjust-error' });
+      return;
+    }
+    adjustInventoryMutation.mutate({
+      productId: id,
+      quantity: parseInt(adjustQuantity),
+      reason: adjustReason,
+    });
+  };
+
   // Map stock to StatusIndicator status and label
   const getStockStatus = (stock) => {
-    if (stock === 0) {
-      return { status: 'error', label: 'Out of Stock' };
-    }
-    if (stock <= 20) {
-      return { status: 'inProgress', label: 'Low Stock' };
-    }
+    if (stock === 0) return { status: 'error', label: 'Out of Stock' };
+    if (stock <= (product?.reorderPoint || 20)) return { status: 'inProgress', label: 'Low Stock' };
     return { status: 'completed', label: 'In Stock' };
   };
 
   if (isProductLoading) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
-        <CircularProgress sx={{ color: '#1976d2' }} />
+        <CircularProgress sx={{ color: '#1565c0' }} />
       </Box>
     );
   }
@@ -121,10 +208,7 @@ function ProductDetail() {
   if (!product) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }} aria-live="polite">
-        <Typography
-          variant="h6"
-          sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#757575' }}
-        >
+        <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#546e7a' }}>
           Product not found
         </Typography>
       </Box>
@@ -133,7 +217,12 @@ function ProductDetail() {
 
   return (
     <Box
-      sx={{ p: 4, bgcolor: '#f5f5f5', minHeight: 'calc(100vh - 64px)', width: '100%' }}
+      sx={{
+        p: { xs: 2, sm: 3, md: 4 },
+        bgcolor: '#f9fafb',
+        minHeight: 'calc(100vh - 64px)',
+        width: '100%',
+      }}
       role="region"
       aria-label={`Product detail page for ${product.name}`}
     >
@@ -155,53 +244,90 @@ function ProductDetail() {
           maxWidth: { xs: '90vw', sm: '400px' },
         }}
       />
-      {/* Page Title */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      {/* Page Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 4,
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 2, sm: 0 },
+        }}
+      >
         <Box>
           <Typography
             variant="h4"
-            sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' }, fontWeight: 'bold', color: '#1976d2' }}
+            sx={{
+              fontSize: { xs: '1.75rem', sm: '2rem', md: '2.5rem' },
+              fontWeight: 700,
+              color: '#1565c0',
+            }}
           >
-            Product Detail
+            {product.name}
           </Typography>
           <Typography
-            variant="h6"
-            sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#757575' }}
+            variant="subtitle1"
+            sx={{
+              fontSize: { xs: '1rem', sm: '1.125rem' },
+              color: '#546e7a',
+              mt: 0.5,
+            }}
           >
-            View and manage product information
+            Manage product details and stock
           </Typography>
         </Box>
         {isManager && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
             <Tooltip title="Edit Product Information">
               <Button
                 variant="contained"
                 startIcon={<Edit />}
                 onClick={handleEditOpen}
-                sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#115293' } }}
+                sx={{
+                  bgcolor: '#1565c0',
+                  '&:hover': { bgcolor: '#104d93' },
+                  borderRadius: '8px',
+                  px: 2.5,
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
                 aria-label="Edit product information"
               >
                 Edit
               </Button>
             </Tooltip>
-            <Tooltip title="Manage Images">
-              <Button
-                variant="contained"
-                startIcon={<Image />}
-                sx={{ bgcolor: '#1976d2', '&:hover': { bgcolor: '#115293' } }}
-                aria-label="Manage product images"
-              >
-                Images
-              </Button>
-            </Tooltip>
-            <Tooltip title="Assign Locations">
+            <Tooltip title="Manage Locations">
               <Button
                 variant="contained"
                 startIcon={<Place />}
-                sx={{ bgcolor: '1976d2', '&:hover': { bgcolor: '#115293' } }}
-                aria-label="Assign product locations"
+                onClick={handleLocationDialogOpen}
+                sx={{
+                  bgcolor: '#1565c0',
+                  '&:hover': { bgcolor: '#104d93' },
+                  borderRadius: '8px',
+                  px: 2.5,
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
+                aria-label="Manage product locations"
               >
                 Locations
+              </Button>
+            </Tooltip>
+            <Tooltip title="Adjust Stock">
+              <Button
+                variant="contained"
+                startIcon={<Adjust />}
+                onClick={handleAdjustDialogOpen}
+                sx={{
+                  bgcolor: '#1565c0',
+                  '&:hover': { bgcolor: '#104d93' },
+                  borderRadius: '8px',
+                  px: 2.5,
+                  fontSize: { xs: '0.875rem', sm: '1rem' },
+                }}
+                aria-label="Adjust stock"
+              >
+                Adjust
               </Button>
             </Tooltip>
           </Box>
@@ -209,35 +335,54 @@ function ProductDetail() {
       </Box>
 
       <Grid container spacing={3}>
-        {/* Product Data */}
+        {/* Product Information */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ backgroundColor: '#e3f2fd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
-            <CardContent>
+          <Card
+            sx={{
+              bgcolor: '#ffffff',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 3,
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 'medium', color: '#1976d2', mb: 2 }}
+                sx={{ fontWeight: 600, color: '#1565c0', mb: 2.5 }}
               >
                 Product Information
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <CardMedia
-                  component="img"
-                  sx={{ width: 120, height: 120, objectFit: 'contain', bgcolor: '#fff', borderRadius: 1 }}
-                  image={product.image || 'placeholder.png'}
-                  alt={product.name}
-                />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                 <Box>
-                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
-                    {product.name}
+                  <Typography variant="subtitle2" sx={{ color: '#546e7a', fontWeight: 500 }}>
+                    SKU
                   </Typography>
-                  <Typography sx={{ color: '#757575' }}>SKU: {product.sku}</Typography>
-                  <Typography sx={{ color: '#757575' }}>
-                    Category: {product.category}
+                  <Typography sx={{ color: '#263238', fontSize: '1rem' }}>
+                    {product.sku}
                   </Typography>
-                  <Typography sx={{ color: '#757575' }}>
-                    Price: ${product.price.toFixed(2)}
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#546e7a', fontWeight: 500 }}>
+                    Category
                   </Typography>
-                  <Typography sx={{ color: '#757575', mt: 1 }}>
+                  <Typography sx={{ color: '#263238', fontSize: '1rem' }}>
+                    {product.category || 'N/A'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#546e7a', fontWeight: 500 }}>
+                    Price
+                  </Typography>
+                  <Typography sx={{ color: '#263238', fontSize: '1rem' }}>
+                    {product.unitCost ? `$${product.unitCost.toFixed(2)}` : 'N/A'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ color: '#546e7a', fontWeight: 500 }}>
+                    Description
+                  </Typography>
+                  <Typography sx={{ color: '#263238', fontSize: '1rem' }}>
                     {product.description || 'No description available'}
                   </Typography>
                 </Box>
@@ -246,66 +391,58 @@ function ProductDetail() {
           </Card>
         </Grid>
 
-        {/* Current Stock Level and Locations */}
+        {/* Stock and Locations */}
         <Grid item xs={12} md={6}>
-          <Card sx={{ backgroundColor: '#e3f2fd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
-            <CardContent>
+          <Card
+            sx={{
+              bgcolor: '#ffffff',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 3,
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 'medium', color: '#1976d2', mb: 2 }}
+                sx={{ fontWeight: 600, color: '#1565c0', mb: 2.5 }}
               >
                 Stock and Locations
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <StatusIndicator {...getStockStatus(product.stock)} />
-                <Typography sx={{ ml: 1, color: '#757575' }}>
-                  Total Stock: {product.stock}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2.5 }}>
+                <StatusIndicator {...getStockStatus(product.stockLevel)} />
+                <Typography sx={{ ml: 1.5, color: '#263238', fontSize: '1rem' }}>
+                  Total Stock: {product.stockLevel}
                 </Typography>
               </Box>
-              {isManager && (
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <TextField
-                    type="number"
-                    label="Adjust Stock"
-                    size="small"
-                    value={adjustStock}
-                    onChange={(e) => setAdjustStock(e.target.value)}
-                    sx={{ width: 120 }}
-                    inputProps={{ min: 0 }}
-                    aria-label="Stock adjustment quantity"
-                  />
-                  <Tooltip title="Increase Stock">
-                    <IconButton
-                      onClick={() => handleAdjustStock('increase')}
-                      sx={{ color: '#1976d2' }}
-                      aria-label="Increase stock"
-                    >
-                      <Add />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Decrease Stock">
-                    <IconButton
-                      onClick={() => handleAdjustStock('decrease')}
-                      sx={{ color: '#1976d2' }}
-                      aria-label="Decrease stock"
-                    >
-                      <Remove />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              )}
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Location</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Stock</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#1565c0' }}>Location</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#1565c0' }}>Stock</TableCell>
+                    {isManager && (
+                      <TableCell sx={{ fontWeight: 600, color: '#1565c0' }}>Actions</TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {(product.locations || []).map((loc, index) => (
-                    <TableRow key={index} sx={{ '&:hover': { bgcolor: '#e0f7fa' } }}>
+                    <TableRow key={index} sx={{ '&:hover': { bgcolor: '#e3f2fd' } }}>
                       <TableCell>{loc.location}</TableCell>
                       <TableCell>{loc.stock}</TableCell>
+                      {isManager && (
+                        <TableCell>
+                          <Tooltip title="Remove Location">
+                            <IconButton
+                              onClick={() => handleRemoveLocation(index)}
+                              sx={{ color: '#d32f2f' }}
+                              aria-label={`Remove ${loc.location}`}
+                            >
+                              <Remove />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -314,85 +451,69 @@ function ProductDetail() {
           </Card>
         </Grid>
 
-        {/* Stock History Graph */}
+        {/* Stock History Pie Chart */}
         <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#e3f2fd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
-            <CardContent>
+          <Card
+            sx={{
+              bgcolor: '#ffffff',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+              borderRadius: 3,
+              transition: 'transform 0.2s',
+              '&:hover': { transform: 'translateY(-4px)' },
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
               <Typography
                 variant="h6"
-                sx={{ fontWeight: 'medium', color: '#1976d2', mb: 2 }}
+                sx={{ fontWeight: 600, color: '#1565c0', mb: 2.5 }}
               >
                 Stock History
               </Typography>
-              <Box sx={{ height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={mockStockHistory}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis dataKey="date" stroke="#757575" />
-                    <YAxis stroke="#757575" />
-                    <RechartsTooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="stock"
-                      stroke="#1976d2"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
+              <Typography
+                variant="body2"
+                sx={{ color: '#546e7a', mb: 3 }}
+              >
+                Stock levels over time by date
+              </Typography>
+              {stockHistory.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }} aria-live="polite">
+                  <Typography
+                    variant="body1"
+                    sx={{ color: '#546e7a', fontSize: { xs: '1rem', sm: '1.125rem' } }}
+                  >
+                    No stock history available
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stockHistory}
+                        dataKey="stock"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={100}
+                        label={({ stock }) => stock}
+                      >
+                        {stockHistory.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(value, name) => [value, `Stock on ${name}`]} />
+                      <Legend formatter={(value) => `Date: ${value}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
 
         {/* Transaction Log */}
         <Grid item xs={12}>
-          <Card sx={{ backgroundColor: '#e3f2fd', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', borderRadius: 2 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 'medium', color: '#1976d2' }}
-                >
-                  Transaction Log
-                </Typography>
-              </Box>
-              {isTransactionsLoading ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <CircularProgress sx={{ color: '#1976d2' }} />
-                </Box>
-              ) : transactions.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }} aria-live="polite">
-                  <Typography
-                    variant="h6"
-                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: '#757575' }}
-                  >
-                    No transactions found
-                  </Typography>
-                </Box>
-              ) : (
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Type</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Quantity</TableCell>
-                      <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>Location</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {transactions.map((transaction) => (
-                      <TableRow key={transaction.id} sx={{ '&:hover': { bgcolor: '#e0f7fa' } }}>
-                        <TableCell>{transaction.date}</TableCell>
-                        <TableCell>{transaction.type}</TableCell>
-                        <TableCell>{transaction.quantity}</TableCell>
-                        <TableCell>{transaction.location || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <TransactionsTable productId={id} />
         </Grid>
       </Grid>
 
@@ -403,6 +524,111 @@ function ProductDetail() {
         onClose={handleEditClose}
         onSubmit={handleEditSubmit}
       />
+
+      {/* Location Management Dialog */}
+      <Dialog
+        open={locationDialogOpen}
+        onClose={handleLocationDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: '#1565c0', color: '#fff', fontWeight: 600 }}>
+          Manage Locations
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Location Name"
+              value={newLocation}
+              onChange={(e) => setNewLocation(e.target.value)}
+              fullWidth
+              variant="outlined"
+              size="small"
+              aria-label="New location name"
+            />
+            <TextField
+              label="Stock Quantity"
+              type="number"
+              value={newLocationStock}
+              onChange={(e) => setNewLocationStock(e.target.value)}
+              fullWidth
+              variant="outlined"
+              size="small"
+              inputProps={{ min: 0 }}
+              aria-label="New location stock quantity"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleLocationDialogClose}
+            sx={{ color: '#546e7a' }}
+            aria-label="Cancel location management"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAddLocation}
+            variant="contained"
+            sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#104d93' } }}
+            aria-label="Add new location"
+          >
+            Add Location
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Adjust Inventory Dialog */}
+      <Dialog
+        open={adjustDialogOpen}
+        onClose={handleAdjustDialogClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: '#1565c0', color: '#fff', fontWeight: 600 }}>
+          Adjust Inventory
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Quantity (positive to add, negative to remove)"
+              type="number"
+              value={adjustQuantity}
+              onChange={(e) => setAdjustQuantity(e.target.value)}
+              fullWidth
+              variant="outlined"
+              size="small"
+              aria-label="Adjustment quantity"
+            />
+            <TextField
+              label="Reason"
+              value={adjustReason}
+              onChange={(e) => setAdjustReason(e.target.value)}
+              fullWidth
+              variant="outlined"
+              size="small"
+              aria-label="Adjustment reason"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleAdjustDialogClose}
+            sx={{ color: '#546e7a' }}
+            aria-label="Cancel adjustment"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAdjustInventory}
+            variant="contained"
+            sx={{ bgcolor: '#1565c0', '&:hover': { bgcolor: '#104d93' } }}
+            aria-label="Confirm adjustment"
+          >
+            Adjust
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

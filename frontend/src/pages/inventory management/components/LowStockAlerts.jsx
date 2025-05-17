@@ -32,7 +32,7 @@ function LowStockAlerts() {
 
   
 
-  const { data: products = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['products'],
     queryFn: getInventoryItems,
     onError: (error) => {
@@ -40,6 +40,8 @@ function LowStockAlerts() {
       toast.error(error.message || 'Failed to fetch products', { toastId: 'fetch-products-error' });
     },
   });
+
+  const products = data?.inventory || [];
 
   console.log('products:', products);
 
@@ -54,7 +56,6 @@ function LowStockAlerts() {
     return stock >= reorder;
   });
 
-  console.log('lowStock:', lowStock);
 
   // Handle stock adjustment
   const handleAdjustStock = (productId, action) => {
@@ -164,7 +165,7 @@ function LowStockAlerts() {
                       sx={{
                         '&:hover': { bgcolor: '#e0f7fa', cursor: 'pointer' },
                       }}
-                      onClick={() => navigate(`/products/${product._id}`)}
+                      onClick={() => navigate(`/products/${product.productId}`)}
                       role="button"
                       aria-label={`View details for ${product.name}`}
                     >
