@@ -18,7 +18,7 @@ import { getInventoryItems } from '../../../services/inventoryService';
 const barColors = ['#0288d1', '#d81b60', '#388e3c', '#f57c00', '#7b1fa2'];
 
 function StockLevelChart() {
-  const { data: products = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['products'],
     queryFn: getInventoryItems,
     onError: (error) => {
@@ -26,9 +26,12 @@ function StockLevelChart() {
     },
   });
 
+  // Extract inventory array, default to empty array if undefined
+  const products = data?.inventory || [];
+
   // Aggregate stock by category
   const stockSummary = products.reduce((acc, product) => {
-    const category = (product.category || 'Uncategorized').toLowerCase(); // Normalize case
+    const category = (product.category || 'Uncategorized').toLowerCase();
     const stockLevel = Number(product.stockLevel) || 0;
     const existing = acc.find((item) => item.category === category);
     if (existing) {
@@ -39,6 +42,7 @@ function StockLevelChart() {
     return acc;
   }, []);
 
+  console.log(stockSummary)
   // Pivot data for bar chart
   const chartData = [{ name: 'Stock' }];
   stockSummary.forEach((entry) => {

@@ -44,6 +44,8 @@ function ProductCatalog() {
     createMutation.mutate(data);
   };
 
+  console.log(products)
+
   return (
     <Fade in timeout={600}>
       <Box

@@ -7,11 +7,11 @@ import StockLevelChart from './components/StockLevelChart';
 import LowStockAlerts from './components/LowStockAlerts';
 import TransactionsTable from './components/TransactionsTable';
 import AddProductDialog from './components/AddProductDialog';
-import useProductMutations from "./hooks/useProductMutations"
+import useProductMutations from './hooks/useProductMutations';
 
 function InventoryDashboard() {
   const navigate = useNavigate();
-  const {editMutation} = useProductMutations()
+  const { addMutation } = useProductMutations(); // Changed to addMutation for adding products
   const isManager = true; // Replace with auth context
   const [addProductOpen, setAddProductOpen] = useState(false);
 
@@ -21,7 +21,8 @@ function InventoryDashboard() {
   };
 
   const handleAddProductSubmit = (data) => {
-    editMutation.mutate(data);
+    addMutation.mutate(data);
+    setAddProductOpen(false);
   };
 
   return (
@@ -55,7 +56,16 @@ function InventoryDashboard() {
           }}
         />
         {/* Page Title and Actions */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 3,
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: { xs: 2, sm: 0 },
+          }}
+        >
           <Box>
             <Typography
               variant="h4"
@@ -77,7 +87,14 @@ function InventoryDashboard() {
               Monitor and manage inventory health
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-end' } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              flexWrap: 'wrap',
+              justifyContent: { xs: 'center', sm: 'flex-end' },
+            }}
+          >
             <Tooltip title="View Product Catalog">
               <Button
                 variant="contained"

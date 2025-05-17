@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import { getInventoryItems } from '../../../services/inventoryService';
 import useProductFilters from './useProductFilters';
-import useProductMutations from './useProductMutations'
+import useProductMutations from './useProductMutations';
 
 function useProductCatalog() {
   const isManager = true; // Replace with auth context
@@ -16,11 +16,11 @@ function useProductCatalog() {
     useProductMutations();
 
   // Fetch products from server
-  const { data: products = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ['products', filters, sort],
     queryFn: () => getInventoryItems(),
     select: (data) => {
-      let filtered = [...data];
+      let filtered = [...(data?.inventory || [])]; // Use inventory array
       if (filters.category) {
         filtered = filtered.filter((p) => p.category === filters.category);
       }
@@ -54,6 +54,9 @@ function useProductCatalog() {
     },
   });
 
+  // Use data?.inventory || [] as products
+  const products = data || [];
+
   // Handlers
   const handleEditOpen = (product) => {
     setEditProduct(product);
@@ -63,8 +66,8 @@ function useProductCatalog() {
     setEditProduct(null);
   };
 
-  const handleEditSubmit = (id, data) => {
-    editMutation.mutate(id, data);
+  const handleEditSubmit = (data) => {
+    editMutation.mutate(data);
     setEditProduct(null);
   };
 
@@ -113,7 +116,6 @@ function useProductCatalog() {
     handleDeleteConfirm,
     handleReleaseProduct,
     handleAdjustStock,
-   
   };
 }
 

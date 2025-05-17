@@ -28,7 +28,7 @@ function ProductCard({ product, isManager, onEdit, onDelete }) {
         borderRadius: 2,
         '&:hover': { boxShadow: '0 8px 16px rgba(0,0,0,0.1)', cursor: 'pointer' },
       }}
-      onClick={() => navigate(`/products/${product._id}`)}
+      onClick={() => navigate(`/products/${product.productId}`)}
       role="button"
       aria-label={`View details for ${product.name}`}
     >
@@ -46,7 +46,7 @@ function ProductCard({ product, isManager, onEdit, onDelete }) {
           Category: {product.category}
         </Typography>
         <Typography sx={{ color: '#757575', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-          Price: ${product.unitCost.toFixed(2)}
+          Price: ${product?.unitCost?.toFixed(2)}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
           <StatusIndicator {...getStockStatus(product.stockLevel)} />
@@ -72,7 +72,7 @@ function ProductCard({ product, isManager, onEdit, onDelete }) {
               <IconButton
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete(product.id);
+                  onDelete(product.productId);
                 }}
                 sx={{ color: '#d32f2f' }}
                 aria-label={`Delete ${product.name}`}
