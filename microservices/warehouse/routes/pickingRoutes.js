@@ -20,9 +20,13 @@ const pickingSchema = {
   ).required()
 };
 
-const statusSchema = {
-  status: Joi.string().valid('Pending', 'InProgress', 'Completed', 'Cancelled').required()
-};
+// Cas in sensitive validation
+const statusSchema = Joi.object({
+  status: Joi.string()
+    .valid('Pending', 'InProgress', 'Completed', 'Cancelled')
+    .insensitive()
+    .required()
+});
 
 const assignSchema = {
   assignedTo: Joi.string().required()
@@ -32,7 +36,7 @@ const pickedQuantitySchema = {
   picked: Joi.number().min(0).required()
 };
 
-// Routes
+// Generate picking list
 router.post(
   '/',
   authMiddleware(['warehouse_manager', 'admin']),
@@ -40,18 +44,21 @@ router.post(
   pickingController.generatePickingList
 );
 
+// List picking lists
 router.get(
   '/',
   authMiddleware(['warehouse_manager', 'warehouse_staff', 'admin']),
   pickingController.listPickingLists
 );
 
+// Get picking list details
 router.get(
   '/:id',
   authMiddleware(['warehouse_manager', 'warehouse_staff', 'admin']),
   pickingController.getPickingList
 );
 
+// Update picking list status
 router.put(
   '/:id/status',
   authMiddleware(['warehouse_manager', 'admin']),
@@ -59,6 +66,8 @@ router.put(
   pickingController.updatePickingListStatus
 );
 
+
+// Assign picking list to staff
 router.put(
   '/:id/assign',
   authMiddleware(['warehouse_manager', 'admin']),
@@ -66,6 +75,7 @@ router.put(
   pickingController.assignPickingList
 );
 
+//  Update picked quantity
 router.put(
   '/:id/items/:itemId',
   authMiddleware(['warehouse_staff', 'admin']),

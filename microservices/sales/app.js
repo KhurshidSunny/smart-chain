@@ -4,10 +4,18 @@ const connectDB = require('./config/db');
 const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
 const orderRoutes = require('./routes/orderRoutes');
 const eventHandlerController = require('./controllers/events/eventHandlerController');
+const cors = require('cors');
+
 
 require('dotenv').config();
 
 const app = express();
+
+app.use(cors({
+  origin: '*',  // Allows any origin
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Middleware
 app.use(express.json());

@@ -29,6 +29,8 @@ const updatePackageSchema = {
 };
 
 // Routes
+
+// Create package record
 router.post(
   '/',
   authMiddleware(['warehouse_staff', 'admin']),
@@ -36,18 +38,22 @@ router.post(
   packageController.createPackage
 );
 
+
+// List packages 
 router.get(
   '/',
   authMiddleware(['warehouse_manager', 'admin']),
   packageController.listPackages
 );
 
+// Get package details
 router.get(
   '/:id',
   authMiddleware(['warehouse_manager', 'admin']),
   packageController.getPackage
 );
 
+// Update package info
 router.put(
   '/:id',
   authMiddleware(['warehouse_manager', 'admin']),
