@@ -1,0 +1,828 @@
+{
+  "info": {
+    "name": "Logistics Microservice API Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Shipment APIs",
+      "item": [
+        {
+          "name": "POST /shipments - Create Shipment (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":\"{{ORDER_ID}}\",\"packageId\":\"{{PACKAGE_ID}}\",\"carrier\":\"DefaultCarrier\",\"serviceLevel\":\"Standard\",\"deliveryAddress\":{\"street\":\"123 Main St\",\"city\":\"New York\",\"state\":\"NY\",\"zipCode\":\"10001\",\"country\":\"USA\"},\"notes\":\"Test shipment\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Response has shipment ID and tracking number', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.be.a('string');",
+                  "  pm.expect(response.trackingNumber).to.match(/^TRK-/);",
+                  "  pm.expect(response.qrCode).to.match(/^QR-/);",
+                  "  pm.expect(response.orderId).to.equal('{{ORDER_ID}}');",
+                  "  pm.expect(response.packageId).to.equal('{{PACKAGE_ID}}');",
+                  "  pm.expect(response.status).to.equal('Created');",
+                  "  pm.expect(response.deliveryAddress).to.have.all.keys('street', 'city', 'state', 'zipCode', 'country');",
+                  "});",
+                  "pm.environment.set('SHIPMENT_ID', pm.response.json()._id);",
+                  "pm.environment.set('TRACKING_NUMBER', pm.response.json().trackingNumber);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /shipments - Invalid Token (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_token",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":\"{{ORDER_ID}}\",\"packageId\":\"{{PACKAGE_ID}}\",\"carrier\":\"DefaultCarrier\",\"serviceLevel\":\"Standard\",\"deliveryAddress\":{\"street\":\"123 Main St\",\"city\":\"New York\",\"state\":\"NY\",\"zipCode\":\"10001\",\"country\":\"USA\"}}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 for invalid token', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "  pm.expect(pm.response.json().message).to.equal('Invalid token');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /shipments - Missing Fields (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":\"{{ORDER_ID}}\",\"carrier\":\"DefaultCarrier\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 for missing fields', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.equal('Validation error');",
+                  "  pm.expect(pm.response.json().errors).to.include.members([",
+                  "    '\"packageId\" is required',",
+                  "    '\"deliveryAddress\" is required',",
+                  "    '\"serviceLevel\" is required'",
+                  "  ]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /shipments - Insufficient Permissions (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orderId\":\"{{ORDER_ID}}\",\"packageId\":\"{{PACKAGE_ID}}\",\"carrier\":\"DefaultCarrier\",\"serviceLevel\":\"Standard\",\"deliveryAddress\":{\"street\":\"123 Main St\",\"city\":\"New York\",\"state\":\"NY\",\"zipCode\":\"10001\",\"country\":\"USA\"}}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure JWT_TOKEN is set to a customer role for this test",
+                  "pm.environment.set('JWT_TOKEN', pm.environment.get('CUSTOMER_JWT_TOKEN') || '{{JWT_TOKEN}}');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 403 for insufficient permissions', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "  pm.expect(pm.response.json().message).to.equal('Insufficient permissions');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /shipments - List Shipments (Success)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array of shipments', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.be.an('array');",
+                  "  if (response.length > 0) {",
+                  "    pm.expect(response[0]).to.have.all.keys('_id', 'orderId', 'packageId', 'trackingNumber', 'carrier', 'serviceLevel', 'status', 'qrCode', 'deliveryAddress', 'createdAt', 'updatedAt');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /shipments/:id - Get Shipment by ID (Success)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response has correct shipment details', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.equal('{{SHIPMENT_ID}}');",
+                  "  pm.expect(response).to.have.all.keys('_id', 'orderId', 'packageId', 'trackingNumber', 'carrier', 'serviceLevel', 'status', 'qrCode', 'deliveryAddress', 'createdAt', 'updatedAt');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /shipments/:id - Shipment Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/invalid_id",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "invalid_id"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 for invalid shipment ID', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json().message).to.equal('Shipment not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/status - Update Status (Success)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"InTransit\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/status",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "status"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Shipment status updated to InTransit', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.equal('{{SHIPMENT_ID}}');",
+                  "  pm.expect(response.status).to.equal('InTransit');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/status - Invalid Status (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"status\":\"InvalidStatus\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/status",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "status"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 for invalid status', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.equal('Validation error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/dispatch - Dispatch Shipment (Success)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/dispatch",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "dispatch"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Shipment status updated to Dispatched', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.equal('{{SHIPMENT_ID}}');",
+                  "  pm.expect(response.status).to.equal('Dispatched');",
+                  "  pm.expect(response.dispatchDate).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/dispatch - Invalid Status (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/dispatch",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "dispatch"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Assuming shipment is already Dispatched, set up for failure test",
+                  "pm.environment.set('SHIPMENT_ID', pm.environment.get('SHIPMENT_ID'));",
+                  ""
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 for non-Created shipment', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.equal('Shipment must be in Created status to dispatch');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/deliver - Deliver Shipment (Success)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/deliver",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "deliver"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Set shipment to OutForDelivery first",
+                  "pm.sendRequest({",
+                  "  url: '{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/status',",
+                  "  method: 'PUT',",
+                  "  header: {",
+                  "    'Authorization': 'Bearer {{JWT_TOKEN}}',",
+                  "    'Content-Type': 'application/json'",
+                  "  },",
+                  "  body: {",
+                  "    mode: 'raw',",
+                  "    raw: JSON.stringify({ status: 'OutForDelivery' })",
+                  "  }",
+                  "}, (err, res) => {",
+                  "  if (err) console.error(err);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Shipment status updated to Delivered', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.equal('{{SHIPMENT_ID}}');",
+                  "  pm.expect(response.status).to.equal('Delivered');",
+                  "  pm.expect(response.actualDeliveryDate).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /shipments/:id/deliver - Invalid Status (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/deliver",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "deliver"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure shipment is not in OutForDelivery",
+                  "pm.sendRequest({",
+                  "  url: '{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/status',",
+                  "  method: 'PUT',",
+                  "  header: {",
+                  "    'Authorization': 'Bearer {{JWT_TOKEN}}',",
+                  "    'Content-Type': 'application/json'",
+                  "  },",
+                  "  body: {",
+                  "    mode: 'raw',",
+                  "    raw: JSON.stringify({ status: 'Created' })",
+                  "  }",
+                  "}, (err, res) => {",
+                  "  if (err) console.error(err);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 for non-OutForDelivery shipment', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.equal('Shipment must be in OutForDelivery status to deliver');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tracking APIs",
+      "item": [
+        {
+          "name": "GET /shipments/:id/tracking - Get Tracking Events (Success)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/tracking",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "tracking"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array of tracking events', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response).to.be.an('array');",
+                  "  if (response.length > 0) {",
+                  "    pm.expect(response[0]).to.have.all.keys('_id', 'shipmentId', 'status', 'location', 'timestamp', 'createdAt');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /shipments/:id/tracking-events - Create Tracking Event (Success)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shipmentId\":\"{{SHIPMENT_ID}}\",\"status\":\"InTransit\",\"location\":\"Warehouse B\",\"notes\":\"Package in transit to regional hub\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/{{SHIPMENT_ID}}/tracking-events",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "{{SHIPMENT_ID}}", "tracking-events"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Tracking event created successfully', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response._id).to.be.a('string');",
+                  "  pm.expect(response.shipmentId).to.equal('{{SHIPMENT_ID}}');",
+                  "  pm.expect(response.status).to.equal('InTransit');",
+                  "  pm.expect(response.location).to.equal('Warehouse B');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /shipments/:id/tracking-events - Invalid Shipment ID (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{JWT_TOKEN}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shipmentId\":\"invalid_id\",\"status\":\"InTransit\",\"location\":\"Warehouse B\"}"
+            },
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/shipments/invalid_id/tracking-events",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["shipments", "invalid_id", "tracking-events"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 for invalid shipment ID', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json().message).to.equal('Shipment not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /tracking/number/:trackingNumber - Public Tracking (Success)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/tracking/number/{{TRACKING_NUMBER}}",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["tracking", "number", "{{TRACKING_NUMBER}}"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response includes shipment and tracking events', () => {",
+                  "  const response = pm.response.json();",
+                  "  pm.expect(response.shipment).to.have.all.keys('_id', 'orderId', 'packageId', 'trackingNumber', 'carrier', 'serviceLevel', 'status', 'qrCode', 'deliveryAddress', 'createdAt', 'updatedAt');",
+                  "  pm.expect(response.trackingEvents).to.be.an('array');",
+                  "  pm.expect(response.shipment.trackingNumber).to.equal('{{TRACKING_NUMBER}}');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /tracking/number/:trackingNumber - Invalid Tracking Number (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{LOGISTICS_SERVICE_URL}}/tracking/number/invalid_tracking",
+              "host": ["{{LOGISTICS_SERVICE_URL}}"],
+              "path": ["tracking", "number", "invalid_tracking"]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 for invalid tracking number', () => {",
+                  "  pm.response.to.have.status(404);",
+                  "  pm.expect(pm.response.json().message).to.equal('Shipment not found');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "LOGISTICS_SERVICE_URL",
+      "value": "http://localhost:3004",
+      "type": "string"
+    },
+    {
+      "key": "JWT_TOKEN",
+      "value": "<valid_jwt_token>",
+      "type": "string"
+    },
+    {
+      "key": "ORDER_ID",
+      "value": "<valid_order_id>",
+      "type": "string"
+    },
+    {
+      "key": "PACKAGE_ID",
+      "value": "<valid_package_id>",
+      "type": "string"
+    },
+    {
+      "key": "SHIPMENT_ID",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "TRACKING_NUMBER",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
