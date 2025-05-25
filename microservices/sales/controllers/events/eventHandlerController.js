@@ -25,8 +25,6 @@ exports.handleInventoryReserved = async (message) => {
         // Generate QR code with orderId
         const qrCodeData = await QRCode.toString(order._id.toString(), { type: 'utf8' });
         order.qrCode = qrCodeData; 
-        console.log(`QR code generated for order ${order.qrCode}`);
-
 
         // Update order status
         order.status = 'confirmed';
@@ -78,7 +76,7 @@ exports.handleOrderDelivered = async (message) => {
         order.updatedAt = Date.now();
         await order.save();
         // TODO: Trigger customer notification (e.g., via a notification service)
-        console.log(`Order ${orderId} status updated to Delivered - Notification pending`);
+        // console.log(`Order ${orderId} status updated to Delivered - Notification pending`);
     } catch (error) {
         console.error('Error handling OrderDelivered:', error);
     }

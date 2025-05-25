@@ -6,10 +6,20 @@ let channel = null;
 
 const connectRabbitMQ = async () => {
   try {
-    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}`);
     const connection = await amqp.connect(process.env.RABBITMQ_URL);
+    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}`);
     channel = await connection.createChannel();
-    await channel.assertExchange('warehouse_events', 'topic', { durable: true });
+
+    const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
+    const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
+    const queue = `${queuePrefix}warehouse_events`;
+
+    await channel.assertExchange(exchange, 'topic', { durable: true });
+    await channel.assertQueue(queue, { durable: true });
+
+    await channel.bindQueue(queue, exchange, 'inventory.reserved');
+
+
     console.log('Connected to RabbitMQ');
   } catch (error) {
     console.error('RabbitMQ connection error:', error);
@@ -20,30 +30,38 @@ const connectRabbitMQ = async () => {
 // Don't immediately connect - we'll connect when needed
 // connectRabbitMQ();
 
-const publishEvent = async (eventName, payload) => {
-  if (!channel) {
-    await connectRabbitMQ();
-  }
-  const routingKey = `warehouse.${eventName}`;
-  const message = JSON.stringify(payload);
-  channel.publish('warehouse_events', routingKey, Buffer.from(message));
-  console.log(`Published event: ${routingKey}`);
+
+const publishEvent = (routingKey, message) => {
+  if (!channel) throw new Error('RabbitMQ channel not initialized');
+  const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
+  const msgBuffer = Buffer.from(JSON.stringify(message));
+  channel.publish(exchange, routingKey, msgBuffer);
+  console.log(`Event Published: ${routingKey}`, message);
 };
 
-const subscribeToEvents = async (eventName, handler) => {
-  if (!channel) {
-    await connectRabbitMQ();
-  }
-  const queue = `warehouse_${eventName}`;
-  await channel.assertQueue(queue, { durable: true });
-  await channel.bindQueue(queue, 'warehouse_events', `*.${eventName}`);
-  channel.consume(queue, async (msg) => {
+
+
+const subscribeToEvents = (eventHandlers) => {
+  if (!channel) throw new Error('RabbitMQ channel not initialized');
+  const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}warehouse_events`;
+
+  channel.consume(queue, (msg) => {
     if (msg !== null) {
-      const payload = JSON.parse(msg.content.toString());
-      await handler(payload);
-      channel.ack(msg);
+      const routingKey = msg.fields.routingKey;
+      const message = JSON.parse(msg.content.toString());
+      const handler = eventHandlers[routingKey];
+
+      if (handler) {
+        handler(message);
+        channel.ack(msg); // Acknowledge after handling
+      } else {
+        console.warn(`No handler for routing key: ${routingKey}`);
+        channel.nack(msg, false, true); // Requeue if unhandled
+      }
     }
-  });
+  }, { noAck: false }); // Manual acknowledgment
+
+  console.log(`Subscribed to events on queue ${queue}`);
 };
 
 // Export first to avoid circular dependencies
@@ -70,6 +88,7 @@ const initSubscriptions = () => {
       status: 'Pending',
     });
     await pickingList.save();
+    console.log("Picking Started for Order:", orderId);
     await publishEvent('PickingStarted', {
       pickingListId: pickingList._id,
       orderId,
