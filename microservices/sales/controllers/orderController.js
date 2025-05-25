@@ -72,7 +72,7 @@ exports.updateOrderStatus = async (req, res) => {
         if (userRole === 'customer' && status !== 'cancelled') {
             return res.status(403).json({ message: 'Customers can only cancel orders' });
         }
-        if (order.status === 'shipped' || order.status === 'delivered') {
+        if (order.status === 'shipping' || order.status === 'delivered') {
             return res.status(400).json({ message: 'Cannot update status after Shipped' });
         }
 

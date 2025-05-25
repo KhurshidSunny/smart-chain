@@ -27,8 +27,8 @@ connectRabbitMQ().then(() => {
   const eventHandlers = {
     'inventory.reserved': eventHandlerController.handleInventoryReserved,
     'warehouse.order.packed': eventHandlerController.handleOrderPacked,
-    'logistics.shipment.dispatched': eventHandlerController.handleShipmentDispatched,
-    'logistics.order.delivered': eventHandlerController.handleOrderDelivered,
+    'logistics.shipment.shipping': eventHandlerController.handleShipmentShipping,
+    'logistics.shipment.delivered': eventHandlerController.handleOrderDelivered,
   };
   subscribeToEvents(eventHandlers);
 });

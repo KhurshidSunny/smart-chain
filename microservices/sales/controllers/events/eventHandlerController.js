@@ -51,13 +51,13 @@ exports.handleOrderPacked = async (message) => {
     }
 };
 
-exports.handleShipmentDispatched = async (message) => {
+exports.handleShipmentShipping = async (message) => {
     try {
         const { orderId } = message;
         const order = await Order.findById(orderId);
         if (!order) return console.warn(`Order ${orderId} not found`);
 
-        order.status = 'shipped';
+        order.status = 'shipping';
         order.updatedAt = Date.now();
         await order.save();
         console.log(`Order ${orderId} status updated to Shipped`);
@@ -75,8 +75,7 @@ exports.handleOrderDelivered = async (message) => {
         order.status = 'delivered';
         order.updatedAt = Date.now();
         await order.save();
-        // TODO: Trigger customer notification (e.g., via a notification service)
-        // console.log(`Order ${orderId} status updated to Delivered - Notification pending`);
+        console.log(`Order ${orderId} status updated to Delivered `);
     } catch (error) {
         console.error('Error handling OrderDelivered:', error);
     }
