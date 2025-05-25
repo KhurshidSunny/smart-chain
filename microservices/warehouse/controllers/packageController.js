@@ -1,41 +1,30 @@
 const Package = require('../models/packageModel');
-const QRCode = require('../models/qrCodeModel');
-const eventService = require('../services/eventService');
-const qrcode = require('qrcode');
+const { publishEvent } = require('../services/eventService');
 
 // Create a package record
 const createPackage = async (req, res) => {
-  const { orderId, packagingType, dimensions, packedBy } = req.body;
+  const { orderId, packagingType, dimensions, packedBy, qrCode } = req.body;
   try {
-    const qrCodeData = `${orderId}-${Date.now()}`;
-    const qrCodeUrl = await qrcode.toDataURL(qrCodeData);
-    const qrCodeRecord = new QRCode({
-      code: qrCodeData,
-      entityType: 'Package',
-      entityId: orderId,
-    });
-    await qrCodeRecord.save();
-
     const packageRecord = new Package({
       orderId,
       packagingType,
       dimensions,
-      qrCode: qrCodeData,
       packedBy,
-      packedAt: new Date(),
+      packedAt: new Date()
     });
     await packageRecord.save();
 
-    await eventService.publishEvent('OrderPacked', {
+    await publishEvent('warehouse.order.packed', {
       orderId,
       packageId: packageRecord._id,
-      qrCode: qrCodeData,
-      dimensions,
+      qrCode, // QR code from order
+      dimensions
     });
 
     res.status(201).json(packageRecord);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error creating package:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -51,10 +40,11 @@ const listPackages = async (req, res) => {
     res.json({
       packages,
       totalPages: Math.ceil(count / limit),
-      currentPage: page,
+      currentPage: parseInt(page)
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error listing packages:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -67,7 +57,8 @@ const getPackage = async (req, res) => {
     }
     res.json(packageRecord);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error getting package:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -81,10 +72,12 @@ const updatePackage = async (req, res) => {
     }
     packageRecord.packagingType = packagingType || packageRecord.packagingType;
     packageRecord.dimensions = dimensions || packageRecord.dimensions;
+    packageRecord.updatedAt = new Date();
     await packageRecord.save();
     res.json(packageRecord);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error updating package:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -92,5 +85,5 @@ module.exports = {
   createPackage,
   listPackages,
   getPackage,
-  updatePackage,
+  updatePackage
 };

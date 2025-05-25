@@ -1,28 +1,5 @@
 const PickingList = require('../models/pickingListModel');
-const QRCode = require('../models/qrCodeModel');
-const eventService = require('../services/eventService');
-
-// Generate a new picking list
-const generatePickingList = async (req, res) => {
-  const { orderId, orderNumber, items } = req.body;
-  try {
-    const pickingList = new PickingList({
-      orderId,
-      orderNumber,
-      items,
-      status: 'Pending',
-    });
-    await pickingList.save();
-    await eventService.publishEvent('PickingStarted', {
-      pickingListId: pickingList._id,
-      orderId,
-      assignedTo: null,
-    });
-    res.status(201).json(pickingList);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+const { publishEvent } = require('../services/eventService');
 
 // List all picking lists
 const listPickingLists = async (req, res) => {
@@ -37,10 +14,11 @@ const listPickingLists = async (req, res) => {
     res.json({
       pickingLists,
       totalPages: Math.ceil(count / limit),
-      currentPage: page,
+      currentPage: parseInt(page)
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error listing picking lists:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -53,7 +31,8 @@ const getPickingList = async (req, res) => {
     }
     res.json(pickingList);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error getting picking list:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -68,16 +47,18 @@ const updatePickingListStatus = async (req, res) => {
     pickingList.status = status;
     if (status === 'Completed') {
       pickingList.completedAt = new Date();
-      await eventService.publishEvent('PickingCompleted', {
+      await publishEvent('warehouse.picking.completed', {
         pickingListId: pickingList._id,
         orderId: pickingList.orderId,
-        pickedItems: pickingList.items,
+        pickedItems: pickingList.items
       });
     }
+    pickingList.updatedAt = new Date();
     await pickingList.save();
     res.json(pickingList);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error updating picking list status:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -92,15 +73,12 @@ const assignPickingList = async (req, res) => {
     pickingList.assignedTo = assignedTo;
     pickingList.status = 'InProgress';
     pickingList.startedAt = new Date();
+    pickingList.updatedAt = new Date();
     await pickingList.save();
-    await eventService.publishEvent('PickingStarted', {
-      pickingListId: pickingList._id,
-      orderId: pickingList.orderId,
-      assignedTo,
-    });
     res.json(pickingList);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error assigning picking list:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
@@ -118,18 +96,19 @@ const updatePickedQuantity = async (req, res) => {
       return res.status(404).json({ message: 'Item not found' });
     }
     item.picked = picked;
+    pickingList.updatedAt = new Date();
     await pickingList.save();
     res.json(pickingList);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Error updating picked quantity:', error);
+    res.status(500).json({ message: 'Something went wrong!' });
   }
 };
 
 module.exports = {
-  generatePickingList,
   listPickingLists,
   getPickingList,
   updatePickingListStatus,
   assignPickingList,
-  updatePickedQuantity,
+  updatePickedQuantity
 };

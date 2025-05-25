@@ -1,3 +1,4 @@
+// app.js
 const express = require('express');
 const passport = require('passport');
 const connectDB = require('./config/db');

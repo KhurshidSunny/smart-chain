@@ -1,15 +1,14 @@
-require('dotenv').config();
+// microservices/warehouse/services/eventService.js
 const amqp = require('amqplib');
-const PickingList = require('../models/pickingListModel')
+require('dotenv').config();
 
-let channel = null;
+let channel;
 
 const connectRabbitMQ = async () => {
   try {
     const connection = await amqp.connect(process.env.RABBITMQ_URL);
-    console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}`);
+    console.log('Connected to RabbitMQ');
     channel = await connection.createChannel();
-
     const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
     const queue = `${queuePrefix}warehouse_events`;
@@ -17,19 +16,37 @@ const connectRabbitMQ = async () => {
     await channel.assertExchange(exchange, 'topic', { durable: true });
     await channel.assertQueue(queue, { durable: true });
 
+    // Bind queue to relevant events
     await channel.bindQueue(queue, exchange, 'inventory.reserved');
+    await channel.bindQueue(queue, exchange, 'sales.order.cancelled');
 
+    console.log('RabbitMQ Connected for Warehouse Service');
+    console.log(`Queue ${queue} bound to ${exchange} with routing keys 'inventory.reserved', 'sales.order.cancelled'`);
 
-    console.log('Connected to RabbitMQ');
+    // Handle connection errors
+    connection.on('error', (err) => {
+      console.error('RabbitMQ Connection Error:', err);
+      reconnectRabbitMQ();
+    });
+
+    connection.on('close', () => {
+      console.log('RabbitMQ Connection Closed');
+      reconnectRabbitMQ();
+    });
   } catch (error) {
-    console.error('RabbitMQ connection error:', error);
+    console.error('RabbitMQ Connection Error:', error);
     throw error;
   }
 };
 
-// Don't immediately connect - we'll connect when needed
-// connectRabbitMQ();
-
+const reconnectRabbitMQ = async () => {
+  console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
+  setTimeout(async () => {
+    channel = null; // Reset channel
+    await connectRabbitMQ();
+    subscribeToEvents(require('../controllers/events/eventHandlerController')); // Re-subscribe
+  }, 5000);
+};
 
 const publishEvent = (routingKey, message) => {
   if (!channel) throw new Error('RabbitMQ channel not initialized');
@@ -39,8 +56,6 @@ const publishEvent = (routingKey, message) => {
   console.log(`Event Published: ${routingKey}`, message);
 };
 
-
-
 const subscribeToEvents = (eventHandlers) => {
   if (!channel) throw new Error('RabbitMQ channel not initialized');
   const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}warehouse_events`;
@@ -49,7 +64,7 @@ const subscribeToEvents = (eventHandlers) => {
     if (msg !== null) {
       const routingKey = msg.fields.routingKey;
       const message = JSON.parse(msg.content.toString());
-      const handler = eventHandlers[routingKey];
+      const handler = eventHandlers[`handle${routingKey.split('.').pop().charAt(0).toUpperCase() + routingKey.split('.').pop().slice(1)}`];
 
       if (handler) {
         handler(message);
@@ -59,51 +74,9 @@ const subscribeToEvents = (eventHandlers) => {
         channel.nack(msg, false, true); // Requeue if unhandled
       }
     }
-  }, { noAck: false }); // Manual acknowledgment
+  }, { noAck: false }); // Manually acknowledge messages
 
   console.log(`Subscribed to events on queue ${queue}`);
 };
 
-// Export first to avoid circular dependencies
-module.exports = {
-  publishEvent,
-  subscribeToEvents,
-  connectRabbitMQ // Export this so we can explicitly connect when ready
-};
-
-// Subscribe to relevant events - moved to a function that can be called after models are initialized
-const initSubscriptions = () => {
-  subscribeToEvents('InventoryReserved', async (payload) => {
-    const { orderId, items } = payload;
-    const pickingList = new PickingList({
-      orderId,
-      orderNumber: `ORD-${orderId}`,
-      items: items.map(item => ({
-        productId: item.productId,
-        sku: item.sku,
-        name: item.name,
-        quantity: item.quantity,
-        location: item.location || 'Unknown',
-      })),
-      status: 'Pending',
-    });
-    await pickingList.save();
-    console.log("Picking Started for Order:", orderId);
-    await publishEvent('PickingStarted', {
-      pickingListId: pickingList._id,
-      orderId,
-      assignedTo: null,
-    });
-  });
-
-  subscribeToEvents('OrderCancelled', async (payload) => {
-    const { orderId } = payload;
-    const pickingList = await PickingList.findOne({ orderId });
-    if (pickingList && pickingList.status === 'Pending') {
-      pickingList.status = 'Cancelled';
-      await pickingList.save();
-    }
-  });
-};
-
-module.exports.initSubscriptions = initSubscriptions;
+module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents };

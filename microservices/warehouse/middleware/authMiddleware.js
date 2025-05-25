@@ -1,3 +1,4 @@
+// warehouse/middlware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (roles = []) => {

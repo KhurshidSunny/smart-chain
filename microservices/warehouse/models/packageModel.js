@@ -4,58 +4,38 @@ const packageSchema = new mongoose.Schema({
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
+    ref: 'Order' // Reference to Order for QR code lookup
   },
   packagingType: {
     type: String,
-    required: true,
+    required: true
   },
   dimensions: {
-    width: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    height: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    depth: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    weight: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-  },
-  qrCode: {
-    type: String,
-    required: true,
-    unique: true,
+    width: { type: Number, required: true, min: 0 },
+    height: { type: Number, required: true, min: 0 },
+    depth: { type: Number, required: true, min: 0 },
+    weight: { type: Number, required: true, min: 0 }
   },
   packedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: true
   },
   packedAt: {
     type: Date,
-    required: true,
+    required: true
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   updatedAt: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
-packageSchema.pre('save', function(next) {
+packageSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
