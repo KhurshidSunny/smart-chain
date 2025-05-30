@@ -1,106 +1,80 @@
-require('dotenv').config();
 const amqp = require('amqplib');
-const Shipment = require('../models/shipmentModel');
+require('dotenv').config();
 
-let channel = null;
+let channel;
 
 const connectRabbitMQ = async () => {
     try {
-        console.log(`Connecting to RabbitMQ at ${process.env.RABBITMQ_URL}`);
         const connection = await amqp.connect(process.env.RABBITMQ_URL);
-        channel = await connection.createChannel();
-        await channel.assertExchange('logistics_events', 'topic', { durable: true });
         console.log('Connected to RabbitMQ');
+        channel = await connection.createChannel();
+        const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
+        const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
+        const queue = `${queuePrefix}logistics_events`;
+
+        await channel.assertExchange(exchange, 'topic', { durable: true });
+        await channel.assertQueue(queue, { durable: true });
+
+        // Bind queue to relevant events
+        await channel.bindQueue(queue, exchange, 'warehouse.order.packed');
+
+        console.log('RabbitMQ Connected for Logistics Service');
+        console.log(`Queue ${queue} bound to ${exchange} with routing key 'warehouse.order.packed'`);
+
+        // Handle connection errors
+        connection.on('error', (err) => {
+            console.error('RabbitMQ Connection Error:', err);
+            reconnectRabbitMQ();
+        });
+
+        connection.on('close', () => {
+            console.log('RabbitMQ Connection Closed');
+            reconnectRabbitMQ();
+        });
     } catch (error) {
-        console.error('RabbitMQ connection error:', error);
+        console.error('RabbitMQ Connection Error:', error);
         throw error;
     }
 };
 
-const publishEvent = async (eventName, payload) => {
-    if (!channel) {
+const reconnectRabbitMQ = async () => {
+    console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
+    setTimeout(async () => {
+        channel = null; // Reset channel
         await connectRabbitMQ();
-    }
-    const routingKey = `logistics.${eventName}`;
-    const message = JSON.stringify(payload);
-    channel.publish('logistics_events', routingKey, Buffer.from(message));
-    console.log(`Published event: ${routingKey}`);
+        subscribeToEvents(require('../controllers/events/eventHandlerController')); // Re-subscribe
+    }, 5000);
 };
 
-const subscribeToEvents = async (eventName, handler) => {
-    if (!channel) {
-        await connectRabbitMQ();
-    }
-    const queue = `logistics_${eventName}`;
-    await channel.assertQueue(queue, { durable: true });
-    await channel.bindQueue(queue, 'logistics_events', `*.${eventName}`);
-    channel.consume(queue, async (msg) => {
+const publishEvent = (routingKey, message) => {
+    if (!channel) throw new Error('RabbitMQ channel not initialized');
+    const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
+    const msgBuffer = Buffer.from(JSON.stringify(message));
+    channel.publish(exchange, routingKey, msgBuffer);
+    console.log(`Event Published: ${routingKey}`, message);
+};
+
+const subscribeToEvents = (eventHandlers) => {
+    if (!channel) throw new Error('RabbitMQ channel not initialized');
+    const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}logistics_events`;
+
+    channel.consume(queue, (msg) => {
         if (msg !== null) {
-            const payload = JSON.parse(msg.content.toString());
-            await handler(payload);
-            channel.ack(msg);
-        }
-    });
-};
+            const routingKey = msg.fields.routingKey;
+            const message = JSON.parse(msg.content.toString());
+            const handler = eventHandlers[routingKey];
 
-module.exports = {
-    publishEvent,
-    subscribeToEvents,
-    connectRabbitMQ
-};
-
-const initSubscriptions = () => {
-    subscribeToEvents('OrderPacked', async (payload) => {
-        const { orderId, packageId, qrCode, dimensions } = payload;
-        const shipment = new Shipment({
-            orderId,
-            orderNumber: `ORD-${orderId}`,
-            packageId,
-            qrCode,
-            trackingNumber: `TRK-${Date.now()}-${orderId}`,
-            carrier: 'DefaultCarrier',
-            serviceLevel: 'Standard',
-            status: 'Created',
-            deliveryAddress: {
-                street: 'TBD', // Will be updated via API or order data
-                city: 'TBD',
-                state: 'TBD',
-                zipCode: 'TBD',
-                country: 'TBD'
-            },
-            cost: 0, // Will be calculated later
-        });
-        await shipment.save();
-        await publishEvent('ShipmentCreated', {
-            shipmentId: shipment._id,
-            orderId,
-            packageId
-        });
-    });
-
-    subscribeToEvents('QRCodeScanned', async (payload) => {
-        const { code, entityType, entityId, location, scannedBy } = payload;
-        if (entityType === 'Shipment') {
-            const shipment = await Shipment.findById(entityId);
-            if (shipment && shipment.qrCode === code) {
-                const trackingEvent = {
-                    shipmentId: entityId,
-                    status: shipment.status === 'Dispatched' ? 'InTransit' : 'OutForDelivery',
-                    location,
-                    timestamp: new Date(),
-                };
-                await require('../models/trackingEventModel').create(trackingEvent);
-                shipment.status = trackingEvent.status;
-                await shipment.save();
-                await publishEvent('TrackingUpdated', {
-                    shipmentId: entityId,
-                    orderId: shipment.orderId,
-                    status: trackingEvent.status,
-                    location
-                });
+            if (handler) {
+                handler(message);
+                channel.ack(msg); // Acknowledge after handling
+            } else {
+                console.warn(`No handler for routing key: ${routingKey}`);
+                channel.nack(msg, false, true); // Requeue if unhandled
             }
         }
-    });
+    }, { noAck: false }); // Manual acknowledgment
+
+    console.log(`Subscribed to events on queue ${queue}`);
 };
 
-module.exports.initSubscriptions = initSubscriptions;
+module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents };

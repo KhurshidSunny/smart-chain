@@ -13,8 +13,6 @@ const app = express();
 
 app.use(cors({
   origin: '*',  // Allows any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware
@@ -27,8 +25,8 @@ connectRabbitMQ().then(() => {
   const eventHandlers = {
     'inventory.reserved': eventHandlerController.handleInventoryReserved,
     'warehouse.order.packed': eventHandlerController.handleOrderPacked,
-    'logistics.shipment.dispatched': eventHandlerController.handleShipmentDispatched,
-    'logistics.order.delivered': eventHandlerController.handleOrderDelivered,
+    'logistics.shipment.shipping': eventHandlerController.handleShipmentShipping,
+    'logistics.shipment.delivered': eventHandlerController.handleOrderDelivered,
   };
   subscribeToEvents(eventHandlers);
 });

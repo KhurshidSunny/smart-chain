@@ -1,3 +1,4 @@
+// eventHandlerController.js
 const Product = require('../../models/productModel');
 const Reservation = require('../../models/reservationModel');
 const InventoryTransaction = require('../../models/inventoryTransactionModel');

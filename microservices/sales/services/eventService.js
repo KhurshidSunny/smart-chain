@@ -46,8 +46,8 @@ const connectRabbitMQ = async () => {
     // This setup allows the sales service to listen for all order-related events.
     await channel.bindQueue(queue, exchange, 'inventory.reserved');
     await channel.bindQueue(queue, exchange, 'warehouse.order.packed');
-    await channel.bindQueue(queue, exchange, 'logistics.shipment.dispatched');
-    await channel.bindQueue(queue, exchange, 'logistics.order.delivered');
+    await channel.bindQueue(queue, exchange, 'logistics.shipment.shipping');
+    await channel.bindQueue(queue, exchange, 'logistics.shipment.delivered');
 
     // Log the binding details for clarity. This shows what queue is listening to what exchange
     // and with which routing key pattern, making it easier to troubleshoot message flow.

@@ -1,3 +1,4 @@
+// productController.js
 const Product = require('../models/productModel');
 const InventoryTransaction = require('../models/inventoryTransactionModel');
 const { publishEvent } = require('../services/eventService');

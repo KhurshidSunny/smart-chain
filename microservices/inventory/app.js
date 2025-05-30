@@ -1,3 +1,4 @@
+// app.js
 const express = require('express');
 const passport = require('passport');
 const connectDB = require('./config/db');
@@ -27,8 +28,6 @@ connectRabbitMQ().then(() => {
 
 app.use(cors({
   origin: '*',  // Allows any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Routes

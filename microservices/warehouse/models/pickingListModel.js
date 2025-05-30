@@ -4,65 +4,74 @@ const pickingListSchema = new mongoose.Schema({
   orderId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
+    ref: 'Order'
   },
   orderNumber: {
     type: String,
-    required: true,
+    required: true
   },
   status: {
     type: String,
     enum: ['Pending', 'InProgress', 'Completed', 'Cancelled'],
-    default: 'Pending',
+    default: 'Pending'
   },
   items: [{
     productId: {
       type: mongoose.Schema.Types.ObjectId,
-      required: true,
+      required: true
     },
     sku: {
       type: String,
-      required: true,
+      required: true
     },
     name: {
       type: String,
-      required: true,
+      required: true
     },
     quantity: {
       type: Number,
       required: true,
-      min: 1,
+      min: 1
     },
     picked: {
       type: Number,
       default: 0,
-      min: 0,
+      min: 0
     },
     location: {
       type: String,
-      required: true,
+      required: true
+    },
+    shippingAddress: {
+      addressId: { type: mongoose.Schema.Types.ObjectId, required: false }, // Optional IAM Address reference
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      zipCode: { type: String, required: true },
+      country: { type: String, required: true },
     },
   }],
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'User'
   },
   startedAt: {
-    type: Date,
+    type: Date
   },
   completedAt: {
-    type: Date,
+    type: Date
   },
   createdAt: {
     type: Date,
-    default: Date.now,
+    default: Date.now
   },
   updatedAt: {
     type: Date,
-    default: Date.now,
-  },
+    default: Date.now
+  }
 });
 
-pickingListSchema.pre('save', function(next) {
+pickingListSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });

@@ -14,15 +14,7 @@ app.use(express.json()); // Parse JSON bodies
 const allowedOrigins = ['http://localhost:5173', 'https://smart-chain.tasawuur.shop'];
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (e.g., mobile apps, curl) or from allowed origins
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true // Support credentials (e.g., cookies, auth headers)
+  origin: '*',  // Allows any origin
 }));
 
 // Connect to MongoDB

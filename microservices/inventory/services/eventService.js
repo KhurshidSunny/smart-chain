@@ -1,3 +1,4 @@
+// eventService.js
 const amqp = require('amqplib');
 require('dotenv').config();
 
@@ -21,7 +22,7 @@ const connectRabbitMQ = async () => {
         await channel.bindQueue(queue, exchange, 'warehouse.order.packed'); // From Warehouse
 
         console.log('RabbitMQ Connected for Inventory Service');
-        console.log(`Queue ${queue} bound to ${exchange} with routing keys 'sales.order.*', 'warehouse.order.packed'`);
+        console.log(`Queue ${queue} bound to ${exchange} with routing keys 'sales.order.created', 'sales.order.cancelled', 'warehouse.order.packed'`);
 
 
         // Handle connection errors

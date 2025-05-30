@@ -1,42 +1,40 @@
 const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
-const helmet = require('helmet');
+const connectDB = require('./config/db');
+const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const trackingRoutes = require('./routes/trackingRoutes');
-const { connectRabbitMQ, initSubscriptions } = require('./services/eventService');
-const connectDB = require('./config/db');
+const { eventHandlerController } = require('./controllers/events/eventHandlerController');
+require('dotenv').config();
+const cors = require('cors');
 
 const app = express();
 
 // Middleware
-app.use(helmet());
-app.use(cors());
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(cors({
+    origin: '*', // Allows any origin
+}));
 
-// Connect to MongoDB and RabbitMQ
-Promise.all([connectDB(), connectRabbitMQ()])
-    .then(() => {
-        initSubscriptions();
-        console.log('Initialized database and message broker');
-    })
-    .catch((error) => {
-        console.error('Startup error:', error);
-        process.exit(1);
-    });
+// Connect to DB and RabbitMQ
+connectDB();
+connectRabbitMQ().then(() => {
+    const eventHandlers = {
+        'warehouse.order.packed': eventHandlerController.handleOrderPacked
+    };
+    subscribeToEvents(eventHandlers);
+});
 
 // Routes
 app.use('/shipments', shipmentRoutes);
 app.use('/tracking', trackingRoutes);
 
-// Error handling middleware
+// Error Handling
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Something went wrong!' });
 });
 
 const PORT = process.env.PORT || 3005;
-app.listen(PORT, () => {
-    console.log(`Logistics Service running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Logistics Service running on port ${PORT}`));
+
+module.exports = app;

@@ -1,3 +1,4 @@
+// inventoryController.js
 const Product = require('../models/productModel');
 const { publishEvent } = require('../services/eventService');
 const mongoose = require('mongoose');

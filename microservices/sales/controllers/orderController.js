@@ -21,7 +21,7 @@ exports.createOrder = async (req, res) => {
         });
 
         await order.save();
-        publishOrderCreated(order); // Event publishing moved to eventHandlerController
+        publishOrderCreated(order);
         res.status(201).json(order);
     } catch (error) {
         res.status(500).json({ message: 'Error creating order', error: error.message });
@@ -72,7 +72,7 @@ exports.updateOrderStatus = async (req, res) => {
         if (userRole === 'customer' && status !== 'cancelled') {
             return res.status(403).json({ message: 'Customers can only cancel orders' });
         }
-        if (order.status === 'shipped' || order.status === 'delivered') {
+        if (order.status === 'shipping' || order.status === 'delivered') {
             return res.status(400).json({ message: 'Cannot update status after Shipped' });
         }
 

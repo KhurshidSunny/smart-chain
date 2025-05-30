@@ -7,7 +7,7 @@ exports.publishOrderCreated = async (order) => {
         publishEvent('sales.order.created', {
             orderId: order._id,
             customerId: order.customerId,
-            items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity })),
+            items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity, shippingAddress: order.shippingAddress })),
         });
         console.log(`Published OrderCreated for order ${order._id}`);
     } catch (error) {
@@ -25,8 +25,6 @@ exports.handleInventoryReserved = async (message) => {
         // Generate QR code with orderId
         const qrCodeData = await QRCode.toString(order._id.toString(), { type: 'utf8' });
         order.qrCode = qrCodeData; 
-        console.log(`QR code generated for order ${order.qrCode}`);
-
 
         // Update order status
         order.status = 'confirmed';
@@ -53,13 +51,13 @@ exports.handleOrderPacked = async (message) => {
     }
 };
 
-exports.handleShipmentDispatched = async (message) => {
+exports.handleShipmentShipping = async (message) => {
     try {
         const { orderId } = message;
         const order = await Order.findById(orderId);
         if (!order) return console.warn(`Order ${orderId} not found`);
 
-        order.status = 'shipped';
+        order.status = 'shipping';
         order.updatedAt = Date.now();
         await order.save();
         console.log(`Order ${orderId} status updated to Shipped`);
@@ -77,8 +75,7 @@ exports.handleOrderDelivered = async (message) => {
         order.status = 'delivered';
         order.updatedAt = Date.now();
         await order.save();
-        // TODO: Trigger customer notification (e.g., via a notification service)
-        console.log(`Order ${orderId} status updated to Delivered - Notification pending`);
+        console.log(`Order ${orderId} status updated to Delivered `);
     } catch (error) {
         console.error('Error handling OrderDelivered:', error);
     }
