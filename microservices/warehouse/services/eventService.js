@@ -1,4 +1,3 @@
-// microservices/warehouse/services/eventService.js
 const amqp = require('amqplib');
 require('dotenv').config();
 
@@ -64,7 +63,7 @@ const subscribeToEvents = (eventHandlers) => {
     if (msg !== null) {
       const routingKey = msg.fields.routingKey;
       const message = JSON.parse(msg.content.toString());
-      const handler = eventHandlers[`handle${routingKey.split('.').pop().charAt(0).toUpperCase() + routingKey.split('.').pop().slice(1)}`];
+      const handler = eventHandlers[routingKey];
 
       if (handler) {
         handler(message);
@@ -74,7 +73,7 @@ const subscribeToEvents = (eventHandlers) => {
         channel.nack(msg, false, true); // Requeue if unhandled
       }
     }
-  }, { noAck: false }); // Manually acknowledge messages
+  }, { noAck: false }); // Manual acknowledgment
 
   console.log(`Subscribed to events on queue ${queue}`);
 };

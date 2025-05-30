@@ -7,7 +7,7 @@ exports.publishOrderCreated = async (order) => {
         publishEvent('sales.order.created', {
             orderId: order._id,
             customerId: order.customerId,
-            items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity })),
+            items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity, shippingAddress: order.shippingAddress })),
         });
         console.log(`Published OrderCreated for order ${order._id}`);
     } catch (error) {

@@ -41,7 +41,15 @@ const pickingListSchema = new mongoose.Schema({
     location: {
       type: String,
       required: true
-    }
+    },
+    shippingAddress: {
+      addressId: { type: mongoose.Schema.Types.ObjectId, required: false }, // Optional IAM Address reference
+      street: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
+      zipCode: { type: String, required: true },
+      country: { type: String, required: true },
+    },
   }],
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,

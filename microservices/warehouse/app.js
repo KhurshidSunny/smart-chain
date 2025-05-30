@@ -1,10 +1,10 @@
-// microservices/warehouse/app.js
 const express = require('express');
+const passport = require('passport');
 const connectDB = require('./config/db');
 const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
 const pickingRoutes = require('./routes/pickingRoutes');
 const packageRoutes = require('./routes/packageRoutes');
-const eventHandlerController = require('./controllers/events/eventHandlerController');
+const { handleInventoryReserved, handleOrderCancelled } = require('./controllers/events/eventHandlerController');
 require('dotenv').config();
 const cors = require('cors');
 
@@ -12,18 +12,17 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+app.use(passport.initialize());
 app.use(cors({
   origin: '*', // Allows any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Connect to DB and RabbitMQ
 connectDB();
 connectRabbitMQ().then(() => {
   const eventHandlers = {
-    'inventory.reserved': eventHandlerController.eventHandlerController,
-    'sales.order.cancelled': eventHandlerController.handleOrderCancelled,
+    'inventory.reserved': handleInventoryReserved,
+    'sales.order.cancelled': handleOrderCancelled
   };
   subscribeToEvents(eventHandlers);
 });

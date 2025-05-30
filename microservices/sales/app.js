@@ -13,8 +13,6 @@ const app = express();
 
 app.use(cors({
   origin: '*',  // Allows any origin
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware

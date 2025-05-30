@@ -21,7 +21,7 @@ exports.createOrder = async (req, res) => {
         });
 
         await order.save();
-        publishOrderCreated(order); // Event publishing moved to eventHandlerController
+        publishOrderCreated(order);
         res.status(201).json(order);
     } catch (error) {
         res.status(500).json({ message: 'Error creating order', error: error.message });

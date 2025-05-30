@@ -1,10 +1,8 @@
-// microservices/warehouse/controllers/events/eventHandlerController.js
 const PickingList = require('../../models/pickingListModel');
-const { publishEvent } = require('../../services/eventService');
 
 exports.handleInventoryReserved = async (message) => {
     try {
-        const { orderId, items } = message;
+        const { orderId, items,  } = message;
 
         // Create a picking list for the reserved order
         const pickingList = new PickingList({
@@ -17,7 +15,8 @@ exports.handleInventoryReserved = async (message) => {
                 name: item.name || 'Unknown Product', // Fallback name
                 quantity: item.quantity,
                 picked: 0,
-                location: item.location || 'Unknown' // Fallback location
+                location: item.location || 'Unknown', // Fallback location
+                shippingAddress: item.shippingAddress || 'Not Provided' // Fallback shipping address
             })),
             createdAt: new Date(),
             updatedAt: new Date()
@@ -25,13 +24,6 @@ exports.handleInventoryReserved = async (message) => {
 
         await pickingList.save();
         console.log(`Handled InventoryReserved: Created picking list for order ${orderId}`);
-
-        // Publish event to indicate picking list completion
-        publishEvent('warehouse.picking.completed', {
-            pickingListId: pickingList._id,
-            orderId,
-            pickedItems: pickingList.items
-        });
     } catch (err) {
         console.error('Error handling InventoryReserved:', err);
     }
@@ -56,3 +48,4 @@ exports.handleOrderCancelled = async (message) => {
         console.error('Error handling OrderCancelled:', err);
     }
 };
+

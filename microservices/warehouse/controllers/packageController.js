@@ -3,14 +3,15 @@ const { publishEvent } = require('../services/eventService');
 
 // Create a package record
 const createPackage = async (req, res) => {
-  const { orderId, packagingType, dimensions, packedBy, qrCode } = req.body;
+  const { orderId, packagingType, dimensions, packedBy, qrCode, shippingAddress } = req.body;
   try {
     const packageRecord = new Package({
       orderId,
       packagingType,
       dimensions,
       packedBy,
-      packedAt: new Date()
+      packedAt: new Date(),
+      shippingAddress,
     });
     await packageRecord.save();
 
@@ -18,7 +19,8 @@ const createPackage = async (req, res) => {
       orderId,
       packageId: packageRecord._id,
       qrCode, // QR code from order
-      dimensions
+      dimensions,
+      shippingAddress
     });
 
     res.status(201).json(packageRecord);
