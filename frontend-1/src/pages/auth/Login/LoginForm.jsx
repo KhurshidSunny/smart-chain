@@ -21,7 +21,7 @@ function LoginForm() {
         try {
             setError(null); // Clear previous errors
             const response = await login(values);
-            setAuth(response.user, response.token);
+            setAuth(response.user, response.token, response.refreshToken);
             navigate('/dashboard');
         } catch (err) {
             console.error('Login error:', err); // Add logging for debugging

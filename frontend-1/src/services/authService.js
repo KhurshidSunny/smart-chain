@@ -24,3 +24,12 @@ export const logout = async (refreshToken) => {
     });
     return response.data;
 };
+
+
+export const getAddresses = async () => {
+    return await apiClient.get(`${API_URLS.IAM}/users/me/addresses`);
+};
+
+export const createAddress = async (addressData) => {
+    return await apiClient.post(`${API_URLS.IAM}/users/me/addresses`, addressData);
+};

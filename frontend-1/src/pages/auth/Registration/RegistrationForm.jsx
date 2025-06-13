@@ -8,16 +8,13 @@ import useAuthStore from '../../../stores/authStore';
 const validationSchema = Yup.object({
     firstName: Yup.string().required('First name is required'),
     lastName: Yup.string().required('Last name is required'),
-    username: Yup.string().required('Username is required').min(3, 'Username must be at least 3 characters'),
     email: Yup.string().email('Invalid email address').required('Email is required'),
-    phone: Yup.string().required('Phone number is required'),
     password: Yup.string()
         .min(8, 'Password must be at least 8 characters')
         .required('Password is required'),
     confirmPassword: Yup.string()
         .oneOf([Yup.ref('password'), null], 'Passwords must match')
         .required('Confirm password is required'),
-    terms: Yup.boolean().oneOf([true], 'You must accept the terms of service'),
 });
 
 function RegistrationForm() {
@@ -41,14 +38,11 @@ function RegistrationForm() {
     return (
         <Formik
             initialValues={{
-                firstName: '',
-                lastName: '',
-                username: '',
-                email: '',
-                phone: '',
-                password: '',
-                confirmPassword: '',
-                terms: false,
+                firstName: 'Demo',
+                lastName: 'Khan',
+                email: 'demo@test.com',
+                password: '12345678',
+                confirmPassword: '12345678',
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
@@ -78,17 +72,6 @@ function RegistrationForm() {
                         <ErrorMessage name="lastName" component="div" className="text-red-500 text-sm mt-1" />
                     </div>
                     <div>
-                        <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                            Username
-                        </label>
-                        <Field
-                            type="text"
-                            name="username"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                        />
-                        <ErrorMessage name="username" component="div" className="text-red-500 text-sm mt-1" />
-                    </div>
-                    <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                             Email
                         </label>
@@ -98,17 +81,6 @@ function RegistrationForm() {
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                         />
                         <ErrorMessage name="email" component="div" className="text-red-500 text-sm mt-1" />
-                    </div>
-                    <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                            Phone
-                        </label>
-                        <Field
-                            type="text"
-                            name="phone"
-                            className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
-                        />
-                        <ErrorMessage name="phone" component="div" className="text-red-500 text-sm mt-1" />
                     </div>
                     <div>
                         <label htmlFor="password" className="block text-sm font-medium text-gray-700">
@@ -131,22 +103,6 @@ function RegistrationForm() {
                             className="mt-1 block w-full p-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
                         />
                         <ErrorMessage name="confirmPassword" component="div" className="text-red-500 text-sm mt-1" />
-                    </div>
-                    <div>
-                        <label className="flex items-center">
-                            <Field
-                                type="checkbox"
-                                name="terms"
-                                className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">
-                                I accept the{' '}
-                                <a href="/terms" className="text-primary hover:underline">
-                                    Terms of Service
-                                </a>
-                            </span>
-                        </label>
-                        <ErrorMessage name="terms" component="div" className="text-red-500 text-sm mt-1" />
                     </div>
                     {error && <div className="text-red-500 text-sm text-center">{error}</div>}
                     <button

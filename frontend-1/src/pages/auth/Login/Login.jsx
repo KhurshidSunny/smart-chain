@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from './LoginForm';
 import useAuthStore from '../../../stores/authStore';
@@ -6,10 +7,12 @@ function LoginPage() {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuthStore();
 
-    // Redirect to dashboard if already authenticated
-    if (isAuthenticated) {
-        navigate('/dashboard');
-    }
+    // Use useEffect to handle redirect after component mounts
+    useEffect(() => {
+        if (isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, navigate]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">

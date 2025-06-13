@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 
 const useAuthStore = create((set, get) => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem('user')) || null,
     token: localStorage.getItem('token') || null,
     refreshToken: localStorage.getItem('refreshToken') || null,
     isAuthenticated: !!localStorage.getItem('token'),
 
     setAuth: (user, token, refreshToken = null) => {
         localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
         if (refreshToken) {
             localStorage.setItem('refreshToken', refreshToken);
         }
@@ -20,6 +21,7 @@ const useAuthStore = create((set, get) => ({
         // Clear local state immediately for better UX
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
 
         // Try to logout on server (don't wait for it)
@@ -38,6 +40,7 @@ const useAuthStore = create((set, get) => ({
     forceLogout: () => {
         localStorage.removeItem('token');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
     }
 }));

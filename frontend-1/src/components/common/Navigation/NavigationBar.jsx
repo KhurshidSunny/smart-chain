@@ -46,15 +46,18 @@ function NavigationBar() {
                     {isAuthenticated ? (
                         <>
                             <Link to="/dashboard" className="hover:text-gray-200">Dashboard</Link>
-                            {user?.roleId === ROLES.ADMIN && (
+                            {[ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(user?.role) && (
+                                <Link to="/orders/create" className="hover:text-gray-200">Create Order</Link>
+                            )}
+                            {user?.role === ROLES.ADMIN && (
                                 <Link to="/admin" className="hover:text-gray-200">Admin</Link>
                             )}
                             <button
                                 onClick={handleLogout}
-                                className="hover:text-gray-200"
+                                className="hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={isLoggingOut}
                             >
-                                Logout
+                                {isLoggingOut ? 'Logging out...' : 'Logout'}
                             </button>
                         </>
                     ) : (
