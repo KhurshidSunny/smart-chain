@@ -1,17 +1,10 @@
 const Shipment = require('../../models/shipmentModel');
-const Order = require('../../models/orderModel'); // Assuming orderModel.js exists for lookup
 const { publishEvent } = require('../../services/eventService');
 
-exports.handleOrderPacked = async (message) => {
+const handleOrderPacked = async (message) => {
     try {
-        const { orderId, packageId, qrCode, dimensions } = message;
-
-        // Fetch order to get shipping address
-        const order = await Order.findById(orderId);
-        if (!order) {
-            console.error(`Order ${orderId} not found`);
-            return;
-        }
+        const { orderId, packageId, qrCode, dimensions, shippingAddress } = message;
+        console.log(message);
 
         const shipment = new Shipment({
             orderId,
@@ -21,13 +14,7 @@ exports.handleOrderPacked = async (message) => {
             carrier: 'DefaultCarrier',
             serviceLevel: 'Standard',
             status: 'created',
-            deliveryAddress: {
-                street: order.shippingAddress.street,
-                city: order.shippingAddress.city,
-                state: order.shippingAddress.state,
-                zipCode: order.shippingAddress.zipCode,
-                country: order.shippingAddress.country
-            },
+            deliveryAddress: shippingAddress,
             cost: calculateCost(dimensions), // Placeholder function
             createdAt: new Date(),
             updatedAt: new Date()

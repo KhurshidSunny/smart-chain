@@ -10,8 +10,6 @@ const app = express();
 
 app.use(express.json()); // Parse JSON bodies
 
-// Define allowed origins for CORS
-const allowedOrigins = ['http://localhost:5173', 'https://smart-chain.tasawuur.shop'];
 
 app.use(cors({
   origin: '*',  // Allows any origin

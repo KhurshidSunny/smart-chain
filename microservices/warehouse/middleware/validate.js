@@ -12,7 +12,14 @@ const schemas = {
       weight: Joi.number().min(0).required()
     }).required(),
     packedBy: Joi.string().required(),
-    qrCode: Joi.string().required() // QR code from order
+    shippingAddress: Joi.object({
+      addressId: Joi.string().optional(), // Optional IAM Address reference
+      street: Joi.string().required(),
+      city: Joi.string().required(),
+      state: Joi.string().required(),
+      zipCode: Joi.string().required(),
+      country: Joi.string().required()
+    }).required()
   }),
 
   updatePackage: Joi.object({

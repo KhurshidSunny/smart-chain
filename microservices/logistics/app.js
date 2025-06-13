@@ -3,9 +3,9 @@ const connectDB = require('./config/db');
 const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const trackingRoutes = require('./routes/trackingRoutes');
-const { eventHandlerController } = require('./controllers/events/eventHandlerController');
 require('dotenv').config();
 const cors = require('cors');
+const { handleOrderPacked } = require('./controllers/events/eventHandlerController');
 
 const app = express();
 
@@ -19,7 +19,7 @@ app.use(cors({
 connectDB();
 connectRabbitMQ().then(() => {
     const eventHandlers = {
-        'warehouse.order.packed': eventHandlerController.handleOrderPacked
+        'warehouse.order.packed': handleOrderPacked
     };
     subscribeToEvents(eventHandlers);
 });
