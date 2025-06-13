@@ -12,7 +12,6 @@ const shipmentSchema = new mongoose.Schema({
         enum: ['Created', 'Dispatched', 'InTransit', 'OutForDelivery', 'Delivered', 'Failed'],
         default: 'Created'
     },
-    qrCode: { type: String, required: true },
     dispatchDate: { type: Date },
     estimatedDeliveryDate: { type: Date },
     actualDeliveryDate: { type: Date },

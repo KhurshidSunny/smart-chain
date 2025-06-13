@@ -3,8 +3,7 @@ const { publishEvent } = require('../../services/eventService');
 
 const handleOrderPacked = async (message) => {
     try {
-        const { orderId, packageId, qrCode, dimensions, shippingAddress } = message;
-        console.log(message);
+        const { orderId, packageId, dimensions, shippingAddress } = message;
 
         const shipment = new Shipment({
             orderId,
@@ -13,7 +12,7 @@ const handleOrderPacked = async (message) => {
             trackingNumber: `TRK-${Date.now()}-${orderId}`,
             carrier: 'DefaultCarrier',
             serviceLevel: 'Standard',
-            status: 'created',
+            status: 'Created',
             deliveryAddress: shippingAddress,
             cost: calculateCost(dimensions), // Placeholder function
             createdAt: new Date(),

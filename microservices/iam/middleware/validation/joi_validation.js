@@ -37,9 +37,9 @@ module.exports.validateLogout = (req, res, next) => {
 module.exports.validateRegistration = (req, res, next) => {
     const schema = Joi.object({
         email: Joi.string().email().required(),
-        password: Joi.string().min(8).required()
-            .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$'))
-            .message('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+        password: Joi.string().min(8).required(),
+            // .pattern(new RegExp('^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$'))
+            // .message('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
         firstName: Joi.string().min(2).max(50).required(),
         lastName: Joi.string().min(2).max(50).required(),
         address: Joi.object({
