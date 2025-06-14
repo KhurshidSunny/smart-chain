@@ -12,3 +12,11 @@ export const reserveInventory = async ({ productId, quantity }) => {
 export const createOrder = async (orderData) => {
     return await apiClient.post(`${API_URLS.SALES}/orders`, orderData);
 };
+
+export const getOrders = async () => {
+    return await apiClient.get(`${API_URLS.SALES}/orders`);
+};
+
+export const getOrder = async (id) => {
+    return await apiClient.get(`${API_URLS.SALES}/orders/${id}`);
+};

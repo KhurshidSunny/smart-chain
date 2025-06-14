@@ -7,6 +7,7 @@ router.get('/', authenticate, authorize('users:read'), userController.getUsers);
 router.post('/', authenticate, authorize('users:write'), userController.createUser);
 router.put('/:userId', authenticate, authorize('users:write'), userController.updateUser);
 router.delete('/:userId', authenticate, authorize('users:write'), userController.deleteUser);
+router.get('/:userId', authenticate, authorize('users:read'), userController.getUserById)
 
 // Get the current logged in user
 router.get('/me', authenticate, userController.getCurrentUser);

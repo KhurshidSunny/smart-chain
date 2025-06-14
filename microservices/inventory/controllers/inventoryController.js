@@ -6,6 +6,54 @@ const InventoryTransactionModel = require('../models/inventoryTransactionModel')
 const ReservationModel = require('../models/reservationModel');
 
 /**
+ * Get inventory summary for dashboard
+ */
+exports.getInventorySummary = async (req, res) => {
+    try {
+        // Get all active products
+        const products = await Product.find({ active: true });
+
+        // Calculate summary statistics
+        const totalProducts = products.length;
+        const totalStock = products.reduce((sum, product) => sum + product.stockLevel, 0);
+
+        // Find low stock products
+        const lowStockProducts = products.filter(product =>
+            product.stockLevel <= product.reorderPoint
+        );
+        const lowStockCount = lowStockProducts.length;
+
+        // Prepare data for stock chart (top 10 products by stock level)
+        const chartData = products
+            .sort((a, b) => b.stockLevel - a.stockLevel)
+            .slice(0, 10)
+            .map(product => ({
+                name: product.name,
+                sku: product.sku,
+                stockLevel: product.stockLevel,
+                reorderPoint: product.reorderPoint
+            }));
+
+        res.json({
+            totalProducts,
+            totalStock,
+            lowStockCount,
+            products: chartData,
+            lowStockProducts: lowStockProducts.map(product => ({
+                _id: product._id,
+                name: product.name,
+                sku: product.sku,
+                stockLevel: product.stockLevel,
+                reorderPoint: product.reorderPoint
+            }))
+        });
+    } catch (err) {
+        console.error('Error fetching inventory summary:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+};
+
+/**
  * Get stock levels for all products with optional filtering
  */
 exports.getInventory = async (req, res) => {
@@ -117,13 +165,13 @@ exports.getInventoryTransactions = async (req, res) => {
         // Paginate results
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const transactions = await inventoryTransaction.find(filter)
+        const transactions = await InventoryTransactionModel.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit))
             .populate('productId', 'sku name');
 
-        const total = await inventoryTransaction.countDocuments(filter);
+        const total = await InventoryTransactionModel.countDocuments(filter);
 
         res.json({
             transactions,

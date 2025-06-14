@@ -4,6 +4,7 @@ const { publishOrderCreated } = require('./events/eventHandlerController');
 const generateOrderNumber = () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
 exports.createOrder = async (req, res) => {
+    console.log("hwllo")
     try {
         const { items, shippingAddress, notes } = req.body;
         const customerId = req.user.sub; // From JWT

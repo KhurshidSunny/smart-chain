@@ -46,11 +46,20 @@ function NavigationBar() {
                     {isAuthenticated ? (
                         <>
                             <Link to="/dashboard" className="hover:text-gray-200">Dashboard</Link>
+                            {[ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN].includes(user?.role) && (
+                                <Link to="/orders" className="hover:text-gray-200">Orders</Link>
+                            )}
                             {[ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(user?.role) && (
                                 <Link to="/orders/create" className="hover:text-gray-200">Create Order</Link>
                             )}
                             {user?.role === ROLES.ADMIN && (
                                 <Link to="/admin" className="hover:text-gray-200">Admin</Link>
+                            )}
+                            {[ROLES.INVENTORY_MANAGER, ROLES.ADMIN].includes(user?.role) && (
+                                <Link to="/inventory" className="hover:text-gray-200">Inventory</Link>
+                            )}
+                            {[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN].includes(user?.role) && (
+                                <Link to="/warehouse" className="hover:text-gray-200">Warehouse</Link>
                             )}
                             <button
                                 onClick={handleLogout}

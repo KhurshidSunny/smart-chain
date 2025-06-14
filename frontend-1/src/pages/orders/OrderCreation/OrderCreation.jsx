@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { ROLES } from '../../../utils/constants';
@@ -14,10 +14,12 @@ function OrderCreation() {
     const [selectedItems, setSelectedItems] = useState([]);
     const [selectedAddress, setSelectedAddress] = useState(null);
 
-    // Restrict access to customers and sales managers
-    if (!isAuthenticated || ![ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(user?.role)) {
-        navigate('/login');
-    }
+    useEffect(() => {
+        // Check if user is authenticated and has the correct role
+        if (!isAuthenticated || ![ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(user?.role)) {
+            navigate('/login');
+        }
+    }, [isAuthenticated, user?.role, navigate]);
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">
