@@ -10,6 +10,9 @@ import ProductCatalog from '../pages/inventory/ProductCatalog/ProductCatalog';
 import PickingDashboard from '../pages/warehouse/PickingDashboard/PickingDashboard';
 import PickingListDetail from '../pages/warehouse/PickingListDetail/PickingListDetail';
 import PackingStation from '../pages/warehouse/PackingStation/PackingStation';
+import ShipmentDashboard from '../pages/logistics/ShipmentDashboard/ShipmentDashboard';
+import ShipmentDetail from '../pages/logistics/ShipmentDetail/ShipmentDetail';
+import PublicTracking from '../pages/logistics/PublicTracking/PublicTracking';
 import ProtectedRoute from './ProtectedRoute';
 import NavigationBar from '../components/common/Navigation/NavigationBar';
 import { ROLES } from '../utils/constants';
@@ -97,6 +100,23 @@ function AppRoutes() {
                         </ProtectedRoute>
                     }
                 />
+                <Route
+                    path="/logistics"
+                    element={
+                        <ProtectedRoute allowedRoles={[ROLES.LOGISTICS_MANAGER, ROLES.ADMIN]}>
+                            <ShipmentDashboard />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/logistics/shipments/:id"
+                    element={
+                        <ProtectedRoute allowedRoles={[ROLES.LOGISTICS_MANAGER, ROLES.ADMIN]}>
+                            <ShipmentDetail />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route path="/tracking" element={<PublicTracking />} />
                 <Route path="/" element={<div className="text-center p-4">Welcome to Smart-Chain</div>} />
             </Routes>
         </>

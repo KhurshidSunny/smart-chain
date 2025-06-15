@@ -50,11 +50,12 @@ function PickingDashboard() {
     const handleAssign = async (pickingListId, staffId) => {
         if (user?.role !== ROLES.WAREHOUSE_MANAGER && user?.role !== ROLES.ADMIN) return;
         try {
-            await assignPickingList(pickingListId, { assignedTo: staffId });
-            setPickingLists(pickingLists.map((list) =>
+            const res = await assignPickingList(pickingListId, { assignedTo: staffId });
+            setPickingLists(pickingLists.pickingLists.map((list) =>
                 list._id === pickingListId ? { ...list, assignedTo: staffId } : list
             ));
         } catch (err) {
+            console.log(err)
             setError(err.response?.data?.message || 'Failed to assign picking list');
         }
     };

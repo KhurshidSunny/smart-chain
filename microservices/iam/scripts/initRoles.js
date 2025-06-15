@@ -21,6 +21,7 @@ const predefinedRoles = [
         name: 'warehouse_manager',
         description: 'Oversees warehouse operations, staff, inventory accuracy, and order fulfillment.',
         permissions: [
+            'users:read',
             'orders:read',
             'inventory:read', 'inventory:write',
             'warehouse:read', 'warehouse:write',

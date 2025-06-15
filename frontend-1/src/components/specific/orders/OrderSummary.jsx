@@ -10,7 +10,6 @@ const validationSchema = Yup.object({
 });
 
 function OrderSummary({ selectedItems, selectedAddress }) {
-    console.log(selectedItems)
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { user } = useAuthStore();

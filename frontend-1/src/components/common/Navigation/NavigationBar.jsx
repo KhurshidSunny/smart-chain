@@ -61,6 +61,9 @@ function NavigationBar() {
                             {[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN].includes(user?.role) && (
                                 <Link to="/warehouse" className="hover:text-gray-200">Warehouse</Link>
                             )}
+                            {[ROLES.LOGISTICS_MANAGER, ROLES.ADMIN].includes(user?.role) && (
+                                <Link to="/logistics" className="hover:text-gray-200">Logistics</Link>
+                            )}
                             <button
                                 onClick={handleLogout}
                                 className="hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"

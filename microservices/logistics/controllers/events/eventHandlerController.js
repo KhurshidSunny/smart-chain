@@ -1,4 +1,5 @@
 const Shipment = require('../../models/shipmentModel');
+const TrackingEvent = require('../../models/trackingEventModel');
 const { publishEvent } = require('../../services/eventService');
 
 const handleOrderPacked = async (message) => {
@@ -27,6 +28,15 @@ const handleOrderPacked = async (message) => {
             orderId,
             packageId
         });
+
+        // Create tracking event with "Created Status"
+        const trkEvt = await new TrackingEvent({
+            shipmentId: shipment._id,
+            status: 'Created',
+            location: 'N/A',
+        })
+
+        await trkEvt.save()
     } catch (err) {
         console.error('Error handling OrderPacked:', err);
     }
