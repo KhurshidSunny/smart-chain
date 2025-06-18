@@ -31,7 +31,7 @@ function PackingStation() {
         const fetchPickingLists = async () => {
             try {
                 const response = await getPickingLists({ status: 'Completed' });
-                setPickingLists(response.data);
+                setPickingLists(response.data?.pickingLists || []);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load picking lists');
             }
@@ -51,9 +51,11 @@ function PackingStation() {
                     weight: packageData.weight,
                 },
                 shippingAddress: selectedList.items[0].shippingAddress,
+                packedBy: user.id,
             });
             setSelectedList({ ...selectedList, package: response.data });
         } catch (err) {
+            console.log(err)
             setError(err.response?.data?.message || 'Failed to create package');
         }
     };

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { ROLES } from '../../../utils/constants';
-import { getPickingLists, assignPickingList } from '../../../services/warehouseService';
+import { getPickingLists, assignPickingList, updatePickingListStatus } from '../../../services/warehouseService';
 import { getWarehouseStaff } from '../../../services/userService';
 import DataTable from '../../../components/common/DataDisplay/DataTable';
 
@@ -26,7 +26,7 @@ function PickingDashboard() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch picking lists
+                // Fetch picking lists (backend will filter for warehouse staff)
                 const pickingResponse = await getPickingLists();
                 setPickingLists(pickingResponse.data);
 
@@ -50,50 +50,98 @@ function PickingDashboard() {
     const handleAssign = async (pickingListId, staffId) => {
         if (user?.role !== ROLES.WAREHOUSE_MANAGER && user?.role !== ROLES.ADMIN) return;
         try {
-            const res = await assignPickingList(pickingListId, { assignedTo: staffId });
-            setPickingLists(pickingLists.pickingLists.map((list) =>
-                list._id === pickingListId ? { ...list, assignedTo: staffId } : list
-            ));
+            await assignPickingList(pickingListId, { assignedTo: staffId });
+            // Refresh the data
+            const pickingResponse = await getPickingLists();
+            setPickingLists(pickingResponse.data);
         } catch (err) {
-            console.log(err)
+            console.log(err);
             setError(err.response?.data?.message || 'Failed to assign picking list');
         }
     };
 
+    const handleStatusChange = async (pickingListId, newStatus) => {
+        try {
+            await updatePickingListStatus(pickingListId, { status: newStatus });
+            // Update local state
+            const pickingListsArray = pickingLists.pickingLists || pickingLists;
+            const updatedLists = pickingListsArray.map((list) =>
+                list._id === pickingListId ? { ...list, status: newStatus } : list
+            );
+
+            if (pickingLists.pickingLists) {
+                setPickingLists({ ...pickingLists, pickingLists: updatedLists });
+            } else {
+                setPickingLists(updatedLists);
+            }
+        } catch (err) {
+            console.log(err);
+            setError(err.response?.data?.message || 'Failed to update status');
+        }
+    };
+
     // Helper function to get staff member name by ID
-    const getStaffName = (staffId) => {
-        const staff = warehouseStaff.find(s => s.id === staffId);
-        return staff ? `${staff.firstName} ${staff.lastName}` : 'Unknown Staff';
+    const getStaffName = (staffMember) => {
+        if (staffMember && staffMember.firstName && staffMember.lastName) {
+            return `${staffMember.firstName} ${staffMember.lastName}`;
+        }
+        return 'Unknown Staff';
     };
 
     const columns = [
         { key: 'orderNumber', header: 'Order Number' },
-        { key: 'status', header: 'Status' },
+        {
+            key: 'status',
+            header: 'Status',
+            render: (list) => {
+                // Only warehouse staff can change status of their assigned lists
+                if (user?.role === ROLES.WAREHOUSE_STAFF) {
+                    return (
+                        <select
+                            value={list.status}
+                            onChange={(e) => handleStatusChange(list._id, e.target.value)}
+                            className="p-1 border rounded"
+                            disabled={loading}
+                        >
+                            <option value="Pending">Pending</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    );
+                }
+                return list.status;
+            }
+        },
         {
             key: 'items',
             header: 'Items',
             render: (list) => list.items.reduce((sum, item) => sum + item.quantity, 0),
         },
-        {
-            key: 'assignedTo',
-            header: 'Assigned To',
-            render: (list) =>
-                user?.role === ROLES.WAREHOUSE_MANAGER || user?.role === ROLES.ADMIN ? (
+
+
+        // Conditionally include assignedTo column
+        ...(user?.role === ROLES.WAREHOUSE_MANAGER || user?.role === ROLES.ADMIN
+            ? [{
+                key: 'assignedTodo',
+                header: 'Assigned To',
+                render: (list) => (
                     <select
                         onChange={(e) => handleAssign(list._id, e.target.value)}
-                        defaultValue={list.assignedTo || ''}
+                        value={list.assignedTo?._id || list.assignedTo || ''}
                         className="p-1 border rounded"
                         disabled={loading}
                     >
                         <option value="">Unassigned</option>
                         {warehouseStaff.map((staff) => (
-                            <option key={staff.id} value={staff.id}>
+                            <option key={staff.id || staff._id} value={staff.id || staff._id}>
                                 {staff.firstName} {staff.lastName}
                             </option>
                         ))}
                     </select>
-                ) : list.assignedTo ? getStaffName(list.assignedTo) : 'Unassigned',
-        },
+                )
+            }]
+            : []),
         {
             key: 'actions',
             header: 'Actions',
@@ -118,19 +166,33 @@ function PickingDashboard() {
         );
     }
 
+    const pickingListsArray = pickingLists.pickingLists || pickingLists;
+    const isWarehouseStaff = user?.role === ROLES.WAREHOUSE_STAFF;
+
     return (
         <div className="min-h-screen bg-gray-100 p-6">
-            <h1 className="text-3xl font-bold text-primary mb-6">Picking Dashboard</h1>
+            <h1 className="text-3xl font-bold text-primary mb-6">
+                {isWarehouseStaff ? 'My Picking Tasks' : 'Picking Dashboard'}
+            </h1>
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
                     {error}
                 </div>
             )}
             <div className="bg-white p-6 rounded-lg shadow-md">
-                <DataTable
-                    data={pickingLists.pickingLists || pickingLists}
-                    columns={columns}
-                />
+                {pickingListsArray.length === 0 ? (
+                    <div className="text-center text-gray-500 py-8">
+                        {isWarehouseStaff
+                            ? 'No picking tasks assigned to you yet.'
+                            : 'No picking lists available.'
+                        }
+                    </div>
+                ) : (
+                    <DataTable
+                        data={pickingListsArray}
+                        columns={columns}
+                    />
+                )}
             </div>
         </div>
     );

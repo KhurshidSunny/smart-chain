@@ -18,6 +18,9 @@ export const updatePickedItem = async (pickingListId, itemId, data) => {
     return await apiClient.put(`${API_URLS.WAREHOUSE}/picking-lists/${pickingListId}/items/${itemId}`, data);
 };
 
+// function for updating picking list status
+export const updatePickingListStatus = async (id, data) => await apiClient.put(`${API_URLS.WAREHOUSE}/picking-lists/${id}/status`, data);
+
 export const createPackage = async (packageData) => {
     return await apiClient.post(`${API_URLS.WAREHOUSE}/packages`, packageData);
 };
