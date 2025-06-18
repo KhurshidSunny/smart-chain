@@ -4,6 +4,8 @@ const { reservationController, adjustmentController, productController, inventor
 const authMiddleware = require('../middleware/authMiddleware');
 const { validateReservation, validateAdjustment } = require('../middleware/validate');
 
+// Summary route - should come before the general inventory route
+router.get('/summary', authMiddleware, inventoryController.getInventorySummary);
 router.get('/transactions', authMiddleware, adjustmentController.getTransactions);
 router.get('/', authMiddleware, inventoryController.getInventory);
 router.get('/:productId', authMiddleware, inventoryController.getProductInventory);

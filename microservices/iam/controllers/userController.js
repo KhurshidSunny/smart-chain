@@ -4,27 +4,93 @@ const Address = require('../models/addressModel');
 
 /**
  * Gets a list of all users in the system with basic information
+ * Supports filtering by role name or role ID
  * Requires 'users:read' permission
+ * 
+ * Query parameters:
+ * - role: Filter by role name (case-insensitive)
+ * - roleId: Filter by role ID
+ * - isActive: Filter by active status (true/false)
  */
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find({}).populate('roleId', 'name description');
+        const { role, roleId, isActive } = req.query;
+
+        // Build the filter object
+        let filter = {};
+
+        // Filter by active status if provided
+        if (isActive !== undefined) {
+            filter.isActive = isActive === 'true';
+        }
+
+        // If role name is provided, find the role ID first
+        if (role) {
+            const roleDoc = await Role.findOne({
+                name: { $regex: new RegExp(role, 'i') } // Case-insensitive search
+            });
+
+            if (!roleDoc) {
+                return res.status(404).json({
+                    message: `Role '${role}' not found`
+                });
+            }
+
+            filter.roleId = roleDoc._id;
+        }
+
+        // If roleId is provided directly, use it
+        if (roleId) {
+            filter.roleId = roleId;
+        }
+
+        // Find users with the applied filters
+        const users = await User.find(filter).populate('roleId', 'name description');
+
         const userList = users.map(user => ({
             id: user._id,
             email: user.email,
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.roleId.name,
+            roleDescription: user.roleId.description,
             isActive: user.isActive,
             lastLogin: user.lastLogin,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         }));
-        res.json(userList);
+
+        res.json({
+            total: userList.length,
+            filters: {
+                role: role || null,
+                roleId: roleId || null,
+                isActive: isActive || null
+            },
+            users: userList
+        });
+
     } catch (err) {
+        console.error('Error fetching users:', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.getUserById = async (req, res) => {
+    try {
+        const { userId } = req.params
+        const user = await User.findById(userId)
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const { firstName, lastName, email } = user
+
+
+        res.json({ firstName, lastName, email })
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: 'Server error' });
+    }
+}
 
 /**
  * Fetches the current authenticated user's profile and information
@@ -122,7 +188,7 @@ exports.updateUser = async (req, res) => {
         const { userId } = req.params;
         const { email, firstName, lastName, roleName, isActive } = req.body;
 
-        const user = await User.findById(userId);
+        const user = await User.findById(userId)
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (roleName) {

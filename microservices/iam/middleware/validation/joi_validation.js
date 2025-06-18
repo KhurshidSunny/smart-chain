@@ -20,7 +20,6 @@ module.exports.validateLogin = (req, res, next) => {
  * Middleware to validate logout request body
  */
 module.exports.validateLogout = (req, res, next) => {
-    console.log(req.body)
     const schema = Joi.object({
         refreshToken: Joi.string().required(),
     });
@@ -42,6 +41,7 @@ module.exports.validateRegistration = (req, res, next) => {
             // .message('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
         firstName: Joi.string().min(2).max(50).required(),
         lastName: Joi.string().min(2).max(50).required(),
+        username: Joi.string(),
         address: Joi.object({
             street: Joi.string().min(5).max(100).required(),
             city: Joi.string().min(2).max(50).required(),
