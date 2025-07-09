@@ -33,3 +33,19 @@ export const getWarehouseStaff = async () => {
         isActive: true
     });
 }
+
+export const getUserById = async (userId) => {
+    return await apiClient.get(`${API_URLS.IAM}/users/${userId}`);
+};
+
+export const createUser = async (userData) => {
+    return await apiClient.post(`${API_URLS.IAM}/users`, userData);
+};
+
+export const updateUser = async (userId, userData) => {
+    return await apiClient.put(`${API_URLS.IAM}/users/${userId}`, userData);
+};
+
+export const deleteUser = async (userId) => {
+    return await apiClient.delete(`${API_URLS.IAM}/users/${userId}`);
+};
