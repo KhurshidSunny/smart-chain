@@ -54,7 +54,7 @@ function AdminDashboard() {
 
   const fetchUsers = async () => {
     try {
-      const response = await getUsers({ isActive: true });
+      const response = await getUsers();
       const usersData = response.data.users || response.data || [];
 
       const transformedUsers = usersData.map(user => ({
