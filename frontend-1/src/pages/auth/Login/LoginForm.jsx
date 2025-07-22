@@ -33,7 +33,7 @@ function LoginForm() {
 
     return (
         <Formik
-            initialValues={{ email: 'admin@test.com', password: '12345678' }}
+            initialValues={{ email: '', password: '' }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
         >

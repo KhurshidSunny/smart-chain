@@ -38,11 +38,11 @@ function RegistrationForm() {
     return (
         <Formik
             initialValues={{
-                firstName: 'Demo',
-                lastName: 'Khan',
-                email: 'demo@test.com',
-                password: '12345678',
-                confirmPassword: '12345678',
+                firstName: '',
+                lastName: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
             }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}

@@ -4,7 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 
 function App() {
   return (
-    <div className='bg-gray-100 text-gray-900'>
+    <div className=''>
       <BrowserRouter>
         <AppRoutes />;
       </BrowserRouter>

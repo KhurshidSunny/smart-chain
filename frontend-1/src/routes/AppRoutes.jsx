@@ -14,21 +14,26 @@ import ShipmentDashboard from '../pages/logistics/ShipmentDashboard/ShipmentDash
 import ShipmentDetail from '../pages/logistics/ShipmentDetail/ShipmentDetail';
 import PublicTracking from '../pages/logistics/PublicTracking/PublicTracking';
 import ProtectedRoute from './ProtectedRoute';
-import NavigationBar from '../components/common/Navigation/NavigationBar';
+import MainLayout from '../components/common/Layout/MainLayout';
 import AdminDashboard from '../pages/admin/AdminDashboard/AdminDashboard';
-
-import { ROLES } from '../utils/constants';
 import Index from '../pages/Index';
+import { ROLES } from '../utils/constants';
 
 function AppRoutes() {
   return (
-    <>
-      <NavigationBar />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Registration />} />
+    <Routes>
+      {/* Public routes without navbar/sidebar */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Registration />} />
+      <Route path="/tracking" element={<PublicTracking />} />
+
+      {/* All other routes with MainLayout (navbar + sidebar) */}
+      <Route path="/" element={<MainLayout />}>
+        <Route index element={<Index />} />
+
+        {/* Protected routes */}
         <Route
-          path="/dashboard"
+          path="dashboard"
           element={
             <ProtectedRoute>
               <MainDashboard />
@@ -36,7 +41,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/orders/create"
+          path="orders/create"
           element={
             <ProtectedRoute allowedRoles={[ROLES.CUSTOMER, ROLES.SALES_MANAGER]}>
               <OrderCreation />
@@ -44,7 +49,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/orders"
+          path="orders"
           element={
             <ProtectedRoute
               allowedRoles={[ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN]}
@@ -54,7 +59,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/orders/:id"
+          path="orders/:id"
           element={
             <ProtectedRoute
               allowedRoles={[ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN]}
@@ -64,7 +69,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/inventory"
+          path="inventory"
           element={
             <ProtectedRoute allowedRoles={[ROLES.INVENTORY_MANAGER, ROLES.ADMIN]}>
               <InventoryDashboard />
@@ -72,7 +77,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/inventory/products"
+          path="inventory/products"
           element={
             <ProtectedRoute allowedRoles={[ROLES.INVENTORY_MANAGER, ROLES.ADMIN]}>
               <ProductCatalog />
@@ -80,7 +85,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/warehouse"
+          path="warehouse"
           element={
             <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
               <PickingDashboard />
@@ -88,7 +93,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/warehouse/picking/:id"
+          path="warehouse/picking/:id"
           element={
             <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
               <PickingListDetail />
@@ -96,7 +101,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/warehouse/packing"
+          path="warehouse/packing"
           element={
             <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
               <PackingStation />
@@ -104,7 +109,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/logistics"
+          path="logistics"
           element={
             <ProtectedRoute allowedRoles={[ROLES.LOGISTICS_MANAGER, ROLES.ADMIN]}>
               <ShipmentDashboard />
@@ -112,7 +117,7 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/logistics/shipments/:id"
+          path="logistics/shipments/:id"
           element={
             <ProtectedRoute allowedRoles={[ROLES.LOGISTICS_MANAGER, ROLES.ADMIN]}>
               <ShipmentDetail />
@@ -120,17 +125,15 @@ function AppRoutes() {
           }
         />
         <Route
-          path="/admin"
+          path="admin"
           element={
             <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
               <AdminDashboard />
             </ProtectedRoute>
           }
         />
-        <Route path="/tracking" element={<PublicTracking />} />
-        <Route path="/" element={<Index />} />
-      </Routes>
-    </>
+      </Route>
+    </Routes>
   );
 }
 
