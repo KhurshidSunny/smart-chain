@@ -24,7 +24,7 @@ function NavigationBar() {
     };
 
     return (
-        <nav className="bg-primary text-white p-4">
+        <nav className="bg-primary text-white p-4 sticky top-0 z-50">
             <div className="container mx-auto flex justify-between items-center">
                 <Link to="/" className="text-xl font-bold">Smart-Chain</Link>
                 <div className="md:hidden">

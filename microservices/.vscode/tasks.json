@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start IAM",
+            "type": "shell",
+            "command": "npx nodemon app.js",
+            "options": {
+                "cwd": "${workspaceFolder}/iam"
+            },
+            "presentation": {
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Inventory",
+            "type": "shell",
+            "command": "npx nodemon app.js",
+            "options": {
+                "cwd": "${workspaceFolder}/inventory"
+            },
+            "presentation": {
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Logistics",
+            "type": "shell",
+            "command": "npx nodemon app.js",
+            "options": {
+                "cwd": "${workspaceFolder}/logistics"
+            },
+            "presentation": {
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Sales",
+            "type": "shell",
+            "command": "npx nodemon app.js",
+            "options": {
+                "cwd": "${workspaceFolder}/sales"
+            },
+            "presentation": {
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Start Warehouse",
+            "type": "shell",
+            "command": "npx nodemon app.js",
+            "options": {
+                "cwd": "${workspaceFolder}/warehouse"
+            },
+            "presentation": {
+                "panel": "new"
+            }
+        }
+    ]
+}
