@@ -35,6 +35,20 @@ function OrderDetail() {
     }, [id]);
 
     const downloadQRCode = () => {
+        if (!order) return;
+
+        // Option 1: If you have a stored Base64 QR code, use it directly
+        if (order.qrCode && order.qrCode.startsWith('data:image/')) {
+            const link = document.createElement('a');
+            link.download = `order-${order.orderNumber}-qrcode.png`;
+            link.href = order.qrCode;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return;
+        }
+
+        // Option 2: Generate from SVG (fallback)
         if (!qrRef.current) {
             console.error('QR Code reference not found');
             return;
@@ -46,39 +60,28 @@ function OrderDetail() {
             return;
         }
 
-        // Clone the SVG to avoid modifying the original
         const svgClone = svg.cloneNode(true);
-
-        // Set explicit dimensions
         svgClone.setAttribute('width', '128');
         svgClone.setAttribute('height', '128');
 
-        // Create a canvas with extra padding
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const padding = 10; // White padding around the QR code
+        const padding = 10;
         canvas.width = 128 + (padding * 2);
         canvas.height = 128 + (padding * 2);
 
-        // Set white background
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Convert SVG to data URL
         const svgData = new XMLSerializer().serializeToString(svgClone);
         const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(svgData);
 
-        // Create image and draw to canvas with padding
         const img = new Image();
         img.onload = () => {
             ctx.drawImage(img, padding, padding, 128, 128);
-
-            // Create download link
             const link = document.createElement('a');
             link.download = `order-${order.orderNumber}-qrcode.png`;
             link.href = canvas.toDataURL('image/png');
-
-            // Trigger download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -128,15 +131,28 @@ function OrderDetail() {
                 <div>
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">QR Code</h2>
                     <div className="flex flex-col items-center space-y-4">
-                        <div ref={qrRef} className="p-8 bg-white border-2 border-gray-200 rounded-lg">
-                            <QRCodeSVG
-                                value={order.qrCode}
-                                size={128}
-                                bgColor="#ffffff"
-                                fgColor="#000000"
-                                level="M"
-                            />
-                        </div>
+                        {/* Option 1: Display stored Base64 image if available */}
+                        {order.qrCode && order.qrCode.startsWith('data:image/') ? (
+                            <div className="p-8 bg-white border-2 border-gray-200 rounded-lg">
+                                <img
+                                    src={order.qrCode}
+                                    alt="Order QR Code"
+                                    className="w-32 h-32"
+                                />
+                            </div>
+                        ) : (
+                            /* Option 2: Generate QR code on the fly */
+                            <div ref={qrRef} className="p-8 bg-white border-2 border-gray-200 rounded-lg">
+                                <QRCodeSVG
+                                    value={order._id || id} // Use the actual order ID, not the stored qrCode
+                                    size={128}
+                                    bgColor="#ffffff"
+                                    fgColor="#000000"
+                                    level="M"
+                                />
+                            </div>
+                        )}
+
                         <button
                             onClick={downloadQRCode}
                             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"

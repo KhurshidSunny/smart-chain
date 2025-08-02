@@ -171,30 +171,6 @@ function ShipmentDetail() {
                         )}
                     </div>
                 </div>
-                {shipment.status === 'Created' && (
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-700 mb-2">QR Code Scanner for Dispatch</h2>
-                        {scanning ? (
-                            <div className="flex flex-col items-center">
-                                <video ref={videoRef} className="w-64 h-64 mb-2" />
-                                <canvas ref={canvasRef} className="hidden" width="640" height="480" />
-                                <button
-                                    onClick={stopScanner}
-                                    className="bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600"
-                                >
-                                    Stop Scanner
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={startScanner}
-                                className="bg-primary text-white py-2 px-4 rounded-md hover:bg-blue-700"
-                            >
-                                Start QR Code Scanner
-                            </button>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );

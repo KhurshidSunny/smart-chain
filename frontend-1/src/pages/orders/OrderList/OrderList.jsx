@@ -61,7 +61,7 @@ function OrderList() {
 
                 setOrders(ordersWithCustomers);
             } catch (err) {
-                setError(err.response?.data?.message || 'Failed to load orders');
+                setError(err.response?.data?.message);
             } finally {
                 setLoading(false);
             }

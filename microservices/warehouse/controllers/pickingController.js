@@ -9,7 +9,7 @@ const listPickingLists = async (req, res) => {
 
     // If user is warehouse staff, only show picking lists assigned to them
     if (req.user.role === 'warehouse_staff') {
-      query.assignedTo = req.user.userId || req.user.id;
+      query.assignedTo = req.user.sub || req.user.id;
     }
 
     const pickingLists = await PickingList.find(query)
@@ -17,6 +17,8 @@ const listPickingLists = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit)
       .exec();
+
+    console.log(query)
 
     const count = await PickingList.countDocuments(query);
 
@@ -38,7 +40,7 @@ const getPickingList = async (req, res) => {
 
     // If user is warehouse staff, only allow access to their assigned picking lists
     if (req.user.role === 'warehouse_staff') {
-      query.assignedTo = req.user.userId || req.user.id;
+      query.assignedTo = req.user.sub || req.user.id;
     }
 
     const pickingList = await PickingList.findOne(query)
@@ -63,7 +65,7 @@ const updatePickingListStatus = async (req, res) => {
 
     // If user is warehouse staff, only allow updating their assigned picking lists
     if (req.user.role === 'warehouse_staff') {
-      query.assignedTo = req.user.userId || req.user.id;
+      query.assignedTo = req.user.sub || req.user.id;
     }
 
     const pickingList = await PickingList.findOne(query);
@@ -78,7 +80,7 @@ const updatePickingListStatus = async (req, res) => {
         pickingListId: pickingList._id,
         orderId: pickingList.orderId,
         pickedItems: pickingList.items,
-        completedBy: req.user.userId || req.user.id
+        completedBy: req.user.sub || req.user.id
       });
     }
 
@@ -122,7 +124,7 @@ const updatePickedQuantity = async (req, res) => {
 
     // If user is warehouse staff, only allow updating their assigned picking lists
     if (req.user.role === 'warehouse_staff') {
-      query.assignedTo = req.user.userId || req.user.id;
+      query.assignedTo = req.user.sub || req.user.id;
     }
 
     const pickingList = await PickingList.findOne(query);

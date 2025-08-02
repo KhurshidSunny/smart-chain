@@ -50,7 +50,7 @@ const createShipment = [
                 notes
             });
             await shipment.save();
-            await publishEvent('ShipmentCreated', { shipmentId: shipment._id, orderId, packageId });
+            await publishEvent('logistics.shipemnt.created', { shipmentId: shipment._id, orderId, packageId });
             res.status(201).json(shipment);
         } catch (error) {
             res.status(500).json({ message: 'Error creating shipment', error: error.message });
@@ -90,7 +90,7 @@ const updateShipmentStatus = [
             shipment.status = req.body.status;
             if (req.body.status === 'Dispatched') {
                 shipment.dispatchDate = new Date();
-                await publishEvent('ShipmentDispatched', {
+                await publishEvent('logistics.shipment.dispatched', {
                     shipmentId: shipment._id,
                     orderId: shipment.orderId,
                     dispatchDate: shipment.dispatchDate,
@@ -98,7 +98,7 @@ const updateShipmentStatus = [
                 });
             } else if (req.body.status === 'Delivered') {
                 shipment.actualDeliveryDate = new Date();
-                await publishEvent('OrderDelivered', {
+                await publishEvent('logistics.shipment.delivered', {
                     shipmentId: shipment._id,
                     orderId: shipment.orderId,
                     deliveryDate: shipment.actualDeliveryDate
@@ -124,7 +124,7 @@ const dispatchShipment = async (req, res) => {
         shipment.status = 'Dispatched';
         shipment.dispatchDate = new Date();
         await shipment.save();
-        await publishEvent('ShipmentDispatched', {
+        await publishEvent('logistics.shipment.dispatched', {
             shipmentId: shipment._id,
             orderId: shipment.orderId,
             dispatchDate: shipment.dispatchDate,
@@ -148,7 +148,7 @@ const deliverShipment = async (req, res) => {
         shipment.status = 'Delivered';
         shipment.actualDeliveryDate = new Date();
         await shipment.save();
-        await publishEvent('OrderDelivered', {
+        await publishEvent('logistics.shipment.delivered', {
             shipmentId: shipment._id,
             orderId: shipment.orderId,
             deliveryDate: shipment.actualDeliveryDate

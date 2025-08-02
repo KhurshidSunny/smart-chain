@@ -29,9 +29,6 @@ function NavigationBar({ onToggleSidebar }) {
         }
     };
 
-    useEffect(() => {
-        console.log(user)
-    }, [])
 
     return (
         <nav className="bg-primary text-white p-4 sticky top-0 z-50 shadow-lg">

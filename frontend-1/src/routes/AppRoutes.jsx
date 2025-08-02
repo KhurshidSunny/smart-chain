@@ -15,9 +15,9 @@ import ShipmentDetail from '../pages/logistics/ShipmentDetail/ShipmentDetail';
 import PublicTracking from '../pages/logistics/PublicTracking/PublicTracking';
 import ProtectedRoute from './ProtectedRoute';
 import MainLayout from '../components/common/Layout/MainLayout';
-import AdminDashboard from '../pages/admin/AdminDashboard/AdminDashboard';
 import Index from '../pages/Index';
 import { ROLES } from '../utils/constants';
+import Users from '../pages/admin/Users/Users';
 
 function AppRoutes() {
   return (
@@ -28,8 +28,8 @@ function AppRoutes() {
       <Route path="/tracking" element={<PublicTracking />} />
 
       {/* All other routes with MainLayout (navbar + sidebar) */}
+      <Route index element={<Index />} />
       <Route path="/" element={<MainLayout />}>
-        <Route index element={<Index />} />
 
         {/* Protected routes */}
         <Route
@@ -85,14 +85,6 @@ function AppRoutes() {
           }
         />
         <Route
-          path="warehouse"
-          element={
-            <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
-              <PickingDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
           path="warehouse/picking/:id"
           element={
             <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
@@ -100,8 +92,16 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
+          <Route
+            path="warehouse/picking-lists"
+            element={
+              <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
+                <PickingDashboard />
+              </ProtectedRoute>
+            }
+          />
         <Route
-          path="warehouse/packing"
+          path="warehouse/packing-lists"
           element={
             <ProtectedRoute allowedRoles={[ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN]}>
               <PackingStation />
@@ -125,10 +125,10 @@ function AppRoutes() {
           }
         />
         <Route
-          path="admin"
+          path="users"
           element={
             <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-              <AdminDashboard />
+              <Users />
             </ProtectedRoute>
           }
         />

@@ -1,4 +1,4 @@
-// src/pages/home/MainDashboard.jsx
+// src/pages/dashboard/MainDashboard/MainDashboard.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
@@ -6,6 +6,7 @@ import { getOrders } from '../../../services/orderService';
 import { getInventorySummary } from '../../../services/inventoryService';
 import { getShipments } from '../../../services/logisticsService';
 import { getPickingLists } from '../../../services/warehouseService';
+import CustomerProfile from '../../../components/specific/customer/Profile';
 
 const MainDashboard = () => {
     const { user, isAuthenticated } = useAuthStore();
@@ -55,7 +56,6 @@ const MainDashboard = () => {
                 const combinedMetrics = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
                 setMetrics((prev) => ({ ...prev, ...combinedMetrics }));
             } catch (err) {
-                setError('Failed to load metrics. Please try again.');
                 console.error('Error fetching metrics:', err);
             } finally {
                 setLoading(false);
@@ -134,44 +134,56 @@ const MainDashboard = () => {
         };
 
         return (
-            <div>
-                <h2 className="text-3xl font-bold text-gray-800 mb-4">
-                    Welcome, {user.firstName} ({role})
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    {role === 'admin' || role === 'sales_manager' || role === 'customer' ? (
-                        <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-lg font-semibold">Active Orders</h3>
-                            <p className="text-2xl">{loading ? 'Loading...' : metrics.activeOrders}</p>
-                        </div>
-                    ) : null}
-                    {role === 'admin' || role === 'inventory_manager' ? (
-                        <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-lg font-semibold">Low Stock Items</h3>
-                            <p className="text-2xl">{loading ? 'Loading...' : metrics.lowStockItems}</p>
-                        </div>
-                    ) : null}
-                    {role === 'admin' || role === 'logistics_manager' ? (
-                        <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-lg font-semibold">Active Shipments</h3>
-                            <p className="text-2xl">{loading ? 'Loading...' : metrics.activeShipments}</p>
-                        </div>
-                    ) : null}
-                    {role === 'admin' || role === 'warehouse_manager' || role === 'warehouse_staff' ? (
-                        <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-lg font-semibold">Pending Picking Lists</h3>
-                            <p className="text-2xl">{loading ? 'Loading...' : metrics.pendingPickingLists}</p>
-                        </div>
-                    ) : null}
+            <div className="space-y-8">
+                {/* Welcome Header */}
+                <div>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-4">
+                        Welcome, {user.firstName} ({role})
+                    </h2>
+                    
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        {role === 'admin' || role === 'sales_manager' || role === 'customer' ? (
+                            <div className="bg-white p-4 rounded-lg shadow-md">
+                                <h3 className="text-lg font-semibold">Active Orders</h3>
+                                <p className="text-2xl">{loading ? 'Loading...' : metrics.activeOrders}</p>
+                            </div>
+                        ) : null}
+                        {role === 'admin' || role === 'inventory_manager' ? (
+                            <div className="bg-white p-4 rounded-lg shadow-md">
+                                <h3 className="text-lg font-semibold">Low Stock Items</h3>
+                                <p className="text-2xl">{loading ? 'Loading...' : metrics.lowStockItems}</p>
+                            </div>
+                        ) : null}
+                        {role === 'admin' || role === 'logistics_manager' ? (
+                            <div className="bg-white p-4 rounded-lg shadow-md">
+                                <h3 className="text-lg font-semibold">Active Shipments</h3>
+                                <p className="text-2xl">{loading ? 'Loading...' : metrics.activeShipments}</p>
+                            </div>
+                        ) : null}
+                        {role === 'admin' || role === 'warehouse_manager' || role === 'warehouse_staff' ? (
+                            <div className="bg-white p-4 rounded-lg shadow-md">
+                                <h3 className="text-lg font-semibold">Pending Picking Lists</h3>
+                                <p className="text-2xl">{loading ? 'Loading...' : metrics.pendingPickingLists}</p>
+                            </div>
+                        ) : null}
+                    </div>
+
+                    {error && <p className="text-red-600 mt-4">{error}</p>}
                 </div>
-                {error && <p className="text-red-600 mt-4">{error}</p>}
+
+                {/* Customer Profile Section */}
+                {role === 'customer' && (
+                    <CustomerProfile />
+                )}
+
             </div>
         );
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-            <div className="max-w-6xl w-full">{renderRoleContent()}</div>
+        <div className="min-h-screen bg-gray-100 p-4">
+            <div className="max-w-6xl mx-auto">{renderRoleContent()}</div>
         </div>
     );
 };

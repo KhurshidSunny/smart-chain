@@ -45,6 +45,37 @@ const CogIcon = ({ className }) => (
     </svg>
 );
 
+// Additional icons for sub-items
+const DocumentTextIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+);
+
+const ClipboardListIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+    </svg>
+);
+
+const ArchiveIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+    </svg>
+);
+
+const ChartBarIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+);
+
+const UserGroupIcon = ({ className }) => (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+);
+
 export const getSidebarItems = (userRole) => {
     const items = [];
 
@@ -55,22 +86,33 @@ export const getSidebarItems = (userRole) => {
         icon: HomeIcon
     });
 
-    // Orders - available to specific roles
+    // Orders - available to specific roles with sub-items
     if ([ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN].includes(userRole)) {
-        items.push({
+        const orderSubItems = [];
+
+        // All order roles can view all orders
+        orderSubItems.push({
             to: '/orders',
+            label: 'All Orders',
+            icon: ShoppingBagIcon,
+            activePattern: /^\/orders$|^\/orders\/view/
+        });
+
+        // Customers and sales managers can create orders
+        if ([ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(userRole)) {
+            orderSubItems.push({
+                to: '/orders/create',
+                label: 'Create Order',
+                icon: PlusIcon
+            });
+        }
+
+        items.push({
+            to: '/orders', // Main route for orders
             label: 'Orders',
             icon: ShoppingBagIcon,
-            activePattern: /^\/orders($|\/)/
-        });
-    }
-
-    // Create Order - available to customers and sales managers
-    if ([ROLES.CUSTOMER, ROLES.SALES_MANAGER].includes(userRole)) {
-        items.push({
-            to: '/orders/create',
-            label: 'Create Order',
-            icon: PlusIcon
+            activePattern: /^\/orders($|\/)/,
+            subItems: orderSubItems
         });
     }
 
@@ -80,17 +122,48 @@ export const getSidebarItems = (userRole) => {
             to: '/inventory',
             label: 'Inventory',
             icon: CubeIcon,
-            activePattern: /^\/inventory($|\/)/
+            activePattern: /^\/inventory($|\/)/,
+            subItems: [
+                {
+                    to: '/inventory',
+                    label: 'Stock Overview',
+                    icon: ChartBarIcon,
+                    activePattern: /^\/inventory$|^\/inventory\/overview/
+                },
+                {
+                    to: '/inventory/products',
+                    label: 'Manage Items',
+                    icon: CubeIcon,
+                    activePattern: /^\/inventory\/items/
+                },
+            ]
         });
     }
 
-    // Warehouse - available to warehouse roles and admins
+    // Warehouse - available to warehouse roles and admins with sub-items
     if ([ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN].includes(userRole)) {
+        const warehouseSubItems = [
+            {
+                to: '/warehouse/picking-lists',
+                label: 'Picking Lists',
+                icon: ClipboardListIcon,
+                activePattern: /^\/warehouse\/picking-lists/
+            },
+            {
+                to: '/warehouse/packing-lists',
+                label: 'Packing Lists',
+                icon: ArchiveIcon,
+                activePattern: /^\/warehouse\/packing-lists/
+            }
+        ];
+
+
         items.push({
-            to: '/warehouse',
+            to: '#',
             label: 'Warehouse',
             icon: BuildingStorefrontIcon,
-            activePattern: /^\/warehouse($|\/)/
+            activePattern: /^\/warehouse($|\/)/,
+            subItems: warehouseSubItems
         });
     }
 
@@ -100,16 +173,45 @@ export const getSidebarItems = (userRole) => {
             to: '/logistics',
             label: 'Logistics',
             icon: TruckIcon,
-            activePattern: /^\/logistics($|\/)/
+            activePattern: /^\/logistics($|\/)/,
+            subItems: [
+                {
+                    to: '/logistics',
+                    label: 'Shipments',
+                    icon: TruckIcon,
+                    activePattern: /^\/logistics$|^\/logistics\/shipments/
+                },
+            ]
         });
     }
 
     // Admin - available only to admins
     if (userRole === ROLES.ADMIN) {
         items.push({
-            to: '/admin',
+            to: '/users',
             label: 'Administration',
-            icon: CogIcon
+            icon: CogIcon,
+            activePattern: /^\/users($|\/)/,
+            subItems: [
+                {
+                    to: '/users',
+                    label: 'User Management',
+                    icon: UserGroupIcon,
+                    activePattern: /^\/users($|\/)/
+                },
+                {
+                    to: '/admin/settings',
+                    label: 'System Settings',
+                    icon: CogIcon,
+                    activePattern: /^\/admin\/settings/
+                },
+                {
+                    to: '/admin/reports',
+                    label: 'System Reports',
+                    icon: ChartBarIcon,
+                    activePattern: /^\/admin\/reports/
+                }
+            ]
         });
     }
 

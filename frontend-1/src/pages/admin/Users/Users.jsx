@@ -6,7 +6,7 @@ import { getUsers, createUser, updateUser, deleteUser, getUserById } from '../..
 import DataTable from '../../../components/common/DataDisplay/DataTable';
 import ConfirmationModal from '../../../components/common/ConfirmationModal/ConfirmationModal';
 
-function AdminDashboard() {
+function Users() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
   const [users, setUsers] = useState([]);
@@ -329,8 +329,7 @@ function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold text-primary mb-6">Admin Dashboard</h1>
+    <div className="min-h-screen p-6">
       
       {error && (
         <div className="text-red-500 mb-4 p-3 bg-red-100 border border-red-300 rounded">
@@ -696,4 +695,4 @@ function AdminDashboard() {
   );
 }
 
-export default AdminDashboard;
+export default Users;
