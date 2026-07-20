@@ -2,12 +2,17 @@ const amqp = require('amqplib');
 require('dotenv').config();
 
 let channel;
+let activeHandlers = null;
+
+const withFrameMax = (url) =>
+  url.includes('?') ? `${url}&frameMax=131072` : `${url}?frameMax=131072`;
 
 const connectRabbitMQ = async () => {
   try {
-    const connection = await amqp.connect(process.env.RABBITMQ_URL);
+    const connection = await amqp.connect(withFrameMax(process.env.RABBITMQ_URL));
     console.log('Connected to RabbitMQ');
     channel = await connection.createChannel();
+
     const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
     const queue = `${queuePrefix}warehouse_events`;
@@ -15,14 +20,14 @@ const connectRabbitMQ = async () => {
     await channel.assertExchange(exchange, 'topic', { durable: true });
     await channel.assertQueue(queue, { durable: true });
 
-    // Bind queue to relevant events
     await channel.bindQueue(queue, exchange, 'inventory.reserved');
     await channel.bindQueue(queue, exchange, 'sales.order.cancelled');
 
     console.log('RabbitMQ Connected for Warehouse Service');
-    console.log(`Queue ${queue} bound to ${exchange} with routing keys 'inventory.reserved', 'sales.order.cancelled'`);
+    console.log(
+      `Queue ${queue} bound to ${exchange} with routing keys 'inventory.reserved', 'sales.order.cancelled'`
+    );
 
-    // Handle connection errors
     connection.on('error', (err) => {
       console.error('RabbitMQ Connection Error:', err);
       reconnectRabbitMQ();
@@ -33,22 +38,32 @@ const connectRabbitMQ = async () => {
       reconnectRabbitMQ();
     });
   } catch (error) {
-    console.error('RabbitMQ Connection Error:', error);
-    throw error;
+    console.error('RabbitMQ Connection Error (Warehouse):', error.message);
+    channel = null;
+    setTimeout(() => {
+      reconnectRabbitMQ().catch(() => {});
+    }, 10000);
+    return false;
   }
 };
 
 const reconnectRabbitMQ = async () => {
   console.log('Attempting to reconnect to RabbitMQ in 5 seconds...');
   setTimeout(async () => {
-    channel = null; // Reset channel
+    channel = null;
     await connectRabbitMQ();
-    subscribeToEvents(require('../controllers/events/eventHandlerController')); // Re-subscribe
+    if (activeHandlers) {
+      subscribeToEvents(activeHandlers);
+    }
   }, 5000);
 };
 
 const publishEvent = (routingKey, message) => {
-  if (!channel) throw new Error('RabbitMQ channel not initialized');
+  if (!channel) {
+    console.warn(`RabbitMQ not ready — skipped publish: ${routingKey}`);
+    return false;
+  }
+
   const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
   const msgBuffer = Buffer.from(JSON.stringify(message));
   channel.publish(exchange, routingKey, msgBuffer);
@@ -56,24 +71,37 @@ const publishEvent = (routingKey, message) => {
 };
 
 const subscribeToEvents = (eventHandlers) => {
-  if (!channel) throw new Error('RabbitMQ channel not initialized');
+  if (!channel) {
+    console.warn('RabbitMQ not ready — skipped subscribe (Warehouse)');
+    return false;
+  }
+
+  activeHandlers = eventHandlers;
   const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}warehouse_events`;
 
-  channel.consume(queue, (msg) => {
-    if (msg !== null) {
-      const routingKey = msg.fields.routingKey;
-      const message = JSON.parse(msg.content.toString());
-      const handler = eventHandlers[routingKey];
+  channel.consume(
+    queue,
+    (msg) => {
+      if (msg !== null) {
+        const routingKey = msg.fields.routingKey;
+        const message = JSON.parse(msg.content.toString());
+        const handler = eventHandlers[routingKey];
 
-      if (handler) {
-        handler(message);
-        channel.ack(msg); // Acknowledge after handling
-      } else {
-        console.warn(`No handler for routing key: ${routingKey}`);
-        channel.nack(msg, false, true); // Requeue if unhandled
+        if (handler) {
+          Promise.resolve(handler(message))
+            .then(() => channel.ack(msg))
+            .catch((err) => {
+              console.error(`Handler failed for ${routingKey}:`, err);
+              channel.nack(msg, false, false);
+            });
+        } else {
+          console.warn(`No handler for routing key: ${routingKey}`);
+          channel.ack(msg);
+        }
       }
-    }
-  }, { noAck: false }); // Manual acknowledgment
+    },
+    { noAck: false }
+  );
 
   console.log(`Subscribed to events on queue ${queue}`);
 };

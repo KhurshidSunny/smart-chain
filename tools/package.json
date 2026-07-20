@@ -1,0 +1,12 @@
+{
+  "name": "smartchain-local-tools",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local helpers for Smart-Chain development",
+  "scripts": {
+    "mongo": "node start-memory-mongo.js"
+  },
+  "dependencies": {
+    "mongodb-memory-server": "^10.1.4"
+  }
+}

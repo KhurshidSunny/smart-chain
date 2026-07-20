@@ -19,13 +19,17 @@ app.use(cors({
 
 // Connect to DB and RabbitMQ
 connectDB();
-connectRabbitMQ().then(() => {
-  const eventHandlers = {
-    'inventory.reserved': handleInventoryReserved,
-    'sales.order.cancelled': handleOrderCancelled
-  };
-  subscribeToEvents(eventHandlers);
-});
+connectRabbitMQ()
+  .then(() => {
+    const eventHandlers = {
+      'inventory.reserved': handleInventoryReserved,
+      'sales.order.cancelled': handleOrderCancelled
+    };
+    subscribeToEvents(eventHandlers);
+  })
+  .catch((err) => {
+    console.error('Warehouse RabbitMQ init failed (non-fatal):', err.message);
+  });
 
 // Routes
 app.use('/picking-lists', pickingRoutes);

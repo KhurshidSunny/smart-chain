@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "init-roles": "node scripts/initRoles.js",
+    "seed-users": "node scripts/seedDemoUsers.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

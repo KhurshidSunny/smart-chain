@@ -21,15 +21,19 @@ app.use(passport.initialize());
 
 // Connect to DB and RabbitMQ
 connectDB();
-connectRabbitMQ().then(() => {
-  const eventHandlers = {
-    'inventory.reserved': eventHandlerController.handleInventoryReserved,
-    'warehouse.order.packed': eventHandlerController.handleOrderPacked,
-    'logistics.shipment.shipping': eventHandlerController.handleShipmentShipping,
-    'logistics.shipment.delivered': eventHandlerController.handleOrderDelivered,
-  };
-  subscribeToEvents(eventHandlers);
-});
+connectRabbitMQ()
+  .then(() => {
+    const eventHandlers = {
+      'inventory.reserved': eventHandlerController.handleInventoryReserved,
+      'warehouse.order.packed': eventHandlerController.handleOrderPacked,
+      'logistics.shipment.shipping': eventHandlerController.handleShipmentShipping,
+      'logistics.shipment.delivered': eventHandlerController.handleOrderDelivered,
+    };
+    subscribeToEvents(eventHandlers);
+  })
+  .catch((err) => {
+    console.error('Sales RabbitMQ init failed (non-fatal):', err.message);
+  });
 
 // Routes
 app.use('/', orderRoutes);

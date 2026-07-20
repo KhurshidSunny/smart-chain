@@ -17,12 +17,16 @@ app.use(cors({
 
 // Connect to DB and RabbitMQ
 connectDB();
-connectRabbitMQ().then(() => {
-    const eventHandlers = {
-        'warehouse.order.packed': handleOrderPacked
-    };
-    subscribeToEvents(eventHandlers);
-});
+connectRabbitMQ()
+    .then(() => {
+        const eventHandlers = {
+            'warehouse.order.packed': handleOrderPacked
+        };
+        subscribeToEvents(eventHandlers);
+    })
+    .catch((err) => {
+        console.error('Logistics RabbitMQ init failed (non-fatal):', err.message);
+    });
 
 // Routes
 app.use('/shipments', shipmentRoutes);

@@ -17,14 +17,18 @@ app.use(passport.initialize());
 
 // Connect to DB and RabbitMQ
 connectDB();
-connectRabbitMQ().then(() => {
-    const eventHandlers = {
-        'sales.order.created': eventHandlerController.handleOrderCreated,
-        'sales.order.cancelled': eventHandlerController.handleOrderCancelled,
-        'warehouse.order.packed': eventHandlerController.handleOrderPacked,
-    };
-    subscribeToEvents(eventHandlers);
-});
+connectRabbitMQ()
+    .then(() => {
+        const eventHandlers = {
+            'sales.order.created': eventHandlerController.handleOrderCreated,
+            'sales.order.cancelled': eventHandlerController.handleOrderCancelled,
+            'warehouse.order.packed': eventHandlerController.handleOrderPacked,
+        };
+        subscribeToEvents(eventHandlers);
+    })
+    .catch((err) => {
+        console.error('Inventory RabbitMQ init failed (non-fatal):', err.message);
+    });
 
 app.use(cors({
   origin: '*',  // Allows any origin

@@ -79,6 +79,12 @@ web_modules/
 .env.production.local
 .env.local
 
+# Local runtime / OS junk
+erl_crash.dump
+*.dmp
+.DS_Store
+Thumbs.db
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

@@ -58,10 +58,11 @@ exports.register = async (req, res) => {
 
         await user.save();
 
-        const token = generateToken(user);
+        const token = generateToken(user, role.name);
         const refreshToken = generateRefreshToken(user);
         res.status(201).json({ token, refreshToken, user: { id: user._id, email: user.email, role: role.name, firstName: user.firstName, lastName: user.lastName } });
     } catch (err) {
+        console.error('Register error:', err);
         res.status(500).json({ message: 'Server error' });
     }
 };
