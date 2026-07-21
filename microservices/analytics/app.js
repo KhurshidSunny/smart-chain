@@ -1,12 +1,18 @@
 const express = require('express');
 const cors = require('cors');
+const passport = require('passport');
+const connectDB = require('./config/db');
 const healthRoutes = require('./routes/healthRoutes');
 require('dotenv').config();
+require('./middleware/authMiddleware');
 
 const app = express();
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
+app.use(passport.initialize());
+
+connectDB();
 
 app.use('/', healthRoutes);
 
