@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/db');
 const healthRoutes = require('./routes/healthRoutes');
-require('dotenv').config();
+const analyticsRoutes = require('./routes/analyticsRoutes');
 require('./middleware/authMiddleware');
 
 const app = express();
@@ -15,6 +17,7 @@ app.use(passport.initialize());
 connectDB();
 
 app.use('/', healthRoutes);
+app.use('/', analyticsRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
