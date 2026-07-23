@@ -3,7 +3,8 @@ const Order = require('../models/orderModel');
 const InventoryTransaction = require('../models/inventoryTransactionModel');
 
 const CANCELLED_STATUS = 'cancelled';
-const DEMAND_TRANSACTION_TYPES = ['sold', 'reserved'];
+// Fulfilled demand only — reserved is an intermediate step and would double-count with sold
+const DEMAND_TRANSACTION_TYPES = ['sold'];
 
 function toObjectId(productId) {
   if (productId instanceof mongoose.Types.ObjectId) {
@@ -13,6 +14,10 @@ function toObjectId(productId) {
     throw new Error('Invalid productId');
   }
   return new mongoose.Types.ObjectId(productId);
+}
+
+function toProductIdString(productId) {
+  return String(toObjectId(productId));
 }
 
 function buildDateMatch(from, to) {
@@ -26,39 +31,12 @@ function buildDateMatch(from, to) {
   return Object.keys(createdAt).length > 0 ? { createdAt } : {};
 }
 
-function mergeDailySeries(seriesList) {
-  const byDate = new Map();
-
-  for (const series of seriesList) {
-    for (const point of series) {
-      const current = byDate.get(point.date) || 0;
-      byDate.set(point.date, Math.max(current, point.quantity));
-    }
-  }
-
-  return Array.from(byDate.entries())
-    .map(([date, quantity]) => ({ date, quantity }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+function sortDailySeries(series) {
+  return series.slice().sort((a, b) => a.date.localeCompare(b.date));
 }
 
-function mergeMultiProductSeries(seriesList) {
-  const byKey = new Map();
-
-  for (const series of seriesList) {
-    for (const point of series) {
-      const key = `${point.productId}|${point.date}`;
-      const current = byKey.get(key);
-      if (!current || point.quantity > current.quantity) {
-        byKey.set(key, {
-          productId: point.productId,
-          date: point.date,
-          quantity: point.quantity,
-        });
-      }
-    }
-  }
-
-  return Array.from(byKey.values()).sort((a, b) => {
+function sortMultiProductSeries(series) {
+  return series.slice().sort((a, b) => {
     if (a.productId === b.productId) {
       return a.date.localeCompare(b.date);
     }
@@ -113,8 +91,8 @@ async function getDailyDemandFromOrders(productId, options = {}) {
 }
 
 /**
- * Aggregate outbound inventory activity into daily demand for one product.
- * Uses sold and reserved transactions.
+ * Aggregate fulfilled inventory activity into daily demand for one product.
+ * Uses sold transactions only.
  */
 async function getDailyDemandFromInventory(productId, options = {}) {
   const productObjectId = toObjectId(productId);
@@ -153,16 +131,17 @@ async function getDailyDemandFromInventory(productId, options = {}) {
 }
 
 /**
- * Combined daily demand from sales orders and inventory transactions.
- * Per day, the larger source quantity is kept to limit double counting.
+ * Daily demand history for one product.
+ * Prefers sales orders; falls back to inventory sold when order history is empty.
  */
 async function getDailyDemandHistory(productId, options = {}) {
-  const [fromOrders, fromInventory] = await Promise.all([
-    getDailyDemandFromOrders(productId, options),
-    getDailyDemandFromInventory(productId, options),
-  ]);
+  const fromOrders = await getDailyDemandFromOrders(productId, options);
+  if (fromOrders.length > 0) {
+    return sortDailySeries(fromOrders);
+  }
 
-  return mergeDailySeries([fromOrders, fromInventory]);
+  const fromInventory = await getDailyDemandFromInventory(productId, options);
+  return sortDailySeries(fromInventory);
 }
 
 /**
@@ -219,7 +198,7 @@ async function getDailyDemandFromOrdersForProducts(productIds, options = {}) {
 }
 
 /**
- * Aggregate daily demand from inventory transactions for several products.
+ * Aggregate daily demand from inventory sold transactions for several products.
  */
 async function getDailyDemandFromInventoryForProducts(productIds, options = {}) {
   if (!Array.isArray(productIds) || productIds.length === 0) {
@@ -266,15 +245,27 @@ async function getDailyDemandFromInventoryForProducts(productIds, options = {}) 
 }
 
 /**
- * Combined multi-product daily demand from orders and inventory.
+ * Multi-product daily demand.
+ * Uses orders when available for a product; otherwise inventory sold.
  */
 async function getDailyDemandHistoryForProducts(productIds, options = {}) {
-  const [fromOrders, fromInventory] = await Promise.all([
-    getDailyDemandFromOrdersForProducts(productIds, options),
-    getDailyDemandFromInventoryForProducts(productIds, options),
-  ]);
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return [];
+  }
 
-  return mergeMultiProductSeries([fromOrders, fromInventory]);
+  const fromOrders = await getDailyDemandFromOrdersForProducts(productIds, options);
+  const productsWithOrders = new Set(fromOrders.map((point) => point.productId));
+
+  const missingProductIds = productIds
+    .map(toProductIdString)
+    .filter((id) => !productsWithOrders.has(id));
+
+  const fromInventory =
+    missingProductIds.length > 0
+      ? await getDailyDemandFromInventoryForProducts(missingProductIds, options)
+      : [];
+
+  return sortMultiProductSeries([...fromOrders, ...fromInventory]);
 }
 
 module.exports = {
