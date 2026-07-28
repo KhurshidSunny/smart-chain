@@ -1,4 +1,7 @@
 const DEFAULT_WINDOW = 7;
+const DEFAULT_HORIZON_DAYS = 7;
+const DEFAULT_SMOOTHING_ALPHA = 0.35;
+const SMOOTHING_MIN_POINTS = 10;
 
 function extractQuantities(history) {
   if (!Array.isArray(history) || history.length === 0) {
@@ -15,13 +18,14 @@ function average(values) {
   return sum / values.length;
 }
 
-/**
- * Simple moving-average forecast from a daily demand series.
- * Uses the last `window` points (or all points if fewer are available).
- */
+function toPositiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 function forecastWithMovingAverage(history, options = {}) {
-  const window = Number(options.window) > 0 ? Number(options.window) : DEFAULT_WINDOW;
-  const horizonDays = Number(options.horizonDays) > 0 ? Number(options.horizonDays) : window;
+  const window = toPositiveNumber(options.window, DEFAULT_WINDOW);
+  const horizonDays = toPositiveNumber(options.horizonDays, DEFAULT_HORIZON_DAYS);
   const quantities = extractQuantities(history);
 
   if (quantities.length === 0) {
@@ -49,6 +53,47 @@ function forecastWithMovingAverage(history, options = {}) {
   };
 }
 
+function forecastWithExponentialSmoothing(history, options = {}) {
+  const alpha = toPositiveNumber(options.alpha, DEFAULT_SMOOTHING_ALPHA);
+  const horizonDays = toPositiveNumber(options.horizonDays, DEFAULT_HORIZON_DAYS);
+  const quantities = extractQuantities(history);
+
+  if (quantities.length === 0) {
+    return {
+      method: 'exponential_smoothing',
+      alpha,
+      horizonDays,
+      averageDailyDemand: 0,
+      predictedDemand: 0,
+      pointsUsed: 0,
+    };
+  }
+
+  let smoothed = quantities[0];
+  for (let index = 1; index < quantities.length; index += 1) {
+    smoothed = alpha * quantities[index] + (1 - alpha) * smoothed;
+  }
+
+  return {
+    method: 'exponential_smoothing',
+    alpha,
+    horizonDays,
+    averageDailyDemand: Number(smoothed.toFixed(4)),
+    predictedDemand: Number((smoothed * horizonDays).toFixed(4)),
+    pointsUsed: quantities.length,
+  };
+}
+
+function selectForecastMethod(history, options = {}) {
+  const quantities = extractQuantities(history);
+  if (quantities.length >= SMOOTHING_MIN_POINTS) {
+    return forecastWithExponentialSmoothing(history, options);
+  }
+  return forecastWithMovingAverage(history, options);
+}
+
 module.exports = {
   forecastWithMovingAverage,
+  forecastWithExponentialSmoothing,
+  selectForecastMethod,
 };
