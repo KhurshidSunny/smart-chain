@@ -1,10 +1,14 @@
 const { getDailyDemandHistory } = require('../services/demandAggregationService');
-const { selectForecastMethod } = require('../services/forecastService');
+const {
+  selectForecastMethod,
+  resolveForecastOptions,
+} = require('../services/forecastService');
 
 exports.getProductForecast = async (req, res) => {
   try {
     const { productId } = req.params;
     const { from, to, window, horizonDays, alpha } = req.query;
+    const options = resolveForecastOptions({ window, horizonDays, alpha });
 
     const history = await getDailyDemandHistory(productId, { from, to });
     if (history.length === 0) {
@@ -12,20 +16,17 @@ exports.getProductForecast = async (req, res) => {
         productId,
         data: {
           method: null,
+          window: options.window,
+          horizonDays: options.horizonDays,
           averageDailyDemand: 0,
           predictedDemand: 0,
           pointsUsed: 0,
-          horizonDays: Number(horizonDays) || 7,
         },
         history: [],
       });
     }
 
-    const forecast = selectForecastMethod(history, {
-      window,
-      horizonDays,
-      alpha,
-    });
+    const forecast = selectForecastMethod(history, options);
 
     res.status(200).json({
       productId,

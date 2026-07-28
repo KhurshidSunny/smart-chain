@@ -1,7 +1,14 @@
-const DEFAULT_WINDOW = 7;
+const FORECAST_HORIZONS = [7, 14, 30];
 const DEFAULT_HORIZON_DAYS = 7;
-const DEFAULT_SMOOTHING_ALPHA = 0.35;
-const SMOOTHING_MIN_POINTS = 10;
+const DEFAULT_SMOOTHING_ALPHA = 0.3;
+const SMOOTHING_MIN_POINTS = 7;
+
+// Lookback windows sized for sparse demo catalog history
+const WINDOW_BY_HORIZON = {
+  7: 7,
+  14: 14,
+  30: 21,
+};
 
 function extractQuantities(history) {
   if (!Array.isArray(history) || history.length === 0) {
@@ -23,9 +30,29 @@ function toPositiveNumber(value, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+function nearestHorizon(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_HORIZON_DAYS;
+  }
+
+  return FORECAST_HORIZONS.reduce((best, current) => {
+    const bestDistance = Math.abs(best - parsed);
+    const currentDistance = Math.abs(current - parsed);
+    return currentDistance < bestDistance ? current : best;
+  }, FORECAST_HORIZONS[0]);
+}
+
+function resolveForecastOptions(options = {}) {
+  const horizonDays = nearestHorizon(options.horizonDays);
+  const window = toPositiveNumber(options.window, WINDOW_BY_HORIZON[horizonDays]);
+  const alpha = toPositiveNumber(options.alpha, DEFAULT_SMOOTHING_ALPHA);
+
+  return { horizonDays, window, alpha };
+}
+
 function forecastWithMovingAverage(history, options = {}) {
-  const window = toPositiveNumber(options.window, DEFAULT_WINDOW);
-  const horizonDays = toPositiveNumber(options.horizonDays, DEFAULT_HORIZON_DAYS);
+  const { window, horizonDays } = resolveForecastOptions(options);
   const quantities = extractQuantities(history);
 
   if (quantities.length === 0) {
@@ -54,8 +81,7 @@ function forecastWithMovingAverage(history, options = {}) {
 }
 
 function forecastWithExponentialSmoothing(history, options = {}) {
-  const alpha = toPositiveNumber(options.alpha, DEFAULT_SMOOTHING_ALPHA);
-  const horizonDays = toPositiveNumber(options.horizonDays, DEFAULT_HORIZON_DAYS);
+  const { alpha, horizonDays } = resolveForecastOptions(options);
   const quantities = extractQuantities(history);
 
   if (quantities.length === 0) {
@@ -85,15 +111,22 @@ function forecastWithExponentialSmoothing(history, options = {}) {
 }
 
 function selectForecastMethod(history, options = {}) {
+  const resolved = resolveForecastOptions(options);
   const quantities = extractQuantities(history);
+
   if (quantities.length >= SMOOTHING_MIN_POINTS) {
-    return forecastWithExponentialSmoothing(history, options);
+    return forecastWithExponentialSmoothing(history, resolved);
   }
-  return forecastWithMovingAverage(history, options);
+
+  return forecastWithMovingAverage(history, resolved);
 }
 
 module.exports = {
+  FORECAST_HORIZONS,
+  DEFAULT_HORIZON_DAYS,
+  WINDOW_BY_HORIZON,
   forecastWithMovingAverage,
   forecastWithExponentialSmoothing,
   selectForecastMethod,
+  resolveForecastOptions,
 };
