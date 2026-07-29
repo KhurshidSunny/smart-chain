@@ -35,6 +35,31 @@ function severityFromZScore(absoluteZ, threshold) {
   return 'none';
 }
 
+function buildAnomalyReason({ quantity, mean, zScore, severity, standardDeviation }) {
+  if (severity === 'none') {
+    return null;
+  }
+
+  if (standardDeviation === 0) {
+    if (quantity > mean) {
+      return `Quantity (${quantity}) differs from the usual fixed amount (${mean})`;
+    }
+    return `Quantity (${quantity}) is below the usual fixed amount (${mean})`;
+  }
+
+  if (zScore > 0) {
+    if (severity === 'high') {
+      return `Quantity (${quantity}) is much higher than average (${mean})`;
+    }
+    return `Quantity (${quantity}) is higher than average (${mean})`;
+  }
+
+  if (severity === 'high') {
+    return `Quantity (${quantity}) is much lower than average (${mean})`;
+  }
+  return `Quantity (${quantity}) is lower than average (${mean})`;
+}
+
 /**
  * Compare one quantity against a product's historical order-line quantities.
  */
@@ -56,6 +81,7 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
       severity: 'none',
       pointsUsed: history.length,
       quantity: value,
+      reason: null,
     };
   }
 
@@ -64,14 +90,22 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
 
   if (stdDev === 0) {
     const isAnomaly = value !== avg;
+    const severity = isAnomaly ? 'medium' : 'none';
     return {
       isAnomaly,
       zScore: isAnomaly ? null : 0,
       mean: Number(avg.toFixed(4)),
       standardDeviation: 0,
-      severity: isAnomaly ? 'medium' : 'none',
+      severity,
       pointsUsed: history.length,
       quantity: value,
+      reason: buildAnomalyReason({
+        quantity: value,
+        mean: Number(avg.toFixed(4)),
+        zScore: value > avg ? 1 : -1,
+        severity,
+        standardDeviation: 0,
+      }),
     };
   }
 
@@ -79,15 +113,24 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
   const absoluteZ = Math.abs(zScore);
   const severity = severityFromZScore(absoluteZ, threshold);
   const isAnomaly = severity !== 'none';
+  const roundedMean = Number(avg.toFixed(4));
+  const roundedZ = Number(zScore.toFixed(4));
 
   return {
     isAnomaly,
-    zScore: Number(zScore.toFixed(4)),
-    mean: Number(avg.toFixed(4)),
+    zScore: roundedZ,
+    mean: roundedMean,
     standardDeviation: Number(stdDev.toFixed(4)),
     severity,
     pointsUsed: history.length,
     quantity: value,
+    reason: buildAnomalyReason({
+      quantity: value,
+      mean: roundedMean,
+      zScore: roundedZ,
+      severity,
+      standardDeviation: stdDev,
+    }),
   };
 }
 
