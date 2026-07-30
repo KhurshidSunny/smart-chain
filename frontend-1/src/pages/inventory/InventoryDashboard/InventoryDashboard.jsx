@@ -5,6 +5,7 @@ import { ROLES } from '../../../utils/constants';
 import { getInventorySummary } from '../../../services/inventoryService';
 import StockChart from '../../../components/common/DataDisplay/StockChart';
 import ForecastSummaryCard from '../../../components/specific/inventory/ForecastSummaryCard';
+import ReorderSuggestionsCard from '../../../components/specific/inventory/ReorderSuggestionsCard';
 
 function InventoryDashboard() {
     const navigate = useNavigate();
@@ -58,6 +59,7 @@ function InventoryDashboard() {
                 </div>
             </div>
             <ForecastSummaryCard />
+            <ReorderSuggestionsCard />
             <div className="bg-white p-6 rounded-lg shadow-md mt-6">
                 <h2 className="text-xl font-semibold text-gray-700 mb-4">Stock Levels</h2>
                 <StockChart data={summary.products} />
