@@ -4,6 +4,7 @@ export const API_URLS = {
     INVENTORY: import.meta.env.VITE_API_INVENTORY_URL,
     WAREHOUSE: import.meta.env.VITE_API_WAREHOUSE_URL,
     LOGISTICS: import.meta.env.VITE_API_LOGISTICS_URL,
+    ANALYTICS: import.meta.env.VITE_API_ANALYTICS_URL,
 };
 
 export const ROLES = {
