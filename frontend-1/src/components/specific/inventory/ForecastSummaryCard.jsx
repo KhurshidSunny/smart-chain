@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import { getReorderSuggestions } from '../../../services/analyticsService';
+import {
+    AnalyticsPanelShell,
+    EmptyState,
+    ErrorState,
+    Spinner,
+} from './AnalyticsPanelState';
 
 function ForecastSummaryCard() {
     const [summary, setSummary] = useState(null);
@@ -39,27 +45,35 @@ function ForecastSummaryCard() {
 
     if (loading) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">Demand Forecast</h2>
-                <p className="text-gray-500">Loading forecast...</p>
-            </div>
+            <AnalyticsPanelShell title="Demand Forecast">
+                <Spinner label="Loading forecast summary..." />
+            </AnalyticsPanelShell>
         );
     }
 
     if (error) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">Demand Forecast</h2>
-                <p className="text-red-500">{error}</p>
-            </div>
+            <AnalyticsPanelShell title="Demand Forecast">
+                <ErrorState message={error} />
+            </AnalyticsPanelShell>
+        );
+    }
+
+    if (!summary || summary.productCount === 0) {
+        return (
+            <AnalyticsPanelShell title="Demand Forecast">
+                <EmptyState
+                    message="No products available for forecasting"
+                    hint="Add active products in inventory, then refresh this page."
+                />
+            </AnalyticsPanelShell>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">
-                Demand Forecast ({summary.horizonDays} days)
-            </h2>
+        <AnalyticsPanelShell
+            title={`Demand Forecast (${summary.horizonDays} days)`}
+        >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
                     <p className="text-sm text-gray-500">Predicted Demand</p>
@@ -91,9 +105,12 @@ function ForecastSummaryCard() {
                     </ul>
                 </div>
             ) : (
-                <p className="text-gray-500 text-sm">No forecasted demand available yet.</p>
+                <EmptyState
+                    message="No forecasted demand available yet"
+                    hint="Place a few demo orders to build demand history, then refresh."
+                />
             )}
-        </div>
+        </AnalyticsPanelShell>
     );
 }
 

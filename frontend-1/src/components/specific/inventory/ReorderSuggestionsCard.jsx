@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
 import { getReorderSuggestions } from '../../../services/analyticsService';
+import {
+    AnalyticsPanelShell,
+    EmptyState,
+    ErrorState,
+    Spinner,
+} from './AnalyticsPanelState';
 
 function ReorderSuggestionsCard() {
     const [suggestions, setSuggestions] = useState([]);
@@ -26,28 +32,25 @@ function ReorderSuggestionsCard() {
 
     if (loading) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">Reorder Suggestions</h2>
-                <p className="text-gray-500">Loading suggestions...</p>
-            </div>
+            <AnalyticsPanelShell title="Reorder Suggestions">
+                <Spinner label="Loading reorder suggestions..." />
+            </AnalyticsPanelShell>
         );
     }
 
     if (error) {
         return (
-            <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-                <h2 className="text-xl font-semibold text-gray-700 mb-2">Reorder Suggestions</h2>
-                <p className="text-red-500">{error}</p>
-            </div>
+            <AnalyticsPanelShell title="Reorder Suggestions">
+                <ErrorState message={error} />
+            </AnalyticsPanelShell>
         );
     }
 
     return (
-        <div className="bg-white p-6 rounded-lg shadow-md mt-6">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-700">Reorder Suggestions</h2>
-                <span className="text-sm text-gray-500">{horizonDays}-day horizon</span>
-            </div>
+        <AnalyticsPanelShell
+            title="Reorder Suggestions"
+            subtitle={`${horizonDays}-day horizon`}
+        >
             {suggestions.length > 0 ? (
                 <ul className="space-y-3">
                     {suggestions.map((item) => (
@@ -76,9 +79,12 @@ function ReorderSuggestionsCard() {
                     ))}
                 </ul>
             ) : (
-                <p className="text-gray-500 text-sm">No reorder suggestions right now.</p>
+                <EmptyState
+                    message="No reorder suggestions right now"
+                    hint="Stock levels look healthy for the current forecast window."
+                />
             )}
-        </div>
+        </AnalyticsPanelShell>
     );
 }
 
