@@ -5,11 +5,13 @@ import { ROLES } from '../../../utils/constants';
 import { getOrders } from '../../../services/orderService';
 import DataTable from '../../../components/common/DataDisplay/DataTable';
 import { getUser } from '../../../services/userService';
+import { getOrderAnomalies } from '../../../services/analyticsService';
 
 function OrderList() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
     const [orders, setOrders] = useState([]);
+    const [anomalyMap, setAnomalyMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
@@ -28,6 +30,15 @@ function OrderList() {
                 setError(null);
 
                 const response = await getOrders();
+                const anomalyResponse = await getOrderAnomalies({ limit: 200 });
+                const anomalies = anomalyResponse.data?.data || [];
+                const anomaliesByOrder = anomalies.reduce((acc, entry) => {
+                    acc[entry.orderId] = {
+                        anomalyCount: entry.anomalyCount || 0,
+                        severity: entry.lines?.[0]?.severity || 'medium',
+                    };
+                    return acc;
+                }, {});
 
                 // Use Promise.all to wait for all customer fetches to complete
                 const ordersWithCustomers = await Promise.all(
@@ -60,6 +71,7 @@ function OrderList() {
                 );
 
                 setOrders(ordersWithCustomers);
+                setAnomalyMap(anomaliesByOrder);
             } catch (err) {
                 setError(err.response?.data?.message);
             } finally {
@@ -87,6 +99,31 @@ function OrderList() {
         { key: 'status', header: 'Status' },
         { key: 'totalAmount', header: 'Total', render: (order) => `$${order.totalAmount?.toFixed(2) || '0.00'}` },
         { key: 'createdAt', header: 'Created', render: (order) => new Date(order.createdAt).toLocaleDateString() },
+        {
+            key: 'anomalies',
+            header: 'Anomalies',
+            render: (order) => {
+                const details = anomalyMap[order._id];
+                if (!details || !details.anomalyCount) {
+                    return (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
+                            None
+                        </span>
+                    );
+                }
+
+                const badgeClass =
+                    details.severity === 'high'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-amber-100 text-amber-700';
+
+                return (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClass}`}>
+                        {details.anomalyCount} flagged
+                    </span>
+                );
+            },
+        },
         {
             key: 'actions',
             header: 'Actions',

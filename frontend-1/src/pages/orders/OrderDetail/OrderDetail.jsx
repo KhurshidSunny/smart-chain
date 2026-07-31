@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { ROLES } from '../../../utils/constants';
 import { getOrder } from '../../../services/orderService';
+import { getOrderAnomalies } from '../../../services/analyticsService';
 import { QRCodeSVG } from 'qrcode.react';
 
 function OrderDetail() {
@@ -10,6 +11,7 @@ function OrderDetail() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
     const [order, setOrder] = useState(null);
+    const [anomalyLines, setAnomalyLines] = useState([]);
     const [error, setError] = useState(null);
     const qrRef = useRef(null);
     const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
@@ -27,6 +29,11 @@ function OrderDetail() {
             try {
                 const response = await getOrder(id);
                 setOrder(response.data);
+
+                const anomalyResponse = await getOrderAnomalies({ limit: 200 });
+                const anomalies = anomalyResponse.data?.data || [];
+                const currentOrderAnomalies = anomalies.find((entry) => entry.orderId === id);
+                setAnomalyLines(currentOrderAnomalies?.lines || []);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load order');
             }
@@ -113,13 +120,43 @@ function OrderDetail() {
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">Items</h2>
                     <ul className="space-y-2">
                         {order.items.map((item, index) => (
-                            <li key={index} className="flex justify-between">
-                                <span>{item.name} (x{item.quantity})</span>
+                            <li key={index} className="flex justify-between items-center">
+                                <div className="flex items-center gap-2">
+                                    <span>{item.name} (x{item.quantity})</span>
+                                    {anomalyLines.some(
+                                        (line) =>
+                                            String(line.productId) === String(item.productId) &&
+                                            Number(line.quantity) === Number(item.quantity)
+                                    ) && (
+                                        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                                            Anomaly
+                                        </span>
+                                    )}
+                                </div>
                                 <span>${(item.unitPrice * item.quantity).toFixed(2)}</span>
                             </li>
                         ))}
                     </ul>
                 </div>
+
+                {anomalyLines.length > 0 && (
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-700 mb-2">Quantity Anomalies</h2>
+                        <ul className="space-y-2">
+                            {anomalyLines.map((line, index) => (
+                                <li key={`${line.productId}-${index}`} className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-gray-800">{line.productName}</span>
+                                        <span className={`text-xs font-semibold uppercase ${line.severity === 'high' ? 'text-red-600' : 'text-amber-700'}`}>
+                                            {line.severity}
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700 mt-1">{line.reason}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div>
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">Shipping Address</h2>
