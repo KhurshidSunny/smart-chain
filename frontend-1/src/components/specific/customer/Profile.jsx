@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { getAddresses, createAddress } from '../../../services/authService';
 import useAuthStore from '../../../stores/authStore';
+import useFeedbackStore from '../../../stores/feedbackStore';
 import AddressModal from './AddressModal';
 
 const Profile = () => {
     const { user } = useAuthStore();
+    const showSuccess = useFeedbackStore((state) => state.showSuccess);
     const [addresses, setAddresses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -42,7 +44,13 @@ const Profile = () => {
     const handleAddressSaved = () => {
         setShowAddressModal(false);
         setEditingAddress(null);
-        fetchAddresses(); // Refresh the addresses list
+        fetchAddresses();
+        showSuccess(
+            editingAddress ? 'Address updated' : 'Address saved',
+            editingAddress
+                ? 'Your shipping address was updated successfully.'
+                : 'Your new shipping address was added successfully.'
+        );
     };
 
     const handleModalClose = () => {

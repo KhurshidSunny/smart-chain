@@ -1,6 +1,7 @@
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
+import useFeedbackStore from '../../../stores/feedbackStore';
 import { ROLES } from '../../../utils/constants';
 import { getPickingLists, createPackage } from '../../../services/warehouseService';
 import { QRCodeSVG } from 'qrcode.react';
@@ -8,6 +9,7 @@ import { QRCodeSVG } from 'qrcode.react';
 function PackingStation() {
     const navigate = useNavigate();
     const { user, isAuthenticated } = useAuthStore();
+    const showSuccess = useFeedbackStore((state) => state.showSuccess);
     const [pickingLists, setPickingLists] = useState([]);
     const [selectedList, setSelectedList] = useState(null);
     const [packageData, setPackageData] = useState({
@@ -54,6 +56,10 @@ function PackingStation() {
                 packedBy: user.id,
             });
             setSelectedList({ ...selectedList, package: response.data });
+            showSuccess(
+                'Package created',
+                'The package was created successfully and is ready for dispatch.'
+            );
         } catch (err) {
             console.log(err)
             setError(err.response?.data?.message || 'Failed to create package');

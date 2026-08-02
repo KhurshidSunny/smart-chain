@@ -4,6 +4,7 @@ import * as Yup from 'yup';
 import { createOrder } from '../../../services/orderService';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
+import useFeedbackStore from '../../../stores/feedbackStore';
 import { Package, MapPin, FileText, Check } from 'lucide-react';
 
 const validationSchema = Yup.object({
@@ -15,6 +16,7 @@ function OrderSummary({ selectedItems, selectedAddress, onBack }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
     const { user } = useAuthStore();
+    const showSuccess = useFeedbackStore((state) => state.showSuccess);
 
     // Calculate totals
     const subtotal = selectedItems.reduce((total, item) => {
@@ -55,13 +57,20 @@ function OrderSummary({ selectedItems, selectedAddress, onBack }) {
                 shippingCost: shippingCost
             };
 
-            const newOrder = await createOrder(orderData);
-            
-            // Show success message
-            alert('Order created successfully!');
-            
-            // Navigate to orders page
-            navigate('/orders');
+            const response = await createOrder(orderData);
+            const created = response?.data || response;
+            const orderNumber = created?.orderNumber || created?.data?.orderNumber;
+
+            showSuccess(
+                'Order placed successfully',
+                orderNumber
+                    ? `Your order ${orderNumber} is confirmed and ready for processing.`
+                    : 'Your order is confirmed and ready for processing.',
+                {
+                    confirmLabel: 'View orders',
+                    onClose: () => navigate('/orders'),
+                }
+            );
         } catch (err) {
             console.log(err);
             setError(err.response?.data?.message || 'Failed to create order');

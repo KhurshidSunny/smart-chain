@@ -95,6 +95,20 @@ Added after the original FYP as a **decision-support** layer on the same MongoDB
 
 Requires MongoDB (same `smartchain` DB as the other services) and a matching `JWT_SECRET` with IAM.
 
+**Start MongoDB before analytics** (this is the usual cause of `ECONNREFUSED 127.0.0.1:27017`):
+
+```bash
+# Option A — Docker (if Docker Desktop is installed)
+docker compose up -d mongodb rabbitmq
+
+# Option B — in-memory Mongo on port 27017 (no Docker; keep the window open)
+cd tools
+npm install
+npm run mongo
+```
+
+If Docker is not installed, use Option B for MongoDB. For RabbitMQ without Docker, install [RabbitMQ for Windows](https://www.rabbitmq.com/docs/install-windows) or start it from an existing local install (`5672`). Analytics itself only needs MongoDB; RabbitMQ is needed for the other microservices when placing orders.
+
 ```bash
 cd microservices/analytics
 cp .env.example .env

@@ -19,10 +19,11 @@ function ProductForm({ product, onSubmit, onCancel }) {
         try {
             if (product) {
                 await updateProduct(product._id, values);
+                onSubmit('update');
             } else {
                 await createProduct(values);
+                onSubmit('create');
             }
-            onSubmit();
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to save product');
         } finally {

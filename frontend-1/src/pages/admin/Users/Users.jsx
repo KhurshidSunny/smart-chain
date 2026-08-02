@@ -5,10 +5,12 @@ import { ROLES } from '../../../utils/constants';
 import { getUsers, createUser, updateUser, deleteUser, getUserById } from '../../../services/userService';
 import DataTable from '../../../components/common/DataDisplay/DataTable';
 import ConfirmationModal from '../../../components/common/ConfirmationModal/ConfirmationModal';
+import useFeedbackStore from '../../../stores/feedbackStore';
 
 function Users() {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
+  const showSuccess = useFeedbackStore((state) => state.showSuccess);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [error, setError] = useState(null);
@@ -183,6 +185,7 @@ function Users() {
       setFormData({ email: '', password: '', firstName: '', lastName: '', roleName: ROLES.CUSTOMER });
       setIsCreateModalOpen(false);
       setError(null);
+      showSuccess('User created', `${newUser.firstName} ${newUser.lastName} was added successfully.`);
     } catch (err) {
       console.error('Error creating user:', err);
       setError(err.response?.data?.message || 'Failed to create user');
@@ -207,6 +210,7 @@ function Users() {
       setSelectedUser(null);
       setFormData({ email: '', password: '', firstName: '', lastName: '', roleName: ROLES.CUSTOMER });
       setError(null);
+      showSuccess('User updated', 'The user profile was saved successfully.');
     } catch (err) {
       console.error('Error updating user:', err);
       setError(err.response?.data?.message || 'Failed to update user');
@@ -228,6 +232,7 @@ function Users() {
       await deleteUser(userToDelete);
       setUsers(users.filter((u) => u._id !== userToDelete));
       setError(null);
+      showSuccess('User deleted', 'The user account was removed successfully.');
     } catch (err) {
       console.error('Error deleting user:', err);
       setError(err.response?.data?.message || 'Failed to delete user');
