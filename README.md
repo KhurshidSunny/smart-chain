@@ -39,6 +39,7 @@ Blockchain and IoT were studied in the FYP report but were **not** implemented i
 | Inventory | 3003 | Products and stock |
 | Warehouse | 3004 | Picking lists and packages |
 | Logistics | 3005 | Shipments and tracking |
+| Analytics | 3006 | Demand history, forecast, reorder, anomalies (post-FYP) |
 
 ## Local setup
 
@@ -82,13 +83,40 @@ App: http://localhost:5173
 | sales@smartchain.local | Sales123! | sales_manager |
 | logistics@smartchain.local | Logistics123! | logistics_manager |
 
-Copy each service `.env.example` → `.env`. Do not commit `.env` files.
+Copy each service `.env.example` → `.env` (including `analytics` and `frontend-1`). Do not commit `.env` files.
 
 Without Docker MongoDB, you can use the in-memory helper: `cd tools && npm install && npm run mongo`.
 
-## Planned work
+## Analytics service (post-FYP extension)
 
-An **AI decision-support layer** (for example demand forecasting or inventory alerts) is planned as a separate extension on top of this MVP. It is not part of the original FYP deliverable.
+Added after the original FYP as a **decision-support** layer on the same MongoDB data. It is not an autonomous AI agent: it uses simple statistical methods (moving average / exponential smoothing, reorder heuristics, z-score anomalies) and exposes JWT-protected APIs used by `frontend-1` inventory and order views.
+
+### Run analytics locally
+
+Requires MongoDB (same `smartchain` DB as the other services) and a matching `JWT_SECRET` with IAM.
+
+```bash
+cd microservices/analytics
+cp .env.example .env
+npm install
+npm start
+# or: npm run dev
+```
+
+Health check: http://localhost:3006/health
+
+| Endpoint | Description |
+|---|---|
+| `GET /demand/:productId` | Daily demand history for a product |
+| `GET /forecast/:productId` | Short-horizon demand forecast |
+| `GET /reorder` | Reorder suggestions for active products |
+| `GET /anomalies` | Order quantity anomalies |
+
+All analytics routes except `/health` need a Bearer JWT from IAM.
+
+In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.example`). Start analytics alongside the other backends before opening the inventory dashboard.
+
+`start-all.bat` currently launches IAM–Logistics only; start analytics in a separate terminal as above.
 
 ## License / academic note
 
