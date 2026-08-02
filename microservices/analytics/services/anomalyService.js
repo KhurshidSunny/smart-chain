@@ -35,29 +35,29 @@ function severityFromZScore(absoluteZ, threshold) {
   return 'none';
 }
 
-function buildAnomalyReason({ quantity, mean, zScore, severity, standardDeviation }) {
+function buildAnomalyReason({ quantity, avgQuantity, zScore, severity, stdDev }) {
   if (severity === 'none') {
     return null;
   }
 
-  if (standardDeviation === 0) {
-    if (quantity > mean) {
-      return `Quantity (${quantity}) differs from the usual fixed amount (${mean})`;
+  if (stdDev === 0) {
+    if (quantity > avgQuantity) {
+      return `Quantity (${quantity}) differs from the usual fixed amount (${avgQuantity})`;
     }
-    return `Quantity (${quantity}) is below the usual fixed amount (${mean})`;
+    return `Quantity (${quantity}) is below the usual fixed amount (${avgQuantity})`;
   }
 
   if (zScore > 0) {
     if (severity === 'high') {
-      return `Quantity (${quantity}) is much higher than average (${mean})`;
+      return `Quantity (${quantity}) is much higher than average (${avgQuantity})`;
     }
-    return `Quantity (${quantity}) is higher than average (${mean})`;
+    return `Quantity (${quantity}) is higher than average (${avgQuantity})`;
   }
 
   if (severity === 'high') {
-    return `Quantity (${quantity}) is much lower than average (${mean})`;
+    return `Quantity (${quantity}) is much lower than average (${avgQuantity})`;
   }
-  return `Quantity (${quantity}) is lower than average (${mean})`;
+  return `Quantity (${quantity}) is lower than average (${avgQuantity})`;
 }
 
 /**
@@ -76,8 +76,8 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
     return {
       isAnomaly: false,
       zScore: null,
-      mean: history.length ? Number(mean(history).toFixed(4)) : null,
-      standardDeviation: null,
+      avgQuantity: history.length ? Number(mean(history).toFixed(4)) : null,
+      stdDev: null,
       severity: 'none',
       pointsUsed: history.length,
       quantity: value,
@@ -91,20 +91,21 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
   if (stdDev === 0) {
     const isAnomaly = value !== avg;
     const severity = isAnomaly ? 'medium' : 'none';
+    const avgQuantity = Number(avg.toFixed(4));
     return {
       isAnomaly,
       zScore: isAnomaly ? null : 0,
-      mean: Number(avg.toFixed(4)),
-      standardDeviation: 0,
+      avgQuantity,
+      stdDev: 0,
       severity,
       pointsUsed: history.length,
       quantity: value,
       reason: buildAnomalyReason({
         quantity: value,
-        mean: Number(avg.toFixed(4)),
+        avgQuantity,
         zScore: value > avg ? 1 : -1,
         severity,
-        standardDeviation: 0,
+        stdDev: 0,
       }),
     };
   }
@@ -113,23 +114,23 @@ function evaluateQuantityAnomaly(quantity, historicalQuantities, options = {}) {
   const absoluteZ = Math.abs(zScore);
   const severity = severityFromZScore(absoluteZ, threshold);
   const isAnomaly = severity !== 'none';
-  const roundedMean = Number(avg.toFixed(4));
+  const avgQuantity = Number(avg.toFixed(4));
   const roundedZ = Number(zScore.toFixed(4));
 
   return {
     isAnomaly,
     zScore: roundedZ,
-    mean: roundedMean,
-    standardDeviation: Number(stdDev.toFixed(4)),
+    avgQuantity,
+    stdDev: Number(stdDev.toFixed(4)),
     severity,
     pointsUsed: history.length,
     quantity: value,
     reason: buildAnomalyReason({
       quantity: value,
-      mean: roundedMean,
+      avgQuantity,
       zScore: roundedZ,
       severity,
-      standardDeviation: stdDev,
+      stdDev,
     }),
   };
 }
@@ -171,7 +172,7 @@ function flagAnomalousOrderLines(order, allOrders, options = {}) {
 
     anomalies.push({
       productId,
-      productName: item.name,
+      name: item.name,
       unitPrice: item.unitPrice,
       ...evaluation,
     });

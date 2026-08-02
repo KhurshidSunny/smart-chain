@@ -146,7 +146,7 @@ function OrderDetail() {
                             {anomalyLines.map((line, index) => (
                                 <li key={`${line.productId}-${index}`} className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                                     <div className="flex items-center justify-between">
-                                        <span className="font-medium text-gray-800">{line.productName}</span>
+                                        <span className="font-medium text-gray-800">{line.name}</span>
                                         <span className={`text-xs font-semibold uppercase ${line.severity === 'high' ? 'text-red-600' : 'text-amber-700'}`}>
                                             {line.severity}
                                         </span>

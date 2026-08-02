@@ -24,7 +24,7 @@ exports.getReorderSuggestions = async (req, res) => {
     const options = resolveForecastOptions({ window, horizonDays, alpha });
 
     const products = await Product.find({ active: true })
-      .select('_id sku name category stockLevel reorderPoint unitCost active')
+      .select('_id sku name stockLevel reorderPoint')
       .lean();
 
     if (products.length === 0) {
@@ -55,9 +55,7 @@ exports.getReorderSuggestions = async (req, res) => {
         productId,
         sku: product.sku,
         name: product.name,
-        category: product.category,
-        active: product.active,
-        forecastMethod: forecast.method,
+        forecastMethod: forecast.forecastMethod,
         ...suggestion,
       };
     });

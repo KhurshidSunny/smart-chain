@@ -57,8 +57,9 @@ function forecastWithMovingAverage(history, options = {}) {
 
   if (quantities.length === 0) {
     return {
-      method: 'moving_average',
+      forecastMethod: 'moving_average',
       window,
+      alpha: null,
       horizonDays,
       averageDailyDemand: 0,
       predictedDemand: 0,
@@ -71,8 +72,9 @@ function forecastWithMovingAverage(history, options = {}) {
   const predictedDemand = averageDailyDemand * horizonDays;
 
   return {
-    method: 'moving_average',
+    forecastMethod: 'moving_average',
     window,
+    alpha: null,
     horizonDays,
     averageDailyDemand: Number(averageDailyDemand.toFixed(4)),
     predictedDemand: Number(predictedDemand.toFixed(4)),
@@ -86,7 +88,8 @@ function forecastWithExponentialSmoothing(history, options = {}) {
 
   if (quantities.length === 0) {
     return {
-      method: 'exponential_smoothing',
+      forecastMethod: 'exponential_smoothing',
+      window: null,
       alpha,
       horizonDays,
       averageDailyDemand: 0,
@@ -101,7 +104,8 @@ function forecastWithExponentialSmoothing(history, options = {}) {
   }
 
   return {
-    method: 'exponential_smoothing',
+    forecastMethod: 'exponential_smoothing',
+    window: null,
     alpha,
     horizonDays,
     averageDailyDemand: Number(smoothed.toFixed(4)),

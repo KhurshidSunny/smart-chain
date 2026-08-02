@@ -15,8 +15,9 @@ exports.getProductForecast = async (req, res) => {
       return res.status(200).json({
         productId,
         data: {
-          method: null,
+          forecastMethod: null,
           window: options.window,
+          alpha: options.alpha,
           horizonDays: options.horizonDays,
           averageDailyDemand: 0,
           predictedDemand: 0,
