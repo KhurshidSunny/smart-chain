@@ -89,7 +89,25 @@ Without Docker MongoDB, you can use the in-memory helper: `cd tools && npm insta
 
 ## Analytics service (post-FYP extension)
 
-Added after the original FYP as a **decision-support** layer on the same MongoDB data. It is not an autonomous AI agent: it uses simple statistical methods (moving average / exponential smoothing, reorder heuristics, z-score anomalies) and exposes JWT-protected APIs used by `frontend-1` inventory and order views.
+Added after the original FYP as a **decision-support** layer on the same MongoDB data. It is **not** an autonomous AI agent and does **not** use trained deep-learning models. It uses simple, explainable statistical methods and JWT-protected APIs consumed by `frontend-1` (inventory dashboard + order anomaly badges).
+
+### What each feature does
+
+| Feature | Method (honest) | Where you see it |
+|---|---|---|
+| Demand history | Daily sold quantities from sales orders (inventory `sold` only as fallback) | API: `GET /demand/:productId` |
+| Forecast | Moving average if history is short; exponential smoothing when enough daily points exist | Inventory → Demand Forecast card (via reorder batch) |
+| Reorder suggestions | `suggestedQty ≈ forecastDemand + reorderPoint − stock` (when positive) | Inventory → Reorder Suggestions |
+| Anomalies | Z-score of an order line quantity vs that **product’s** past line quantities | Orders list/detail badges |
+
+Default horizons: **7 / 14 / 30** days. Anomaly flagging needs enough **same-product** history (about 3+ prior lines); a few one-off orders on different SKUs will correctly show “None”.
+
+### Limits (read before claiming “AI” on applications)
+
+- Methods are classical statistics / heuristics, not neural networks.
+- Demo catalogs are sparse; forecasts are directional aids for operators, not production-grade demand planning.
+- Anomalies detect unusual **quantities**, not fraud graphs or account takeovers.
+- RabbitMQ is not required for analytics reads; other services still need it for the full order flow.
 
 ### Run analytics locally
 
@@ -131,6 +149,12 @@ All analytics routes except `/health` need a Bearer JWT from IAM.
 In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.example`). Start analytics alongside the other backends before opening the inventory dashboard.
 
 `start-all.bat` currently launches IAM–Logistics only; start analytics in a separate terminal as above.
+
+### How to demo for reviewers
+
+1. Seed users/products; place several orders as **customer** (repeat the **same SKU** with varied quantities if you want anomaly badges).
+2. Login as **inventory** → Inventory Dashboard → forecast + reorder cards.
+3. Login as **sales/admin** → Orders → anomaly column / order detail.
 
 ## License / academic note
 
