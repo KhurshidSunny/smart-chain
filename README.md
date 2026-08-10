@@ -140,9 +140,11 @@ Health check: http://localhost:3006/health
 | Endpoint | Description |
 |---|---|
 | `GET /demand/:productId` | Daily demand history for a product |
-| `GET /forecast/:productId` | Short-horizon demand forecast |
+| `GET /forecast/:productId` | Short-horizon demand forecast + optional holdout `evaluation` (`mae` / `mape`) |
 | `GET /reorder` | Reorder suggestions for active products |
 | `GET /anomalies` | Order quantity anomalies |
+
+`GET /forecast/:productId` returns `data.evaluation` when there is enough daily history for a holdout check; otherwise `evaluation` is `null`. Example fields: `holdoutDays`, `pointsEvaluated`, `mae`, `mape`.
 
 All analytics routes except `/health` need a Bearer JWT from IAM.
 

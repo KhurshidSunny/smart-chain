@@ -22,6 +22,7 @@ exports.getProductForecast = async (req, res) => {
           averageDailyDemand: 0,
           predictedDemand: 0,
           pointsUsed: 0,
+          evaluation: null,
         },
         history: [],
       });
@@ -31,7 +32,16 @@ exports.getProductForecast = async (req, res) => {
 
     res.status(200).json({
       productId,
-      data: forecast,
+      data: {
+        forecastMethod: forecast.forecastMethod,
+        window: forecast.window,
+        alpha: forecast.alpha,
+        horizonDays: forecast.horizonDays,
+        averageDailyDemand: forecast.averageDailyDemand,
+        predictedDemand: forecast.predictedDemand,
+        pointsUsed: forecast.pointsUsed,
+        evaluation: forecast.evaluation,
+      },
       history,
     });
   } catch (err) {
