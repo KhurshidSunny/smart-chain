@@ -148,9 +148,7 @@ Health check: http://localhost:3006/health
 
 All analytics routes except `/health` need a Bearer JWT from IAM.
 
-In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.example`). Start analytics alongside the other backends before opening the inventory dashboard.
-
-`start-all.bat` currently launches IAM–Logistics only; start analytics in a separate terminal as above.
+In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.example`). `microservices/start-all.bat` launches IAM–Logistics **and** Analytics (3006). Or start analytics alone as above.
 
 ### How to demo for reviewers
 

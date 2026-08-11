@@ -15,6 +15,8 @@ timeout /t 1 /nobreak >nul
 start "Warehouse:3004" cmd /k "cd /d %~dp0warehouse && npm start"
 timeout /t 1 /nobreak >nul
 start "Logistics:3005" cmd /k "cd /d %~dp0logistics && npm start"
+timeout /t 1 /nobreak >nul
+start "Analytics:3006" cmd /k "cd /d %~dp0analytics && npm start"
 
 echo.
 echo Services launching in separate windows:
@@ -23,7 +25,9 @@ echo   Sales     http://localhost:3002
 echo   Inventory http://localhost:3003
 echo   Warehouse http://localhost:3004
 echo   Logistics http://localhost:3005
+echo   Analytics http://localhost:3006
 echo.
+echo Ensure MongoDB is running before analytics connects.
 echo Next: start frontend-1 with: cd frontend-1 ^&^& npm run dev
 echo.
 pause
