@@ -56,6 +56,7 @@ exports.getReorderSuggestions = async (req, res) => {
         sku: product.sku,
         name: product.name,
         forecastMethod: forecast.forecastMethod,
+        evaluation: forecast.evaluation,
         ...suggestion,
       };
     });

@@ -6,6 +6,10 @@ import {
     ErrorState,
     Spinner,
 } from './AnalyticsPanelState';
+import {
+    formatEvaluationHint,
+    formatForecastMethod,
+} from './forecastDisplay';
 
 function ForecastSummaryCard() {
     const [summary, setSummary] = useState(null);
@@ -26,12 +30,21 @@ function ForecastSummaryCard() {
                     .sort((a, b) => b.predictedDemand - a.predictedDemand)
                     .slice(0, 3);
 
+                const methodsUsed = [
+                    ...new Set(
+                        withDemand
+                            .map((item) => item.forecastMethod)
+                            .filter(Boolean)
+                    ),
+                ];
+
                 setSummary({
                     horizonDays: response.data?.horizonDays || 7,
                     productCount: items.length,
                     productsWithDemand: withDemand.length,
                     totalPredictedDemand: Math.round(totalPredictedDemand),
                     topProducts,
+                    methodsUsed,
                 });
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to load forecast summary');
@@ -70,9 +83,15 @@ function ForecastSummaryCard() {
         );
     }
 
+    const methodSubtitle =
+        summary.methodsUsed.length > 0
+            ? summary.methodsUsed.map(formatForecastMethod).join(' · ')
+            : null;
+
     return (
         <AnalyticsPanelShell
             title={`Demand Forecast (${summary.horizonDays} days)`}
+            subtitle={methodSubtitle}
         >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
@@ -93,13 +112,20 @@ function ForecastSummaryCard() {
                     <h3 className="text-sm font-semibold text-gray-600 mb-2">Top Forecasted Products</h3>
                     <ul className="space-y-2">
                         {summary.topProducts.map((product) => (
-                            <li key={product.productId} className="flex justify-between text-sm">
-                                <span>
-                                    {product.name} (SKU: {product.sku})
-                                </span>
-                                <span className="text-primary font-medium">
-                                    {Math.round(product.predictedDemand)} units
-                                </span>
+                            <li key={product.productId} className="text-sm">
+                                <div className="flex justify-between gap-3">
+                                    <span>
+                                        {product.name} (SKU: {product.sku})
+                                    </span>
+                                    <span className="text-primary font-medium shrink-0">
+                                        {Math.round(product.predictedDemand)} units
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    {formatForecastMethod(product.forecastMethod)}
+                                    {' · '}
+                                    {formatEvaluationHint(product.evaluation)}
+                                </p>
                             </li>
                         ))}
                     </ul>

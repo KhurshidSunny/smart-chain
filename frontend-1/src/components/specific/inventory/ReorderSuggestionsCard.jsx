@@ -6,6 +6,10 @@ import {
     ErrorState,
     Spinner,
 } from './AnalyticsPanelState';
+import {
+    formatEvaluationHint,
+    formatForecastMethod,
+} from './forecastDisplay';
 
 function ReorderSuggestionsCard() {
     const [suggestions, setSuggestions] = useState([]);
@@ -68,6 +72,11 @@ function ReorderSuggestionsCard() {
                                     <p className="text-xs text-gray-400 mt-1">
                                         Stock: {item.stockLevel} · Reorder point: {item.reorderPoint} ·
                                         Forecast: {Math.round(item.predictedDemand)}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        {formatForecastMethod(item.forecastMethod)}
+                                        {' · '}
+                                        {formatEvaluationHint(item.evaluation)}
                                     </p>
                                 </div>
                                 <div className="text-right shrink-0">
