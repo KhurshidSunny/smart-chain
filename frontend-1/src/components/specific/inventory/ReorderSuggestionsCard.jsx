@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getReorderSuggestions } from '../../../services/analyticsService';
+import { getOperatorSettings } from '../../../utils/operatorSettings';
 import {
     AnalyticsPanelShell,
     EmptyState,
@@ -20,7 +21,8 @@ function ReorderSuggestionsCard() {
     useEffect(() => {
         const fetchSuggestions = async () => {
             try {
-                const response = await getReorderSuggestions({ horizonDays: 7 });
+                const horizonDays = getOperatorSettings().forecastHorizonDays;
+                const response = await getReorderSuggestions({ horizonDays });
                 const items = (response.data?.data || []).filter((item) => item.shouldReorder);
                 setHorizonDays(response.data?.horizonDays || 7);
                 setSuggestions(items);

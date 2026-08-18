@@ -18,6 +18,8 @@ import MainLayout from '../components/common/Layout/MainLayout';
 import Index from '../pages/Index';
 import { ROLES } from '../utils/constants';
 import Users from '../pages/admin/Users/Users';
+import SystemSettings from '../pages/admin/SystemSettings';
+import SystemReports from '../pages/admin/SystemReports';
 
 function AppRoutes() {
   return (
@@ -129,6 +131,22 @@ function AppRoutes() {
           element={
             <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
               <Users />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/settings"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+              <SystemSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/reports"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+              <SystemReports />
             </ProtectedRoute>
           }
         />

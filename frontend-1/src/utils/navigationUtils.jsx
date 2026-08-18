@@ -191,7 +191,7 @@ export const getSidebarItems = (userRole) => {
             to: '/users',
             label: 'Administration',
             icon: CogIcon,
-            activePattern: /^\/users($|\/)/,
+            activePattern: /^\/(users|admin)($|\/)/,
             subItems: [
                 {
                     to: '/users',

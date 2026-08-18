@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getReorderSuggestions } from '../../../services/analyticsService';
+import { getOperatorSettings } from '../../../utils/operatorSettings';
 import {
     AnalyticsPanelShell,
     EmptyState,
@@ -19,7 +20,8 @@ function ForecastSummaryCard() {
     useEffect(() => {
         const fetchForecastSummary = async () => {
             try {
-                const response = await getReorderSuggestions({ horizonDays: 7 });
+                const horizonDays = getOperatorSettings().forecastHorizonDays;
+                const response = await getReorderSuggestions({ horizonDays });
                 const items = response.data?.data || [];
                 const withDemand = items.filter((item) => item.predictedDemand > 0);
                 const totalPredictedDemand = withDemand.reduce(
