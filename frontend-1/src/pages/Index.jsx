@@ -23,7 +23,7 @@ const Index = () => {
         {
             icon: Package,
             title: "Smart Inventory",
-            description: "AI-powered inventory management that predicts demand and optimizes stock levels automatically."
+            description: "Inventory tools with demand forecasts and reorder suggestions based on historical order data."
         },
         {
             icon: Truck,
@@ -107,8 +107,8 @@ const Index = () => {
                             </span>
                         </h1>
                         <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
-                            Transform your operations with AI-powered logistics, real-time QR tracking,
-                            and intelligent automation that scales with your business.
+                            Transform your operations with role-based logistics, real-time QR tracking,
+                            and event-driven microservices that scale with your workflow.
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                             <Link

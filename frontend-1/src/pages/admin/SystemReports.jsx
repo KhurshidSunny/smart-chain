@@ -96,7 +96,7 @@ function SystemReports() {
                     reorderCount: reorderItems.filter((item) => item.shouldReorder).length,
                     anomalyCount: anomalies.length,
                     methodsNote:
-                        'Forecast uses moving average or exponential smoothing. Anomalies use z-score on order line quantity. Not a deep-learning model.',
+                        'Forecast uses moving average or exponential smoothing. Anomalies use z-score on order line quantity.',
                 },
             });
             setLoading(false);

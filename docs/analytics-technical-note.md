@@ -4,9 +4,9 @@
 **Authors / team:** Khurshid Khan, Aftab Alam, Afaq Ajaz  
 **Supervisor:** Mr. Omar Bin Samin  
 **Mentoring:** Code for Pakistan  
-**Scope of this note:** the Analytics microservice (port 3006) and its use in the inventory/order UI  
+**Scope of this note:** the Analytics microservice (port 3006) and its use in the inventory/order UI.
 
-This note is written for portfolio readers and scholarship reviewers. It describes what was built, how it works, and what it is *not*.
+This document covers architecture, algorithms, and API endpoints for the analytics extension.
 
 ---
 
@@ -42,7 +42,7 @@ Orders / inventory data (MongoDB)
 
 - Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
-- Methods are **explainable statistics / heuristics**, not trained deep-learning models.
+- Algorithms: moving average, exponential smoothing (forecast), and z-score (anomalies).
 
 ---
 
@@ -101,14 +101,14 @@ Exact numeric outputs depend on the demo data you place; the system is designed 
 
 ## 5. Limitations
 
-- Not a production demand-planning engine; demo catalogs are often sparse or intermittent.
-- Not generative AI or a multi-agent system.
-- Anomalies require **repeated purchases of the same product**; four unrelated SKUs will correctly show no flags.
-- No automatic purchase orders are placed—suggestions are advisory.
+- Suited to demo and pilot use; not a full enterprise demand-planning system.
+- Sparse or intermittent order history reduces forecast and anomaly usefulness.
+- Anomalies require **repeated purchases of the same product**; unrelated SKUs may show no flags.
+- Reorder output is advisory only—no automatic purchase orders are created.
 
 ---
 
-## 6. Future work (honest roadmap)
+## 6. Future work
 
 Possible next steps for research or a Master’s thesis direction:
 

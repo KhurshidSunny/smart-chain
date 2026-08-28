@@ -43,15 +43,18 @@ Blockchain and IoT were studied in the FYP report but were **not** implemented i
 
 ## Local setup
 
-**Requirements:** Node.js 18+, MongoDB on `27017`, RabbitMQ on `5672` (or `docker compose up -d`).
+**Requirements:** Node.js 18+, RabbitMQ on `5672` (local or Docker). MongoDB can be **Atlas** (recommended) or local `27017`.
 
 ```bash
-# Infra (optional if you already run MongoDB + RabbitMQ)
-docker compose up -d
+# RabbitMQ only (if MongoDB Atlas is already in each service .env)
+docker compose up -d rabbitmq
 
-# IAM: roles + demo users
+# Or both local MongoDB + RabbitMQ:
+# docker compose up -d
+
+# IAM: roles + demo users (once; against Atlas or local MONGO_URI in .env)
 cd microservices/iam
-cp .env.example .env   # repeat for each service
+cp .env.example .env   # repeat for each service; set MONGO_URI / JWT_SECRET / RABBITMQ_URL
 npm install
 npm run init-roles
 npm run seed-users
@@ -64,13 +67,15 @@ npm run seed-products
 # Start all backends (Windows)
 # from microservices/: start-all.bat
 
-# Frontend
+# Frontend (localhost API URLs in frontend-1/.env)
 cd frontend-1
 npm install
 npm run dev
 ```
 
 App: http://localhost:5173
+
+For local runs: keep `RABBITMQ_URL=amqp://guest:guest@127.0.0.1:5672` and `frontend-1` `VITE_API_*` on `http://localhost:3001`–`3006`. Atlas `MONGO_URI` does not require a local database process.
 
 ### Demo accounts
 
@@ -89,34 +94,34 @@ Without Docker MongoDB, you can use the in-memory helper: `cd tools && npm insta
 
 ## Analytics service (post-FYP extension)
 
-Added after the original FYP as a **decision-support** layer on the same MongoDB data. It is **not** an autonomous AI agent and does **not** use trained deep-learning models. It uses simple, explainable statistical methods and JWT-protected APIs consumed by `frontend-1` (inventory dashboard + order anomaly badges).
+Decision-support module on the same MongoDB data. It exposes JWT-protected APIs used by `frontend-1` for the inventory dashboard (demand forecast, reorder suggestions) and order anomaly badges.
 
-### What each feature does
+### Features
 
-| Feature | Method (honest) | Where you see it |
+| Feature | Method | Where you see it |
 |---|---|---|
 | Demand history | Daily sold quantities from sales orders (inventory `sold` only as fallback) | API: `GET /demand/:productId` |
 | Forecast | Moving average if history is short; exponential smoothing when enough daily points exist | Inventory → Demand Forecast card (via reorder batch) |
 | Reorder suggestions | `suggestedQty ≈ forecastDemand + reorderPoint − stock` (when positive) | Inventory → Reorder Suggestions |
 | Anomalies | Z-score of an order line quantity vs that **product’s** past line quantities | Orders list/detail badges |
 
-Default horizons: **7 / 14 / 30** days. Anomaly flagging needs enough **same-product** history (about 3+ prior lines); a few one-off orders on different SKUs will correctly show “None”.
+Default horizons: **7 / 14 / 30** days. Anomaly flagging needs enough **same-product** history (about 3+ prior lines); a few one-off orders on different SKUs will show “None”.
 
-### Limits (read before claiming “AI” on applications)
+### Scope
 
-- Methods are classical statistics / heuristics, not neural networks.
-- Demo catalogs are sparse; forecasts are directional aids for operators, not production-grade demand planning.
-- Anomalies detect unusual **quantities**, not fraud graphs or account takeovers.
-- RabbitMQ is not required for analytics reads; other services still need it for the full order flow.
+- Forecasts and reorder suggestions are advisory; they do not place purchase orders automatically.
+- Demo catalogs are limited; outputs improve as more orders are recorded for the same SKU.
+- Anomaly flags compare line quantity against that product’s history (unusual order size), not payment or account fraud.
+- Analytics reads MongoDB only. Sales, Inventory, Warehouse, and Logistics still use RabbitMQ for the full order flow.
 
 ### Run analytics locally
 
-Requires MongoDB (same `smartchain` DB as the other services) and a matching `JWT_SECRET` with IAM.
+Requires MongoDB (same `smartchain` DB — Atlas or local) and a matching `JWT_SECRET` with IAM.
 
-**Start MongoDB before analytics** (this is the usual cause of `ECONNREFUSED 127.0.0.1:27017`):
+**If using local MongoDB** (skip if `MONGO_URI` already points to Atlas):
 
 ```bash
-# Option A — Docker (if Docker Desktop is installed)
+# Option A — Docker
 docker compose up -d mongodb rabbitmq
 
 # Option B — in-memory Mongo on port 27017 (no Docker; keep the window open)
@@ -125,7 +130,7 @@ npm install
 npm run mongo
 ```
 
-If Docker is not installed, use Option B for MongoDB. For RabbitMQ without Docker, install [RabbitMQ for Windows](https://www.rabbitmq.com/docs/install-windows) or start it from an existing local install (`5672`). Analytics itself only needs MongoDB; RabbitMQ is needed for the other microservices when placing orders.
+For RabbitMQ without Docker, install [RabbitMQ for Windows](https://www.rabbitmq.com/docs/install-windows) or start a local install on `5672`. Analytics itself only needs MongoDB; RabbitMQ is needed for the other microservices when placing orders.
 
 ```bash
 cd microservices/analytics
