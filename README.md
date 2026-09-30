@@ -41,6 +41,57 @@ Blockchain and IoT were studied in the FYP report but were **not** implemented i
 | Logistics | 3005 | Shipments and tracking |
 | Analytics | 3006 | Demand history, forecast, reorder, anomalies (post-FYP) |
 
+## Architecture overview
+
+Event-driven order flow uses RabbitMQ between the operational services. Analytics is a **read-side decision-support service**: it uses the same MongoDB data (and IAM JWTs) but does **not** publish order-flow events.
+
+```mermaid
+flowchart LR
+  UI["frontend-1<br/>React / Vite"]
+
+  subgraph ops ["Operational microservices"]
+    IAM["IAM :3001"]
+    Sales["Sales :3002"]
+    Inv["Inventory :3003"]
+    Wh["Warehouse :3004"]
+    Log["Logistics :3005"]
+  end
+
+  An["Analytics :3006<br/>forecast · reorder · anomalies"]
+  MQ["RabbitMQ<br/>topic exchange"]
+  DB[(MongoDB)]
+
+  UI -->|REST + JWT| IAM
+  UI --> Sales
+  UI --> Inv
+  UI --> Wh
+  UI --> Log
+  UI --> An
+
+  Sales <--> MQ
+  Inv <--> MQ
+  Wh <--> MQ
+  Log <--> MQ
+
+  IAM --> DB
+  Sales --> DB
+  Inv --> DB
+  Wh --> DB
+  Log --> DB
+  An --> DB
+```
+
+**Who owns what (analytics):**
+
+| Capability | Owner | Notes |
+|---|---|---|
+| Demand history | **Analytics** | Built from sales order lines (inventory `sold` as fallback) |
+| Short-horizon forecast (MA / ES) + holdout MAE/MAPE | **Analytics** | `GET /forecast/:productId` |
+| Reorder suggestions | **Analytics** | Advisory only; does not create POs |
+| Order-quantity anomaly flags (z-score) | **Analytics** | Shown on sales/admin order UI |
+| Auth / JWT issuance | **IAM** | Analytics validates the same `JWT_SECRET` |
+| Stock, picking, shipping | Inventory / Warehouse / Logistics | Unchanged by analytics |
+
 ## Local setup
 
 **Requirements:** Node.js 18+, RabbitMQ on `5672` (local or Docker). MongoDB can be **Atlas** (recommended) or local `27017`.
