@@ -33,6 +33,7 @@ experiments/
   README.md
   load_demand_history.py
   classical_forecast.py
+  sklearn_lag_forecast.py
   data/
     README.md
     demo_daily_demand.json
@@ -80,6 +81,18 @@ python classical_forecast.py --product-id sku-rice-1kg --horizon-days 7
 
 Importable helpers: `moving_average_forecast`, `exponential_smoothing_forecast`, `evaluate_forecast_holdout`, `mean_absolute_error`, `mean_absolute_percentage_error`.
 
+## Sklearn lag-feature baseline
+
+`sklearn_lag_forecast.py` builds lag-1..lag-N features (optional rolling mean) and fits Ridge or RandomForest. Holdout uses the same short one-step protocol as the classical script. If the series is too short for lagging, the script prints a clear skip reason instead of failing hard.
+
+```powershell
+python sklearn_lag_forecast.py
+python sklearn_lag_forecast.py --product-id sku-rice-1kg --model ridge --n-lags 7
+python sklearn_lag_forecast.py --model random_forest --horizon-days 7
+```
+
+Importable helpers: `build_lag_feature_matrix`, `sklearn_lag_forecast`, `evaluate_sklearn_lag_holdout`.
+
 ## Relation to the Node analytics service
 
 | Concern | Node Analytics (`:3006`) | This folder |
@@ -87,6 +100,6 @@ Importable helpers: `moving_average_forecast`, `exponential_smoothing_forecast`,
 | Live inventory / order UI | Yes | No |
 | MA / ES forecast in production path | Yes | Reimplemented for comparison |
 | Holdout MAE / MAPE | Yes (API) | Offline tables / plots |
-| sklearn baselines | No | Yes (planned scripts) |
+| sklearn lag baseline | No | `sklearn_lag_forecast.py` |
 
 Use the same demo demand history shape where possible so Node and Python results can be compared honestly.
