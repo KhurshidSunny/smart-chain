@@ -112,10 +112,12 @@ Exact numeric outputs depend on the demo data you place; the system is designed 
 
 Possible next steps for research or a Master’s thesis direction:
 
-1. Compare classical methods with a simple supervised model (e.g. gradient boosting on lag features) on larger public retail datasets, extending the existing holdout MAE/MAPE evaluation.
+1. Extend the offline comparison in [forecast-comparison-results.md](./forecast-comparison-results.md) to larger public retail datasets (beyond the demo SKUs).
 2. Intermittent-demand methods (e.g. Croston-style) for sparse SKUs.
 3. Calibrated uncertainty and better operator explanations.
 4. Stronger evaluation harness and regression tests around forecast/anomaly pipelines.
+
+An initial MA / ES / sklearn lag comparison on demo demand data is already documented in that results file and can be regenerated from `experiments/compare_forecast_methods.py`.
 
 ---
 

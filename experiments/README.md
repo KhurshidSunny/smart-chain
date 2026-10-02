@@ -34,6 +34,7 @@ experiments/
   load_demand_history.py
   classical_forecast.py
   sklearn_lag_forecast.py
+  compare_forecast_methods.py
   data/
     README.md
     demo_daily_demand.json
@@ -92,6 +93,16 @@ python sklearn_lag_forecast.py --model random_forest --horizon-days 7
 ```
 
 Importable helpers: `build_lag_feature_matrix`, `sklearn_lag_forecast`, `evaluate_sklearn_lag_holdout`.
+
+## Method comparison report
+
+`compare_forecast_methods.py` runs MA, exponential smoothing, and sklearn lag (Ridge) on the same holdout protocol and can write `docs/forecast-comparison-results.md`.
+
+```powershell
+python compare_forecast_methods.py
+python compare_forecast_methods.py --write-md
+python compare_forecast_methods.py --product-id sku-rice-1kg --write-md
+```
 
 ## Relation to the Node analytics service
 
