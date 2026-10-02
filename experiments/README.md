@@ -31,19 +31,36 @@ pip install -r requirements.txt
 experiments/
   requirements.txt
   README.md
-  data/          # demo demand exports (added with the loader scripts)
-  *.py           # experiment scripts (added over time)
+  load_demand_history.py
+  data/
+    README.md
+    demo_daily_demand.json
+    demo_daily_demand.csv
 ```
 
-## Running scripts
+## Demand history format
 
-With the virtual environment activated:
+Offline experiments expect daily rows with:
+
+| Field | Type | Example |
+|---|---|---|
+| `productId` | string | `sku-rice-1kg` |
+| `date` | `YYYY-MM-DD` | `2025-01-03` |
+| `quantity` | number ≥ 0 | `11` |
+
+JSON may be a list of objects, or `{ "rows": [ ... ] }`. CSV uses the same column names (aliases such as `qty` / `sku` are accepted by the loader).
+
+## Running the demand loader
+
+With the virtual environment activated, from `experiments/`:
 
 ```powershell
-python path\to\script.py
+python load_demand_history.py
+python load_demand_history.py --input data/demo_daily_demand.csv
+python load_demand_history.py --input data/demo_daily_demand.json --product-id sku-rice-1kg
 ```
 
-Each script should print a short summary (metrics or row counts) and exit with a clear error if the input series is too short.
+The script prints per-product day counts, date range, total quantity, and mean daily demand. Later forecast scripts import `load_daily_demand` from this module.
 
 ## Relation to the Node analytics service
 

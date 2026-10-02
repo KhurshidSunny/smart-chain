@@ -1,0 +1,38 @@
+{
+  "description": "Demo daily demand export for offline forecast experiments. Not production data.",
+  "fields": {
+    "productId": "string product id",
+    "date": "YYYY-MM-DD",
+    "quantity": "non-negative daily demand"
+  },
+  "rows": [
+    {"productId": "sku-rice-1kg", "date": "2025-01-01", "quantity": 12},
+    {"productId": "sku-rice-1kg", "date": "2025-01-02", "quantity": 15},
+    {"productId": "sku-rice-1kg", "date": "2025-01-03", "quantity": 11},
+    {"productId": "sku-rice-1kg", "date": "2025-01-04", "quantity": 18},
+    {"productId": "sku-rice-1kg", "date": "2025-01-05", "quantity": 14},
+    {"productId": "sku-rice-1kg", "date": "2025-01-06", "quantity": 9},
+    {"productId": "sku-rice-1kg", "date": "2025-01-07", "quantity": 16},
+    {"productId": "sku-rice-1kg", "date": "2025-01-08", "quantity": 13},
+    {"productId": "sku-rice-1kg", "date": "2025-01-09", "quantity": 17},
+    {"productId": "sku-rice-1kg", "date": "2025-01-10", "quantity": 20},
+    {"productId": "sku-rice-1kg", "date": "2025-01-11", "quantity": 12},
+    {"productId": "sku-rice-1kg", "date": "2025-01-12", "quantity": 19},
+    {"productId": "sku-rice-1kg", "date": "2025-01-13", "quantity": 15},
+    {"productId": "sku-rice-1kg", "date": "2025-01-14", "quantity": 21},
+    {"productId": "sku-oil-1l", "date": "2025-01-01", "quantity": 4},
+    {"productId": "sku-oil-1l", "date": "2025-01-02", "quantity": 6},
+    {"productId": "sku-oil-1l", "date": "2025-01-03", "quantity": 5},
+    {"productId": "sku-oil-1l", "date": "2025-01-04", "quantity": 7},
+    {"productId": "sku-oil-1l", "date": "2025-01-05", "quantity": 3},
+    {"productId": "sku-oil-1l", "date": "2025-01-06", "quantity": 8},
+    {"productId": "sku-oil-1l", "date": "2025-01-07", "quantity": 5},
+    {"productId": "sku-oil-1l", "date": "2025-01-08", "quantity": 6},
+    {"productId": "sku-oil-1l", "date": "2025-01-09", "quantity": 4},
+    {"productId": "sku-oil-1l", "date": "2025-01-10", "quantity": 9},
+    {"productId": "sku-oil-1l", "date": "2025-01-11", "quantity": 5},
+    {"productId": "sku-oil-1l", "date": "2025-01-12", "quantity": 7},
+    {"productId": "sku-oil-1l", "date": "2025-01-13", "quantity": 6},
+    {"productId": "sku-oil-1l", "date": "2025-01-14", "quantity": 8}
+  ]
+}
