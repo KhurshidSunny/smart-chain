@@ -32,6 +32,7 @@ experiments/
   requirements.txt
   README.md
   load_demand_history.py
+  classical_forecast.py
   data/
     README.md
     demo_daily_demand.json
@@ -60,7 +61,24 @@ python load_demand_history.py --input data/demo_daily_demand.csv
 python load_demand_history.py --input data/demo_daily_demand.json --product-id sku-rice-1kg
 ```
 
-The script prints per-product day counts, date range, total quantity, and mean daily demand. Later forecast scripts import `load_daily_demand` from this module.
+The script prints per-product day counts, date range, total quantity, and mean daily demand.
+
+## Classical forecast baselines
+
+`classical_forecast.py` reimplements the Analytics service methods in Python:
+
+- moving average
+- exponential smoothing
+- one-step holdout MAE / MAPE
+
+Defaults match `microservices/analytics/services/forecastService.js` (horizon 7/14/30, alpha 0.3, short holdout).
+
+```powershell
+python classical_forecast.py
+python classical_forecast.py --product-id sku-rice-1kg --horizon-days 7
+```
+
+Importable helpers: `moving_average_forecast`, `exponential_smoothing_forecast`, `evaluate_forecast_holdout`, `mean_absolute_error`, `mean_absolute_percentage_error`.
 
 ## Relation to the Node analytics service
 
