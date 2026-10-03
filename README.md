@@ -87,6 +87,7 @@ flowchart LR
 |---|---|---|
 | Demand history | **Analytics** | Built from sales order lines (inventory `sold` as fallback) |
 | Short-horizon forecast (MA / ES) + holdout MAE/MAPE | **Analytics** | `GET /forecast/:productId` |
+| Forecast method comparison (MA vs ES; optional sklearn cache) | **Analytics** | `GET /forecast/:productId/compare` |
 | Reorder suggestions | **Analytics** | Advisory only; does not create POs |
 | Order-quantity anomaly flags (z-score) | **Analytics** | Shown on sales/admin order UI |
 | Auth / JWT issuance | **IAM** | Analytics validates the same `JWT_SECRET` |
@@ -197,10 +198,13 @@ Health check: http://localhost:3006/health
 |---|---|
 | `GET /demand/:productId` | Daily demand history for a product |
 | `GET /forecast/:productId` | Short-horizon demand forecast + optional holdout `evaluation` (`mae` / `mape`) |
+| `GET /forecast/:productId/compare` | Side-by-side MA vs ES holdout on live history; sklearn metrics from offline cache when available |
 | `GET /reorder` | Reorder suggestions for active products |
 | `GET /anomalies` | Order quantity anomalies |
 
 `GET /forecast/:productId` returns `data.evaluation` when there is enough daily history for a holdout check; otherwise `evaluation` is `null`. Example fields: `holdoutDays`, `pointsEvaluated`, `mae`, `mape`.
+
+`GET /forecast/:productId/compare` always computes moving-average and exponential-smoothing evaluations from Mongo demand history. Sklearn Ridge lag metrics are optional and loaded from `microservices/analytics/data/sklearn_holdout_cache.json` (demo SKU keys such as `sku-rice-1kg`). Use `?sklearnKey=sku-rice-1kg` to attach demo sklearn numbers while classical methods still use the live `:productId` history.
 
 All analytics routes except `/health` need a Bearer JWT from IAM.
 

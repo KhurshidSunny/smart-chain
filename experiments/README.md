@@ -104,6 +104,9 @@ python compare_forecast_methods.py --write-md
 python compare_forecast_methods.py --product-id sku-rice-1kg --write-md
 ```
 
+Demo sklearn holdout numbers used by the Analytics compare API live in  
+`../microservices/analytics/data/sklearn_holdout_cache.json`.
+
 ## Relation to the Node analytics service
 
 | Concern | Node Analytics (`:3006`) | This folder |

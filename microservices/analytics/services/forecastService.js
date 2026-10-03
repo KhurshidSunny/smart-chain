@@ -109,11 +109,27 @@ function predictNextDailyDemand(trainHistory, options = {}) {
   return average(sample);
 }
 
+function predictNextWithMethod(trainHistory, options = {}, method = 'auto') {
+  const resolved = resolveForecastOptions(options);
+
+  if (method === 'moving_average') {
+    return forecastWithMovingAverage(trainHistory, resolved).averageDailyDemand;
+  }
+
+  if (method === 'exponential_smoothing') {
+    return forecastWithExponentialSmoothing(trainHistory, resolved).averageDailyDemand;
+  }
+
+  return predictNextDailyDemand(trainHistory, resolved);
+}
+
 /**
  * Hold out the most recent days, refit on earlier history, and score one-step daily errors.
  * Returns null when history is too short for a meaningful holdout.
+ *
+ * method: 'auto' | 'moving_average' | 'exponential_smoothing'
  */
-function evaluateForecastHoldout(history, options = {}) {
+function evaluateForecastHoldout(history, options = {}, method = 'auto') {
   const quantities = extractQuantities(history);
 
   if (quantities.length < EVAL_MIN_HISTORY_POINTS) {
@@ -135,7 +151,7 @@ function evaluateForecastHoldout(history, options = {}) {
 
   for (let index = trainEnd; index < quantities.length; index += 1) {
     const trainHistory = history.slice(0, index);
-    const predictedDaily = predictNextDailyDemand(trainHistory, options);
+    const predictedDaily = predictNextWithMethod(trainHistory, options, method);
     actuals.push(quantities[index]);
     predictions.push(predictedDaily);
   }
@@ -148,6 +164,32 @@ function evaluateForecastHoldout(history, options = {}) {
     pointsEvaluated: actuals.length,
     mae: mae === null ? null : Number(mae.toFixed(4)),
     mape: mape === null ? null : Number(mape.toFixed(2)),
+    method,
+  };
+}
+
+/**
+ * Side-by-side classical baselines on the same history.
+ * Sklearn metrics are optional and come from an offline cache file when present.
+ */
+function compareClassicalForecastMethods(history, options = {}) {
+  const resolved = resolveForecastOptions(options);
+  const movingAverage = forecastWithMovingAverage(history, resolved);
+  const exponentialSmoothing = forecastWithExponentialSmoothing(history, resolved);
+
+  return {
+    horizonDays: resolved.horizonDays,
+    historyDays: extractQuantities(history).length,
+    methods: {
+      moving_average: {
+        ...movingAverage,
+        evaluation: evaluateForecastHoldout(history, resolved, 'moving_average'),
+      },
+      exponential_smoothing: {
+        ...exponentialSmoothing,
+        evaluation: evaluateForecastHoldout(history, resolved, 'exponential_smoothing'),
+      },
+    },
   };
 }
 
@@ -239,6 +281,7 @@ module.exports = {
   selectForecastMethod,
   resolveForecastOptions,
   evaluateForecastHoldout,
+  compareClassicalForecastMethods,
   meanAbsoluteError,
   meanAbsolutePercentageError,
 };

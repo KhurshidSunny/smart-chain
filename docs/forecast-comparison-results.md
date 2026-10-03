@@ -47,3 +47,17 @@ cd experiments
 python compare_forecast_methods.py
 python compare_forecast_methods.py --product-id sku-rice-1kg --write-md
 ```
+
+## Live API comparison
+
+The Analytics service also exposes a comparison endpoint:
+
+```http
+GET /forecast/:productId/compare
+Authorization: Bearer <JWT>
+```
+
+- Classical MA / ES holdout metrics are computed live from MongoDB demand history.
+- Sklearn metrics are optional and read from `microservices/analytics/data/sklearn_holdout_cache.json`.
+- Example with demo sklearn key:  
+  `GET /forecast/<mongoProductId>/compare?sklearnKey=sku-rice-1kg`

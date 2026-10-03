@@ -9,6 +9,12 @@ const router = express.Router();
 
 router.get('/demand/:productId', authMiddleware, demandController.getProductDemandHistory);
 
+router.get(
+  '/forecast/:productId/compare',
+  authMiddleware,
+  forecastController.compareProductForecastMethods
+);
+
 router.get('/forecast/:productId', authMiddleware, forecastController.getProductForecast);
 
 router.get('/reorder', authMiddleware, reorderController.getReorderSuggestions);

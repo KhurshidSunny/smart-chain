@@ -1,0 +1,32 @@
+{
+  "generatedFrom": "experiments/data/demo_daily_demand.json",
+  "notes": "Offline sklearn Ridge lag-holdout metrics for demo SKUs. Live Mongo product ObjectIds are usually absent here; classical MA/ES comparison is always computed from live history.",
+  "products": {
+    "sku-rice-1kg": {
+      "forecastMethod": "sklearn_lag_ridge",
+      "nLags": 7,
+      "averageDailyDemand": 20.596,
+      "evaluation": {
+        "holdoutDays": 3,
+        "pointsEvaluated": 3,
+        "mae": 5.6385,
+        "mape": 30.54,
+        "method": "sklearn_lag_ridge"
+      },
+      "notes": "Demo catalog product key used by Python experiments."
+    },
+    "sku-oil-1l": {
+      "forecastMethod": "sklearn_lag_ridge",
+      "nLags": 7,
+      "averageDailyDemand": 8.229,
+      "evaluation": {
+        "holdoutDays": 3,
+        "pointsEvaluated": 3,
+        "mae": 1.617,
+        "mape": 22.46,
+        "method": "sklearn_lag_ridge"
+      },
+      "notes": "Demo catalog product key used by Python experiments."
+    }
+  }
+}
