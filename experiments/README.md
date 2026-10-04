@@ -35,10 +35,12 @@ experiments/
   classical_forecast.py
   sklearn_lag_forecast.py
   compare_forecast_methods.py
+  evaluate_zscore_anomalies.py
   data/
     README.md
     demo_daily_demand.json
     demo_daily_demand.csv
+    anomaly_labels.json
 ```
 
 ## Demand history format
@@ -106,6 +108,22 @@ python compare_forecast_methods.py --product-id sku-rice-1kg --write-md
 
 Demo sklearn holdout numbers used by the Analytics compare API live in  
 `../microservices/analytics/data/sklearn_holdout_cache.json`.
+
+## Z-score anomaly evaluation
+
+`evaluate_zscore_anomalies.py` scores the labeled demo set in
+`data/anomaly_labels.json` with leave-one-out history per product and sweeps
+z-score thresholds (default 2.0, 2.5, 3.0). It prints precision / recall / F1 and
+can write `docs/anomaly-evaluation-results.md`.
+
+```powershell
+python evaluate_zscore_anomalies.py
+python evaluate_zscore_anomalies.py --write-md
+python evaluate_zscore_anomalies.py --thresholds 2.0,2.5,3.0 --write-md
+```
+
+Labels in `anomaly_labels.json` are injected demo ground truth for method checks,
+not production fraud labels.
 
 ## Relation to the Node analytics service
 
