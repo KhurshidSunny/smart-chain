@@ -36,6 +36,7 @@ experiments/
   sklearn_lag_forecast.py
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
+  compare_isolation_forest_anomalies.py
   data/
     README.md
     demo_daily_demand.json
@@ -124,6 +125,18 @@ python evaluate_zscore_anomalies.py --thresholds 2.0,2.5,3.0 --write-md
 
 Labels in `anomaly_labels.json` are injected demo ground truth for method checks,
 not production fraud labels.
+
+## Isolation Forest comparison
+
+`compare_isolation_forest_anomalies.py` runs Isolation Forest on the same labeled
+set and leave-one-out protocol, then writes a combined comparison into
+`docs/anomaly-evaluation-results.md` (z-score vs Isolation Forest).
+
+```powershell
+python compare_isolation_forest_anomalies.py
+python compare_isolation_forest_anomalies.py --write-md
+python compare_isolation_forest_anomalies.py --contaminations 0.1,0.15,0.2 --write-md
+```
 
 ## Relation to the Node analytics service
 
