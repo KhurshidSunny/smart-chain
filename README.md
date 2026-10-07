@@ -18,6 +18,17 @@ Role-based web app for a simple order-to-delivery flow:
 
 Blockchain and IoT were studied in the FYP report but were **not** implemented in the MVP (timeline/budget).
 
+## Evaluation and documentation
+
+The post-FYP analytics extension was evaluated offline on small synthetic demo datasets: forecast methods (moving average, exponential smoothing, sklearn Ridge lag model) by holdout MAE/MAPE, and order-quantity anomaly detectors (z-score, Isolation Forest) by precision, recall, and F1 on 42 labeled rows. The numbers show that the evaluation pipeline works; they are not production results.
+
+| Document | Contents |
+|---|---|
+| [Project overview](docs/FOR_REVIEWERS.md) | Problem, architecture, methods, key metrics, 5-step demo, FYP vs post-FYP work, limitations |
+| [Forecast comparison results](docs/forecast-comparison-results.md) | MA vs ES vs sklearn Ridge holdout MAE/MAPE per demo SKU |
+| [Anomaly evaluation results](docs/anomaly-evaluation-results.md) | Z-score threshold sweep, Isolation Forest contamination sweep, best-of-each comparison |
+| [Analytics technical note](docs/analytics-technical-note.md) | Algorithms, evaluation protocols, limitations, future work |
+
 ## Stack
 
 | Layer | Tech |
@@ -210,7 +221,7 @@ All analytics routes except `/health` need a Bearer JWT from IAM.
 
 In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.example`). `microservices/start-all.bat` launches IAM–Logistics **and** Analytics (3006). Or start analytics alone as above.
 
-### How to demo for reviewers
+### How to demo
 
 1. Seed users/products; place several orders as **customer** (repeat the **same SKU** with varied quantities if you want anomaly badges).
 2. Login as **inventory** → Inventory Dashboard → forecast + reorder cards.
