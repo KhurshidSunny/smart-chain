@@ -1,10 +1,10 @@
-# Smart-Chain — Guide
+# Smart-Chain — Project Overview
 
+Problem, design, analytics methods, evaluation results, and local setup in one page.
 
-
-**Author of the post-FYP extension:** Khurshid Khan Ahmadzai  
 **Original FYP team:** Khurshid Khan, Aftab Alam, Afaq Ajaz  
-**Supervisor:** Mr. Omar Bin Samin (IMSciences) · **Mentoring:** Code for Pakistan
+**Supervisor:** Mr. Omar Bin Samin (IMSciences) · **Mentoring:** Code for Pakistan  
+**Analytics extension:** Khurshid Khan Ahmadzai
 
 ---
 
@@ -88,6 +88,4 @@ Blockchain and IoT were studied in the FYP report but not implemented.
 - Anomaly labels are injected for method testing, not real fraud labels; the detector flags unusual order sizes only.
 - Forecasts need repeated orders for the same SKU; sparse or intermittent demand reduces quality.
 - Reorder output is advisory; no purchase orders are created automatically.
-- No deep learning is used or claimed.
-
-
+- Methods are classical statistics and lightweight ML; no deep learning models are used.

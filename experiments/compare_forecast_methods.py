@@ -1,6 +1,6 @@
 """Compare MA, exponential smoothing, and sklearn lag forecasts on the same holdout.
 
-Writes a markdown results table suitable for scholarship / portfolio documentation.
+Optionally writes the results table to docs/forecast-comparison-results.md.
 """
 
 from __future__ import annotations
