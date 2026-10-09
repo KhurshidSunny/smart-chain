@@ -37,6 +37,7 @@ experiments/
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
   compare_isolation_forest_anomalies.py
+  simulate_demand_shock.py
   data/
     README.md
     demo_daily_demand.json
@@ -136,6 +137,19 @@ set and leave-one-out protocol, then writes a combined comparison into
 python compare_isolation_forest_anomalies.py
 python compare_isolation_forest_anomalies.py --write-md
 python compare_isolation_forest_anomalies.py --contaminations 0.1,0.15,0.2 --write-md
+```
+
+## Demand shock simulation
+
+`simulate_demand_shock.py` multiplies the last day(s) of a demo product series by a
+spike factor (default 3×), then compares moving-average and exponential-smoothing
+fit / holdout metrics and a last-day z-score before and after. It can write
+`docs/demand-shock-simulation.md`. The input demand file is not modified.
+
+```powershell
+python simulate_demand_shock.py
+python simulate_demand_shock.py --write-md
+python simulate_demand_shock.py --product-id sku-oil-1l --spike-factor 4 --write-md
 ```
 
 ## Relation to the Node analytics service

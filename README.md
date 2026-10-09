@@ -27,6 +27,7 @@ The post-FYP analytics extension was evaluated offline on small synthetic demo d
 | [Project overview](docs/FOR_REVIEWERS.md) | Problem, architecture, methods, key metrics, 5-step demo, FYP vs post-FYP work, limitations |
 | [Forecast comparison results](docs/forecast-comparison-results.md) | MA vs ES vs sklearn Ridge holdout MAE/MAPE per demo SKU |
 | [Anomaly evaluation results](docs/anomaly-evaluation-results.md) | Z-score threshold sweep, Isolation Forest contamination sweep, best-of-each comparison |
+| [Demand shock simulation](docs/demand-shock-simulation.md) | Before/after MA and ES metrics after an injected demand spike on a demo SKU |
 | [Analytics technical note](docs/analytics-technical-note.md) | Algorithms, evaluation protocols, limitations, future work |
 
 ## Stack
