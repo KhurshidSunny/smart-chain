@@ -30,6 +30,7 @@ Five operational Node.js/Express microservices (IAM, Sales, Inventory, Warehouse
 | Demand forecast | Moving average (short history); exponential smoothing, α ≈ 0.3 (≥ 7 daily points) | Sklearn lag-feature Ridge regression |
 | Forecast quality | One-step holdout on recent days → MAE / MAPE | Same holdout protocol for all methods |
 | Reorder | `max(0, ⌈forecast⌉ + reorderPoint − stock)` | — |
+| Low stock signal | RabbitMQ `analytics.low_stock.predicted` when `predictedDemand > stockLevel` (on `GET /reorder`) | Log subscriber in Analytics (demo) |
 | Order anomalies | Z-score vs same-product history (default threshold 2.5, needs 3+ prior lines) | Isolation Forest on `[quantity, quantity − peer_mean]` |
 
 ## 4. Key metrics (demo data)

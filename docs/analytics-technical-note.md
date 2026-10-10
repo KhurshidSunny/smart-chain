@@ -34,14 +34,16 @@ Orders / inventory data (MongoDB)
    ├── demand aggregation
    ├── forecast (+ optional method compare)
    ├── reorder suggestions
+   ├── LowStockPredicted (RabbitMQ, advisory)
    └── anomaly detection (z-score live)
         │
-        ▼
- frontend-1 (inventory dashboard, order badges)
+        ├──► frontend-1 (inventory dashboard, order badges)
+        └──► RabbitMQ topic exchange (analytics.low_stock.predicted)
 ```
 
 - Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
+- On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created.
 - **Live path:** moving average / exponential smoothing (forecast), z-score (anomalies).
 - **Offline experiments:** sklearn lag (Ridge) forecast baseline; Isolation Forest anomaly baseline. These strengthen the research comparison story; they are not required for the UI demo.
 
@@ -77,6 +79,19 @@ For each **active** product:
 \]
 
 A human-readable `reason` explains whether stock is below reorder point and/or forecast exceeds available stock.
+
+When forecasted demand exceeds current stock (`predictedDemand > stockLevel`), Analytics also publishes:
+
+| Field | Meaning |
+|---|---|
+| Routing key | `analytics.low_stock.predicted` |
+| `event` | `"LowStockPredicted"` |
+| `productId` / `sku` / `name` | Product identity |
+| `stockLevel` / `predictedDemand` / `horizonDays` | Comparison inputs |
+| `forecastMethod` / `reorderPoint` / `suggestedQuantity` | Context from the reorder calculation |
+| `emittedAt` | ISO timestamp |
+
+The reorder HTTP response includes `lowStockEventsPublished` (count of events attempted). If RabbitMQ is down, reorder JSON is still returned and publish is skipped with a warning.
 
 ### 3.4 Order quantity anomalies
 

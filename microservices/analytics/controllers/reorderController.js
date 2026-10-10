@@ -5,6 +5,9 @@ const {
   resolveForecastOptions,
 } = require('../services/forecastService');
 const { calculateReorderSuggestion } = require('../services/reorderSuggestionService');
+const {
+  publishLowStockPredictedBatch,
+} = require('../services/lowStockPredictedService');
 
 function groupHistoryByProduct(historyPoints) {
   const byProduct = new Map();
@@ -68,9 +71,12 @@ exports.getReorderSuggestions = async (req, res) => {
       return b.suggestedQuantity - a.suggestedQuantity;
     });
 
+    const lowStockEventsPublished = publishLowStockPredictedBatch(data);
+
     res.status(200).json({
       horizonDays: options.horizonDays,
       count: data.length,
+      lowStockEventsPublished,
       data,
     });
   } catch (err) {
