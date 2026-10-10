@@ -1,0 +1,7 @@
+productId,method,mae,mape
+sku-oil-1l,Moving average,1.1905,16.04
+sku-oil-1l,Exponential smoothing,1.0538,14.15
+sku-oil-1l,Sklearn lag (Ridge),1.6170,22.46
+sku-rice-1kg,Moving average,3.2381,16.27
+sku-rice-1kg,Exponential smoothing,3.4816,17.98
+sku-rice-1kg,Sklearn lag (Ridge),5.6385,30.54

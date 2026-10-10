@@ -69,11 +69,14 @@ The live service keeps z-score (default 2.5) because it is simple to explain to 
    python evaluate_zscore_anomalies.py --write-md
    python compare_isolation_forest_anomalies.py --write-md
    python simulate_demand_shock.py --write-md
+   python export_forecast_evaluation_csv.py
    ```
 
 Health check without login: http://localhost:3006/health
 
 Optional stress check: [demand-shock-simulation.md](./demand-shock-simulation.md) shows how MA/ES and a last-day z-score change when the end of a demo series is spiked.
+
+Downloadable forecast holdout rows (productId, method, mae, mape): [samples/evaluation_rows.csv](./samples/evaluation_rows.csv). Regenerate with `python export_forecast_evaluation_csv.py` from `experiments/`.
 
 ## 6. FYP vs post-FYP work
 

@@ -198,6 +198,7 @@ See the root [README](../README.md) — Analytics service section. Typical path:
 | [forecast-comparison-results.md](./forecast-comparison-results.md) | MA / ES / sklearn holdout tables |
 | [anomaly-evaluation-results.md](./anomaly-evaluation-results.md) | Z-score vs Isolation Forest metrics |
 | [demand-shock-simulation.md](./demand-shock-simulation.md) | Before/after forecast metrics under an injected demand spike |
+| [samples/evaluation_rows.csv](./samples/evaluation_rows.csv) | Holdout MAE/MAPE CSV export (productId, method, mae, mape) |
 
 ---
 

@@ -38,6 +38,7 @@ experiments/
   evaluate_zscore_anomalies.py
   compare_isolation_forest_anomalies.py
   simulate_demand_shock.py
+  export_forecast_evaluation_csv.py
   data/
     README.md
     demo_daily_demand.json
@@ -151,6 +152,21 @@ python simulate_demand_shock.py
 python simulate_demand_shock.py --write-md
 python simulate_demand_shock.py --product-id sku-oil-1l --spike-factor 4 --write-md
 ```
+
+## Forecast evaluation CSV export
+
+`export_forecast_evaluation_csv.py` runs the same MA / exponential smoothing /
+sklearn Ridge holdout comparison and writes a flat CSV
+(`productId`, `method`, `mae`, `mape`). Default output:
+`../docs/samples/evaluation_rows.csv`.
+
+```powershell
+python export_forecast_evaluation_csv.py
+python export_forecast_evaluation_csv.py --product-id sku-rice-1kg --output ../docs/samples/evaluation_rows.csv
+```
+
+Empty `mae` / `mape` cells mean that method could not be scored on that series
+(for example, too short for sklearn lag features).
 
 ## Relation to the Node analytics service
 
