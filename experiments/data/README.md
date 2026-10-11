@@ -2,8 +2,8 @@
 
 | File | Format | Contents |
 |---|---|---|
-| `demo_daily_demand.json` | JSON | Two SKUs, 14 days each |
-| `demo_daily_demand.csv` | CSV | Same schema, shorter sample |
+| `demo_daily_demand.json` | JSON | Three SKUs, 14 days each (includes intermittent `sku-spare-filter`) |
+| `demo_daily_demand.csv` | CSV | Same schema; rice/oil shorter sample + full spare-filter series |
 | `anomaly_labels.json` | JSON | Labeled order-line quantities for anomaly evaluation |
 
 ## Required fields (daily demand)

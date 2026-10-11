@@ -20,12 +20,12 @@ Blockchain and IoT were studied in the FYP report but were **not** implemented i
 
 ## Evaluation and documentation
 
-The post-FYP analytics extension was evaluated offline on small synthetic demo datasets: forecast methods (moving average, exponential smoothing, sklearn Ridge lag model) by holdout MAE/MAPE, and order-quantity anomaly detectors (z-score, Isolation Forest) by precision, recall, and F1 on 42 labeled rows. The numbers show that the evaluation pipeline works; they are not production results.
+The post-FYP analytics extension was evaluated offline on small synthetic demo datasets: forecast methods (moving average, exponential smoothing, Croston for intermittent demand, sklearn Ridge lag model) by holdout MAE/MAPE, and order-quantity anomaly detectors (z-score, Isolation Forest) by precision, recall, and F1 on 42 labeled rows. The numbers show that the evaluation pipeline works; they are not production results.
 
 | Document | Contents |
 |---|---|
 | [Project overview](docs/FOR_REVIEWERS.md) | Problem, architecture, methods, key metrics, 5-step demo, FYP vs post-FYP work, limitations |
-| [Forecast comparison results](docs/forecast-comparison-results.md) | MA vs ES vs sklearn Ridge holdout MAE/MAPE per demo SKU |
+| [Forecast comparison results](docs/forecast-comparison-results.md) | MA vs ES vs Croston vs sklearn Ridge holdout MAE/MAPE per demo SKU |
 | [Anomaly evaluation results](docs/anomaly-evaluation-results.md) | Z-score threshold sweep, Isolation Forest contamination sweep, best-of-each comparison |
 | [Demand shock simulation](docs/demand-shock-simulation.md) | Before/after MA and ES metrics after an injected demand spike on a demo SKU |
 | [Forecast evaluation CSV](docs/samples/evaluation_rows.csv) | Holdout MAE/MAPE rows (productId, method, mae, mape) for offline review |
@@ -101,7 +101,7 @@ flowchart LR
 |---|---|---|
 | Demand history | **Analytics** | Built from sales order lines (inventory `sold` as fallback) |
 | Short-horizon forecast (MA / ES) + holdout MAE/MAPE | **Analytics** | `GET /forecast/:productId` |
-| Forecast method comparison (MA vs ES; optional sklearn cache) | **Analytics** | `GET /forecast/:productId/compare` |
+| Forecast method comparison (MA vs ES vs Croston; optional sklearn cache) | **Analytics** | `GET /forecast/:productId/compare` |
 | Reorder suggestions | **Analytics** | Advisory only; does not create POs |
 | `LowStockPredicted` event | **Analytics** | RabbitMQ when `predictedDemand > stockLevel` on `GET /reorder` |
 | Order-quantity anomaly flags (z-score) | **Analytics** | Shown on sales/admin order UI |
@@ -168,7 +168,7 @@ Decision-support module on the same MongoDB data. It exposes JWT-protected APIs 
 | Feature | Method | Where you see it |
 |---|---|---|
 | Demand history | Daily sold quantities from sales orders (inventory `sold` only as fallback) | API: `GET /demand/:productId` |
-| Forecast | Moving average if history is short; exponential smoothing when enough daily points exist | Inventory → Demand Forecast card (via reorder batch) |
+| Forecast | Croston when demand is intermittent (≥ 40% zero days); else exponential smoothing (≥ 7 points) or moving average | Inventory → Demand Forecast card (via reorder batch) |
 | Reorder suggestions | `suggestedQty ≈ forecastDemand + reorderPoint − stock` (when positive) | Inventory → Reorder Suggestions |
 | Low-stock signal | Publishes `analytics.low_stock.predicted` when `predictedDemand > stockLevel` | Analytics logs (+ RabbitMQ); response field `lowStockEventsPublished` |
 | Anomalies | Z-score of an order line quantity vs that **product’s** past line quantities | Orders list/detail badges |
@@ -215,7 +215,7 @@ Health check: http://localhost:3006/health
 |---|---|
 | `GET /demand/:productId` | Daily demand history for a product |
 | `GET /forecast/:productId` | Short-horizon demand forecast + optional holdout `evaluation` (`mae` / `mape`) |
-| `GET /forecast/:productId/compare` | Side-by-side MA vs ES holdout on live history; sklearn metrics from offline cache when available |
+| `GET /forecast/:productId/compare` | Side-by-side MA / ES / Croston holdout on live history; sklearn metrics from offline cache when available |
 | `GET /reorder` | Reorder suggestions for active products; publishes `LowStockPredicted` when forecast exceeds stock |
 | `GET /anomalies` | Order quantity anomalies |
 
@@ -223,7 +223,7 @@ Health check: http://localhost:3006/health
 
 `GET /forecast/:productId` returns `data.evaluation` when there is enough daily history for a holdout check; otherwise `evaluation` is `null`. Example fields: `holdoutDays`, `pointsEvaluated`, `mae`, `mape`.
 
-`GET /forecast/:productId/compare` always computes moving-average and exponential-smoothing evaluations from Mongo demand history. Sklearn Ridge lag metrics are optional and loaded from `microservices/analytics/data/sklearn_holdout_cache.json` (demo SKU keys such as `sku-rice-1kg`). Use `?sklearnKey=sku-rice-1kg` to attach demo sklearn numbers while classical methods still use the live `:productId` history.
+`GET /forecast/:productId/compare` always computes moving-average, exponential-smoothing, and Croston evaluations from Mongo demand history. The live forecast path selects Croston when the series is intermittent. Sklearn Ridge lag metrics are optional and loaded from `microservices/analytics/data/sklearn_holdout_cache.json` (demo SKU keys such as `sku-rice-1kg`). Use `?sklearnKey=sku-rice-1kg` to attach demo sklearn numbers while classical methods still use the live `:productId` history.
 
 All analytics routes except `/health` need a Bearer JWT from IAM.
 

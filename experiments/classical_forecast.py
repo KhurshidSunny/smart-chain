@@ -3,6 +3,7 @@
 Methods mirror microservices/analytics/services/forecastService.js:
   - moving average over a lookback window
   - simple exponential smoothing
+  - Croston for intermittent (sparse / zero-heavy) demand
   - one-step holdout evaluation with MAE and MAPE
 """
 
@@ -20,6 +21,8 @@ DEFAULT_SMOOTHING_ALPHA = 0.3
 SMOOTHING_MIN_POINTS = 7
 EVAL_MIN_HISTORY_POINTS = 4
 EVAL_MAX_HOLDOUT_DAYS = 3
+INTERMITTENT_ZERO_RATIO = 0.4
+CROSTON_MIN_DEMAND_EVENTS = 2
 
 WINDOW_BY_HORIZON = {
     7: 7,
@@ -177,32 +180,122 @@ def exponential_smoothing_forecast(
     }
 
 
+def count_demand_events(quantities: Sequence[float]) -> int:
+    return sum(1 for value in quantities if value > 0)
+
+
+def zero_day_ratio(quantities: Sequence[float]) -> float:
+    if not quantities:
+        return 0.0
+    zeros = sum(1 for value in quantities if value == 0)
+    return zeros / len(quantities)
+
+
+def is_intermittent_series(quantities: Sequence[float]) -> bool:
+    return (
+        len(quantities) >= EVAL_MIN_HISTORY_POINTS
+        and count_demand_events(quantities) >= CROSTON_MIN_DEMAND_EVENTS
+        and zero_day_ratio(quantities) >= INTERMITTENT_ZERO_RATIO
+    )
+
+
+def croston_forecast(
+    history: Sequence[dict[str, Any]] | Sequence[float],
+    *,
+    horizon_days: int | None = None,
+    window: int | None = None,
+    alpha: float | None = None,
+) -> dict[str, Any]:
+    """Croston intermittent demand: smooth size and inter-demand interval."""
+    options = resolve_forecast_options(horizon_days, window, alpha)
+    quantities = extract_quantities(history)
+    smoothing_alpha = float(options["alpha"])
+    horizon = int(options["horizonDays"])
+    events = count_demand_events(quantities)
+    ratio = zero_day_ratio(quantities)
+
+    if not quantities or events == 0:
+        return {
+            "forecastMethod": "croston",
+            "window": None,
+            "alpha": smoothing_alpha,
+            "horizonDays": horizon,
+            "averageDailyDemand": 0.0,
+            "predictedDemand": 0.0,
+            "pointsUsed": len(quantities),
+            "demandEvents": 0,
+            "zeroDayRatio": round(ratio, 4),
+        }
+
+    smoothed_size: float | None = None
+    smoothed_interval: float | None = None
+    periods_since_demand = 0
+
+    for demand in quantities:
+        periods_since_demand += 1
+        if demand <= 0:
+            continue
+        if smoothed_size is None:
+            smoothed_size = demand
+            smoothed_interval = float(periods_since_demand)
+        else:
+            smoothed_size = (
+                smoothing_alpha * demand + (1.0 - smoothing_alpha) * smoothed_size
+            )
+            smoothed_interval = (
+                smoothing_alpha * periods_since_demand
+                + (1.0 - smoothing_alpha) * smoothed_interval
+            )
+        periods_since_demand = 0
+
+    assert smoothed_size is not None and smoothed_interval is not None
+    interval = smoothed_interval if smoothed_interval > 0 else 1.0
+    average_daily = smoothed_size / interval
+
+    return {
+        "forecastMethod": "croston",
+        "window": None,
+        "alpha": smoothing_alpha,
+        "horizonDays": horizon,
+        "averageDailyDemand": round(average_daily, 4),
+        "predictedDemand": round(average_daily * horizon, 4),
+        "pointsUsed": len(quantities),
+        "demandEvents": events,
+        "zeroDayRatio": round(ratio, 4),
+    }
+
+
 def _predict_next_daily(
     train_history: Sequence[dict[str, Any]] | Sequence[float],
     options: dict[str, float | int],
+    method: str = "auto",
 ) -> float:
     quantities = extract_quantities(train_history)
     if not quantities:
         return 0.0
 
+    kwargs = {
+        "horizon_days": int(options["horizonDays"]),
+        "window": int(options["window"]),
+        "alpha": float(options["alpha"]),
+    }
+
+    if method == "moving_average":
+        return float(moving_average_forecast(train_history, **kwargs)["averageDailyDemand"])
+    if method == "exponential_smoothing":
+        return float(
+            exponential_smoothing_forecast(train_history, **kwargs)["averageDailyDemand"]
+        )
+    if method == "croston":
+        return float(croston_forecast(train_history, **kwargs)["averageDailyDemand"])
+
+    if is_intermittent_series(quantities):
+        return float(croston_forecast(train_history, **kwargs)["averageDailyDemand"])
     if len(quantities) >= SMOOTHING_MIN_POINTS:
         return float(
-            exponential_smoothing_forecast(
-                train_history,
-                horizon_days=int(options["horizonDays"]),
-                window=int(options["window"]),
-                alpha=float(options["alpha"]),
-            )["averageDailyDemand"]
+            exponential_smoothing_forecast(train_history, **kwargs)["averageDailyDemand"]
         )
-
-    return float(
-        moving_average_forecast(
-            train_history,
-            horizon_days=int(options["horizonDays"]),
-            window=int(options["window"]),
-            alpha=float(options["alpha"]),
-        )["averageDailyDemand"]
-    )
+    return float(moving_average_forecast(train_history, **kwargs)["averageDailyDemand"])
 
 
 def evaluate_forecast_holdout(
@@ -216,9 +309,10 @@ def evaluate_forecast_holdout(
     """One-step holdout on the most recent days (same idea as the Node service).
 
     method:
-      - "auto": MA when history is short, ES when long enough (Node default)
+      - "auto": Croston when intermittent; else ES when long enough, else MA
       - "moving_average"
       - "exponential_smoothing"
+      - "croston"
     """
     options = resolve_forecast_options(horizon_days, window, alpha)
     quantities = extract_quantities(history)
@@ -244,27 +338,7 @@ def evaluate_forecast_holdout(
 
     for index in range(train_end, len(quantities)):
         train = points[:index]
-        if method == "moving_average":
-            predicted = float(
-                moving_average_forecast(
-                    train,
-                    horizon_days=int(options["horizonDays"]),
-                    window=int(options["window"]),
-                    alpha=float(options["alpha"]),
-                )["averageDailyDemand"]
-            )
-        elif method == "exponential_smoothing":
-            predicted = float(
-                exponential_smoothing_forecast(
-                    train,
-                    horizon_days=int(options["horizonDays"]),
-                    window=int(options["window"]),
-                    alpha=float(options["alpha"]),
-                )["averageDailyDemand"]
-            )
-        else:
-            predicted = _predict_next_daily(train, options)
-
+        predicted = _predict_next_daily(train, options, method=method)
         actuals.append(quantities[index])
         predictions.append(predicted)
 
@@ -294,17 +368,24 @@ def run_baselines_for_product(
     horizon_days: int = DEFAULT_HORIZON_DAYS,
 ) -> dict[str, Any]:
     history = history_points_from_series(series_frame)
+    quantities = extract_quantities(history)
     ma = moving_average_forecast(history, horizon_days=horizon_days)
     es = exponential_smoothing_forecast(history, horizon_days=horizon_days)
+    croston = croston_forecast(history, horizon_days=horizon_days)
     return {
         "points": len(history),
+        "intermittent": is_intermittent_series(quantities),
         "moving_average": ma,
         "exponential_smoothing": es,
+        "croston": croston,
         "holdout_moving_average": evaluate_forecast_holdout(
             history, horizon_days=horizon_days, method="moving_average"
         ),
         "holdout_exponential_smoothing": evaluate_forecast_holdout(
             history, horizon_days=horizon_days, method="exponential_smoothing"
+        ),
+        "holdout_croston": evaluate_forecast_holdout(
+            history, horizon_days=horizon_days, method="croston"
         ),
         "holdout_auto": evaluate_forecast_holdout(
             history, horizon_days=horizon_days, method="auto"
@@ -324,7 +405,10 @@ def _format_holdout(label: str, evaluation: dict[str, Any] | None) -> str:
 def main() -> int:
     default_data = Path(__file__).resolve().parent / "data" / "demo_daily_demand.json"
     parser = argparse.ArgumentParser(
-        description="Run moving-average and exponential-smoothing baselines on demand history."
+        description=(
+            "Run moving-average, exponential-smoothing, and Croston baselines "
+            "on demand history."
+        )
     )
     parser.add_argument(
         "--input",
@@ -357,7 +441,11 @@ def main() -> int:
         )
         ma = result["moving_average"]
         es = result["exponential_smoothing"]
-        print(f"\nproductId={product_id}  historyDays={result['points']}")
+        croston = result["croston"]
+        print(
+            f"\nproductId={product_id}  historyDays={result['points']}  "
+            f"intermittent={result['intermittent']}"
+        )
         print(
             f"  MA: avgDaily={ma['averageDailyDemand']}  "
             f"predicted={ma['predictedDemand']}  window={ma['window']}"
@@ -366,8 +454,14 @@ def main() -> int:
             f"  ES: avgDaily={es['averageDailyDemand']}  "
             f"predicted={es['predictedDemand']}  alpha={es['alpha']}"
         )
+        print(
+            f"  Croston: avgDaily={croston['averageDailyDemand']}  "
+            f"predicted={croston['predictedDemand']}  "
+            f"events={croston['demandEvents']}  zeroRatio={croston['zeroDayRatio']}"
+        )
         print(_format_holdout("MA holdout", result["holdout_moving_average"]))
         print(_format_holdout("ES holdout", result["holdout_exponential_smoothing"]))
+        print(_format_holdout("Croston holdout", result["holdout_croston"]))
         print(_format_holdout("auto holdout", result["holdout_auto"]))
 
     return 0

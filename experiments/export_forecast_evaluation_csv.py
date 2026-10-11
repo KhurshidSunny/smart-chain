@@ -1,7 +1,7 @@
 """Export forecast holdout evaluation rows to CSV for offline review.
 
 Writes one row per productId × method with mae and mape from the same protocol
-as compare_forecast_methods.py (MA, exponential smoothing, sklearn Ridge lag).
+as compare_forecast_methods.py (MA, ES, Croston, sklearn Ridge lag).
 """
 
 from __future__ import annotations

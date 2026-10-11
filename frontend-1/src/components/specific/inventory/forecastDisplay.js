@@ -5,6 +5,9 @@ export function formatForecastMethod(method) {
   if (method === 'moving_average') {
     return 'Moving average';
   }
+  if (method === 'croston') {
+    return 'Croston';
+  }
   return method || 'n/a';
 }
 

@@ -33,6 +33,20 @@
     {"productId": "sku-oil-1l", "date": "2025-01-11", "quantity": 5},
     {"productId": "sku-oil-1l", "date": "2025-01-12", "quantity": 7},
     {"productId": "sku-oil-1l", "date": "2025-01-13", "quantity": 6},
-    {"productId": "sku-oil-1l", "date": "2025-01-14", "quantity": 8}
+    {"productId": "sku-oil-1l", "date": "2025-01-14", "quantity": 8},
+    {"productId": "sku-spare-filter", "date": "2025-01-01", "quantity": 5},
+    {"productId": "sku-spare-filter", "date": "2025-01-02", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-03", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-04", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-05", "quantity": 8},
+    {"productId": "sku-spare-filter", "date": "2025-01-06", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-07", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-08", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-09", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-10", "quantity": 6},
+    {"productId": "sku-spare-filter", "date": "2025-01-11", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-12", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-13", "quantity": 0},
+    {"productId": "sku-spare-filter", "date": "2025-01-14", "quantity": 4}
   ]
 }

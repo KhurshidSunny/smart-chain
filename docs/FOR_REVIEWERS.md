@@ -27,7 +27,7 @@ Five operational Node.js/Express microservices (IAM, Sales, Inventory, Warehouse
 
 | Question | Live method (Analytics service) | Offline comparison (`experiments/`) |
 |---|---|---|
-| Demand forecast | Moving average (short history); exponential smoothing, α ≈ 0.3 (≥ 7 daily points) | Sklearn lag-feature Ridge regression |
+| Demand forecast | Croston when intermittent (≥ 40% zero days); else ES (α ≈ 0.3, ≥ 7 days) or moving average | Same classical methods + sklearn lag Ridge |
 | Forecast quality | One-step holdout on recent days → MAE / MAPE | Same holdout protocol for all methods |
 | Reorder | `max(0, ⌈forecast⌉ + reorderPoint − stock)` | — |
 | Low stock signal | RabbitMQ `analytics.low_stock.predicted` when `predictedDemand > stockLevel` (on `GET /reorder`) | Log subscriber in Analytics (demo) |
@@ -39,12 +39,13 @@ All numbers come from small synthetic demo datasets in `experiments/data/`. They
 
 **Forecast holdout (7-day horizon, 3 holdout days):**
 
-| Product | Best method by MAE | MAE | MAPE |
-|---|---|---:|---:|
-| `sku-oil-1l` | Exponential smoothing | 1.05 | 14.15% |
-| `sku-rice-1kg` | Moving average | 3.24 | 16.27% |
+| Product | Best classical by MAE | MAE | MAPE | Notes |
+|---|---|---:|---:|---|
+| `sku-oil-1l` | Exponential smoothing | 1.05 | 14.15% | Dense demand |
+| `sku-rice-1kg` | Moving average | 3.24 | 16.27% | Dense demand |
+| `sku-spare-filter` | Moving average | 2.00 | 78.57% | Intermittent; Croston MAPE 47.61% (best classical MAPE) |
 
-The sklearn Ridge baseline was worse on both demo series (MAPE 22.46% and 30.54%). Full table: [forecast-comparison-results.md](./forecast-comparison-results.md)
+On the intermittent SKU, Croston cuts MAPE roughly in half vs MA/ES while MAE stays similar. Sklearn Ridge had the lowest MAE on that series but a higher MAPE. Full table: [forecast-comparison-results.md](./forecast-comparison-results.md)
 
 **Anomaly detection (42 labeled rows: 34 normal, 8 injected anomalies):**
 
@@ -93,6 +94,6 @@ Blockchain and IoT were studied in the FYP report but not implemented.
 
 - Evaluations use small synthetic datasets with short holdout windows; rankings can change on real, longer, or noisier data.
 - Anomaly labels are injected for method testing, not real fraud labels; the detector flags unusual order sizes only.
-- Forecasts need repeated orders for the same SKU; sparse or intermittent demand reduces quality.
+- Forecasts need repeated orders for the same SKU; Croston is used when demand is intermittent (≥ 40% zero days), but very sparse series with few demand events remain hard.
 - Reorder output is advisory; no purchase orders are created automatically.
 - Methods are classical statistics and lightweight ML; no deep learning models are used.

@@ -44,7 +44,7 @@ Orders / inventory data (MongoDB)
 - Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
 - On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created.
-- **Live path:** moving average / exponential smoothing (forecast), z-score (anomalies).
+- **Live path:** Croston when demand is intermittent; otherwise moving average / exponential smoothing (forecast); z-score (anomalies).
 - **Offline experiments:** sklearn lag (Ridge) forecast baseline; Isolation Forest anomaly baseline. These strengthen the research comparison story; they are not required for the UI demo.
 
 ---
@@ -61,10 +61,11 @@ For a chosen horizon (default options: **7, 14, 30** days):
 
 | Situation | Method | Idea |
 |-----------|--------|------|
-| Short history | Moving average over a lookback window | Average recent daily demand × horizon |
-| Enough daily points (≥ 7) | Exponential smoothing (α ≈ 0.3) | Recent days weigh more than older days |
+| Intermittent (≥ 40% zero days, ≥ 2 demand events, ≥ 4 history days) | Croston | Smooth non-zero demand size and inter-demand interval; average daily = size / interval |
+| Enough daily points (≥ 7), not intermittent | Exponential smoothing (α ≈ 0.3) | Recent days weigh more than older days |
+| Short history, not intermittent | Moving average over a lookback window | Average recent daily demand × horizon |
 
-Output includes average daily demand, predicted demand over the horizon, points used, and `forecastMethod`.
+Output includes average daily demand, predicted demand over the horizon, points used, and `forecastMethod`. Croston responses may also include `demandEvents` and `zeroDayRatio`.
 
 When enough daily history exists, `GET /forecast/:productId` also returns an `evaluation` object from a small holdout check (recent days scored with one-step predictions): `holdoutDays`, `pointsEvaluated`, `mae`, and `mape`. If history is too short or empty, `evaluation` is `null`.
 
@@ -115,8 +116,8 @@ An offline **Isolation Forest** baseline uses the same labeled demo set for meth
 
 - Same daily demand series and the same short one-step holdout (recent days held out, refit on earlier history).
 - Metrics: **MAE** and **MAPE**.
-- Methods compared: Moving Average, Exponential Smoothing, and sklearn lag (Ridge).
-- Regenerated from `experiments/compare_forecast_methods.py` using `experiments/data/demo_daily_demand.json`.
+- Methods compared: Moving Average, Exponential Smoothing, Croston, and sklearn lag (Ridge).
+- Regenerated from `experiments/compare_forecast_methods.py` using `experiments/data/demo_daily_demand.json` (includes intermittent demo SKU `sku-spare-filter`).
 
 **What the demo tables show (summary):**
 
@@ -179,7 +180,7 @@ Exact numeric outputs depend on the demo data you place; empty history fails saf
 ## 7. Limitations
 
 - Suited to demo and pilot use; not a full enterprise demand-planning or fraud system.
-- Sparse or intermittent order history reduces forecast and anomaly usefulness.
+- Sparse or intermittent order history still challenges MA/ES; Croston helps on zero-heavy SKUs but needs enough demand events to smooth size and interval.
 - Anomalies require **repeated purchases of the same product**; unrelated SKUs may show no flags.
 - Reorder output is advisory only—no automatic purchase orders are created.
 - Forecast and anomaly evaluations use **small synthetic / demo datasets**; holdout windows are short by design (aligned with the live service).
@@ -193,10 +194,9 @@ Exact numeric outputs depend on the demo data you place; empty history fails saf
 Possible next steps for research or a Master’s thesis direction:
 
 1. Extend the offline comparison in [forecast-comparison-results.md](./forecast-comparison-results.md) to larger public retail datasets (beyond the demo SKUs).
-2. Intermittent-demand methods (e.g. Croston-style) for sparse SKUs.
-3. Calibrated uncertainty and better operator explanations.
-4. Stronger evaluation harness and regression tests around forecast/anomaly pipelines.
-5. Optionally wire Isolation Forest (or another second detector) behind a feature flag if a labelled operational set becomes available.
+2. Calibrated uncertainty and better operator explanations.
+3. Stronger evaluation harness and regression tests around forecast/anomaly pipelines.
+4. Optionally wire Isolation Forest (or another second detector) behind a feature flag if a labelled operational set becomes available.
 
 ---
 
@@ -210,7 +210,7 @@ See the root [README](../README.md) — Analytics service section. Typical path:
 
 | Document | Role |
 |----------|------|
-| [forecast-comparison-results.md](./forecast-comparison-results.md) | MA / ES / sklearn holdout tables |
+| [forecast-comparison-results.md](./forecast-comparison-results.md) | MA / ES / Croston / sklearn holdout tables |
 | [anomaly-evaluation-results.md](./anomaly-evaluation-results.md) | Z-score vs Isolation Forest metrics |
 | [demand-shock-simulation.md](./demand-shock-simulation.md) | Before/after forecast metrics under an injected demand spike |
 | [samples/evaluation_rows.csv](./samples/evaluation_rows.csv) | Holdout MAE/MAPE CSV export (productId, method, mae, mape) |

@@ -4,6 +4,9 @@ const DEFAULT_SMOOTHING_ALPHA = 0.3;
 const SMOOTHING_MIN_POINTS = 7;
 const EVAL_MIN_HISTORY_POINTS = 4;
 const EVAL_MAX_HOLDOUT_DAYS = 3;
+/** Prefer Croston when at least this share of days are zero and enough demand events exist. */
+const INTERMITTENT_ZERO_RATIO = 0.4;
+const CROSTON_MIN_DEMAND_EVENTS = 2;
 
 // Lookback windows sized for sparse demo catalog history
 const WINDOW_BY_HORIZON = {
@@ -89,24 +92,83 @@ function meanAbsolutePercentageError(actuals, predictions) {
   return (total / counted) * 100;
 }
 
-function predictNextDailyDemand(trainHistory, options = {}) {
-  const resolved = resolveForecastOptions(options);
-  const quantities = extractQuantities(trainHistory);
+function countDemandEvents(quantities) {
+  return quantities.filter((value) => value > 0).length;
+}
 
+function zeroDayRatio(quantities) {
   if (quantities.length === 0) {
     return 0;
   }
+  const zeros = quantities.filter((value) => value === 0).length;
+  return zeros / quantities.length;
+}
 
-  if (quantities.length >= SMOOTHING_MIN_POINTS) {
-    let smoothed = quantities[0];
-    for (let index = 1; index < quantities.length; index += 1) {
-      smoothed = resolved.alpha * quantities[index] + (1 - resolved.alpha) * smoothed;
-    }
-    return smoothed;
+function isIntermittentSeries(quantities) {
+  return (
+    quantities.length >= EVAL_MIN_HISTORY_POINTS &&
+    countDemandEvents(quantities) >= CROSTON_MIN_DEMAND_EVENTS &&
+    zeroDayRatio(quantities) >= INTERMITTENT_ZERO_RATIO
+  );
+}
+
+/**
+ * Croston intermittent demand: smooth non-zero demand size and inter-demand interval,
+ * then averageDailyDemand = size / interval.
+ */
+function forecastWithCroston(history, options = {}) {
+  const { alpha, horizonDays } = resolveForecastOptions(options);
+  const quantities = extractQuantities(history);
+
+  if (quantities.length === 0 || countDemandEvents(quantities) === 0) {
+    return {
+      forecastMethod: 'croston',
+      window: null,
+      alpha,
+      horizonDays,
+      averageDailyDemand: 0,
+      predictedDemand: 0,
+      pointsUsed: quantities.length,
+      demandEvents: 0,
+      zeroDayRatio: zeroDayRatio(quantities),
+    };
   }
 
-  const sample = quantities.slice(-resolved.window);
-  return average(sample);
+  let smoothedSize = null;
+  let smoothedInterval = null;
+  let periodsSinceDemand = 0;
+
+  for (let index = 0; index < quantities.length; index += 1) {
+    periodsSinceDemand += 1;
+    const demand = quantities[index];
+    if (demand <= 0) {
+      continue;
+    }
+
+    if (smoothedSize === null) {
+      smoothedSize = demand;
+      smoothedInterval = periodsSinceDemand;
+    } else {
+      smoothedSize = alpha * demand + (1 - alpha) * smoothedSize;
+      smoothedInterval = alpha * periodsSinceDemand + (1 - alpha) * smoothedInterval;
+    }
+    periodsSinceDemand = 0;
+  }
+
+  const interval = smoothedInterval > 0 ? smoothedInterval : 1;
+  const averageDailyDemand = smoothedSize / interval;
+
+  return {
+    forecastMethod: 'croston',
+    window: null,
+    alpha,
+    horizonDays,
+    averageDailyDemand: Number(averageDailyDemand.toFixed(4)),
+    predictedDemand: Number((averageDailyDemand * horizonDays).toFixed(4)),
+    pointsUsed: quantities.length,
+    demandEvents: countDemandEvents(quantities),
+    zeroDayRatio: Number(zeroDayRatio(quantities).toFixed(4)),
+  };
 }
 
 function predictNextWithMethod(trainHistory, options = {}, method = 'auto') {
@@ -120,6 +182,10 @@ function predictNextWithMethod(trainHistory, options = {}, method = 'auto') {
     return forecastWithExponentialSmoothing(trainHistory, resolved).averageDailyDemand;
   }
 
+  if (method === 'croston') {
+    return forecastWithCroston(trainHistory, resolved).averageDailyDemand;
+  }
+
   return predictNextDailyDemand(trainHistory, resolved);
 }
 
@@ -127,7 +193,7 @@ function predictNextWithMethod(trainHistory, options = {}, method = 'auto') {
  * Hold out the most recent days, refit on earlier history, and score one-step daily errors.
  * Returns null when history is too short for a meaningful holdout.
  *
- * method: 'auto' | 'moving_average' | 'exponential_smoothing'
+ * method: 'auto' | 'moving_average' | 'exponential_smoothing' | 'croston'
  */
 function evaluateForecastHoldout(history, options = {}, method = 'auto') {
   const quantities = extractQuantities(history);
@@ -174,12 +240,15 @@ function evaluateForecastHoldout(history, options = {}, method = 'auto') {
  */
 function compareClassicalForecastMethods(history, options = {}) {
   const resolved = resolveForecastOptions(options);
+  const quantities = extractQuantities(history);
   const movingAverage = forecastWithMovingAverage(history, resolved);
   const exponentialSmoothing = forecastWithExponentialSmoothing(history, resolved);
+  const croston = forecastWithCroston(history, resolved);
 
   return {
     horizonDays: resolved.horizonDays,
-    historyDays: extractQuantities(history).length,
+    historyDays: quantities.length,
+    intermittent: isIntermittentSeries(quantities),
     methods: {
       moving_average: {
         ...movingAverage,
@@ -188,6 +257,10 @@ function compareClassicalForecastMethods(history, options = {}) {
       exponential_smoothing: {
         ...exponentialSmoothing,
         evaluation: evaluateForecastHoldout(history, resolved, 'exponential_smoothing'),
+      },
+      croston: {
+        ...croston,
+        evaluation: evaluateForecastHoldout(history, resolved, 'croston'),
       },
     },
   };
@@ -260,15 +333,38 @@ function selectForecastMethod(history, options = {}) {
   const resolved = resolveForecastOptions(options);
   const quantities = extractQuantities(history);
 
-  const forecast =
-    quantities.length >= SMOOTHING_MIN_POINTS
-      ? forecastWithExponentialSmoothing(history, resolved)
-      : forecastWithMovingAverage(history, resolved);
+  let forecast;
+  if (isIntermittentSeries(quantities)) {
+    forecast = forecastWithCroston(history, resolved);
+  } else if (quantities.length >= SMOOTHING_MIN_POINTS) {
+    forecast = forecastWithExponentialSmoothing(history, resolved);
+  } else {
+    forecast = forecastWithMovingAverage(history, resolved);
+  }
 
   return {
     ...forecast,
-    evaluation: evaluateForecastHoldout(history, resolved),
+    evaluation: evaluateForecastHoldout(history, resolved, forecast.forecastMethod),
   };
+}
+
+function predictNextDailyDemand(trainHistory, options = {}) {
+  const resolved = resolveForecastOptions(options);
+  const quantities = extractQuantities(trainHistory);
+
+  if (quantities.length === 0) {
+    return 0;
+  }
+
+  if (isIntermittentSeries(quantities)) {
+    return forecastWithCroston(trainHistory, resolved).averageDailyDemand;
+  }
+
+  if (quantities.length >= SMOOTHING_MIN_POINTS) {
+    return forecastWithExponentialSmoothing(trainHistory, resolved).averageDailyDemand;
+  }
+
+  return forecastWithMovingAverage(trainHistory, resolved).averageDailyDemand;
 }
 
 module.exports = {
@@ -276,8 +372,12 @@ module.exports = {
   DEFAULT_HORIZON_DAYS,
   WINDOW_BY_HORIZON,
   EVAL_MIN_HISTORY_POINTS,
+  INTERMITTENT_ZERO_RATIO,
+  CROSTON_MIN_DEMAND_EVENTS,
   forecastWithMovingAverage,
   forecastWithExponentialSmoothing,
+  forecastWithCroston,
+  isIntermittentSeries,
   selectForecastMethod,
   resolveForecastOptions,
   evaluateForecastHoldout,

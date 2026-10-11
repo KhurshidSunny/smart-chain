@@ -1,4 +1,4 @@
-"""Compare MA, exponential smoothing, and sklearn lag forecasts on the same holdout.
+"""Compare MA, ES, Croston, and sklearn lag forecasts on the same holdout.
 
 Optionally writes the results table to docs/forecast-comparison-results.md.
 """
@@ -12,9 +12,12 @@ from typing import Any
 from classical_forecast import (
     DEFAULT_HORIZON_DAYS,
     FORECAST_HORIZONS,
+    croston_forecast,
     evaluate_forecast_holdout,
     exponential_smoothing_forecast,
+    extract_quantities,
     history_points_from_series,
+    is_intermittent_series,
     moving_average_forecast,
 )
 from load_demand_history import load_daily_demand
@@ -47,9 +50,11 @@ def compare_product(
 ) -> list[dict[str, Any]]:
     history = history_points_from_series(series_frame)
     history_days = len(history)
+    intermittent = is_intermittent_series(extract_quantities(history))
 
     ma_forecast = moving_average_forecast(history, horizon_days=horizon_days)
     es_forecast = exponential_smoothing_forecast(history, horizon_days=horizon_days)
+    croston = croston_forecast(history, horizon_days=horizon_days)
     sk_forecast = sklearn_lag_forecast(
         history,
         horizon_days=horizon_days,
@@ -62,6 +67,9 @@ def compare_product(
     )
     es_holdout = evaluate_forecast_holdout(
         history, horizon_days=horizon_days, method="exponential_smoothing"
+    )
+    croston_holdout = evaluate_forecast_holdout(
+        history, horizon_days=horizon_days, method="croston"
     )
     sk_holdout = evaluate_sklearn_lag_holdout(
         history, horizon_days=horizon_days, n_lags=n_lags, model_name="ridge"
@@ -81,6 +89,17 @@ def compare_product(
             "avgDaily": es_forecast["averageDailyDemand"],
             "holdout": es_holdout,
             "notes": f"alpha={es_forecast['alpha']}",
+        },
+        {
+            "method": "Croston",
+            "historyDays": history_days,
+            "avgDaily": croston["averageDailyDemand"],
+            "holdout": croston_holdout,
+            "notes": (
+                f"events={croston['demandEvents']}, "
+                f"zeroRatio={croston['zeroDayRatio']}, "
+                f"intermittent={intermittent}"
+            ),
         },
         {
             "method": "Sklearn lag (Ridge)",
@@ -123,7 +142,10 @@ def render_markdown(
         f"- Input: `{input_display}`",
         f"- Horizon: **{horizon_days}** days",
         f"- Sklearn lags: **{n_lags}** (+ rolling mean feature)",
-        "- Classical methods match `microservices/analytics/services/forecastService.js`",
+        "- Classical methods (MA, ES, Croston) match",
+        "  `microservices/analytics/services/forecastService.js`",
+        "- Croston is preferred on the live path when a series is intermittent",
+        "  (at least 40% zero days and at least 2 demand events)",
         "",
     ]
 
@@ -194,7 +216,10 @@ def render_markdown(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Compare MA, ES, and sklearn lag forecasts; optionally write markdown results."
+        description=(
+            "Compare MA, ES, Croston, and sklearn lag forecasts; "
+            "optionally write markdown results."
+        )
     )
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--product-id", default=None)

@@ -42,6 +42,8 @@ exports.getProductForecast = async (req, res) => {
         averageDailyDemand: forecast.averageDailyDemand,
         predictedDemand: forecast.predictedDemand,
         pointsUsed: forecast.pointsUsed,
+        demandEvents: forecast.demandEvents,
+        zeroDayRatio: forecast.zeroDayRatio,
         evaluation: forecast.evaluation,
       },
       history,
@@ -73,16 +75,18 @@ exports.compareProductForecastMethods = async (req, res) => {
     const sklearnLookupId = sklearnKey ? String(sklearnKey) : String(productId);
     const sklearn = getSklearnHoldoutForProduct(sklearnLookupId);
 
+    const classicalCandidates = [
+      ['moving_average', classical.methods.moving_average.evaluation],
+      ['exponential_smoothing', classical.methods.exponential_smoothing.evaluation],
+      ['croston', classical.methods.croston.evaluation],
+    ];
     let bestClassical = null;
-    const maEval = classical.methods.moving_average.evaluation;
-    const esEval = classical.methods.exponential_smoothing.evaluation;
-    if (maEval && esEval) {
-      bestClassical =
-        maEval.mae <= esEval.mae ? 'moving_average' : 'exponential_smoothing';
-    } else if (maEval) {
-      bestClassical = 'moving_average';
-    } else if (esEval) {
-      bestClassical = 'exponential_smoothing';
+    let bestMae = Infinity;
+    for (const [name, evaluation] of classicalCandidates) {
+      if (evaluation && evaluation.mae != null && evaluation.mae < bestMae) {
+        bestMae = evaluation.mae;
+        bestClassical = name;
+      }
     }
 
     res.status(200).json({
@@ -90,12 +94,18 @@ exports.compareProductForecastMethods = async (req, res) => {
       sklearnLookupId,
       horizonDays: classical.horizonDays,
       historyDays: classical.historyDays,
+      intermittent: classical.intermittent,
       methods: {
         ...classical.methods,
         sklearn_lag_ridge: sklearn,
       },
       summary: {
         bestClassicalByMae: bestClassical,
+        selectedLiveMethod: classical.intermittent
+          ? 'croston'
+          : classical.historyDays >= 7
+            ? 'exponential_smoothing'
+            : 'moving_average',
         sklearnAvailable: Boolean(sklearn.available),
       },
     });

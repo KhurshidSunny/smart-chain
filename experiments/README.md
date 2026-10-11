@@ -76,16 +76,18 @@ The script prints per-product day counts, date range, total quantity, and mean d
 
 - moving average
 - exponential smoothing
+- Croston (intermittent / zero-heavy series)
 - one-step holdout MAE / MAPE
 
-Defaults match `microservices/analytics/services/forecastService.js` (horizon 7/14/30, alpha 0.3, short holdout).
+Defaults match `microservices/analytics/services/forecastService.js` (horizon 7/14/30, alpha 0.3, short holdout, intermittent threshold ≥ 40% zero days).
 
 ```powershell
 python classical_forecast.py
 python classical_forecast.py --product-id sku-rice-1kg --horizon-days 7
+python classical_forecast.py --product-id sku-spare-filter --horizon-days 7
 ```
 
-Importable helpers: `moving_average_forecast`, `exponential_smoothing_forecast`, `evaluate_forecast_holdout`, `mean_absolute_error`, `mean_absolute_percentage_error`.
+Importable helpers: `moving_average_forecast`, `exponential_smoothing_forecast`, `croston_forecast`, `is_intermittent_series`, `evaluate_forecast_holdout`, `mean_absolute_error`, `mean_absolute_percentage_error`.
 
 ## Sklearn lag-feature baseline
 
@@ -101,12 +103,12 @@ Importable helpers: `build_lag_feature_matrix`, `sklearn_lag_forecast`, `evaluat
 
 ## Method comparison report
 
-`compare_forecast_methods.py` runs MA, exponential smoothing, and sklearn lag (Ridge) on the same holdout protocol and can write `docs/forecast-comparison-results.md`.
+`compare_forecast_methods.py` runs MA, exponential smoothing, Croston, and sklearn lag (Ridge) on the same holdout protocol and can write `docs/forecast-comparison-results.md`.
 
 ```powershell
 python compare_forecast_methods.py
 python compare_forecast_methods.py --write-md
-python compare_forecast_methods.py --product-id sku-rice-1kg --write-md
+python compare_forecast_methods.py --product-id sku-spare-filter --write-md
 ```
 
 Demo sklearn holdout numbers used by the Analytics compare API live in  
@@ -155,7 +157,7 @@ python simulate_demand_shock.py --product-id sku-oil-1l --spike-factor 4 --write
 
 ## Forecast evaluation CSV export
 
-`export_forecast_evaluation_csv.py` runs the same MA / exponential smoothing /
+`export_forecast_evaluation_csv.py` runs the same MA / ES / Croston /
 sklearn Ridge holdout comparison and writes a flat CSV
 (`productId`, `method`, `mae`, `mape`). Default output:
 `../docs/samples/evaluation_rows.csv`.
@@ -173,7 +175,7 @@ Empty `mae` / `mape` cells mean that method could not be scored on that series
 | Concern | Node Analytics (`:3006`) | This folder |
 |---|---|---|
 | Live inventory / order UI | Yes | No |
-| MA / ES forecast in production path | Yes | Reimplemented for comparison |
+| MA / ES / Croston forecast in production path | Yes (Croston when intermittent) | Reimplemented for comparison |
 | Holdout MAE / MAPE | Yes (API) | Offline tables / plots |
 | sklearn lag baseline | No | `sklearn_lag_forecast.py` |
 
