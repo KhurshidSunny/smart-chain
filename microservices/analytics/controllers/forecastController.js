@@ -25,6 +25,8 @@ exports.getProductForecast = async (req, res) => {
           predictedDemand: 0,
           pointsUsed: 0,
           evaluation: null,
+          uncertainty: null,
+          explanation: 'No demand history yet for this product.',
         },
         history: [],
       });
@@ -45,6 +47,8 @@ exports.getProductForecast = async (req, res) => {
         demandEvents: forecast.demandEvents,
         zeroDayRatio: forecast.zeroDayRatio,
         evaluation: forecast.evaluation,
+        uncertainty: forecast.uncertainty,
+        explanation: forecast.explanation,
       },
       history,
     });

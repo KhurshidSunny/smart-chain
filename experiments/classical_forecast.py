@@ -5,11 +5,13 @@ Methods mirror microservices/analytics/services/forecastService.js:
   - simple exponential smoothing
   - Croston for intermittent (sparse / zero-heavy) demand
   - one-step holdout evaluation with MAE and MAPE
+  - residual-based approx. 80% uncertainty band + operator explanation
 """
 
 from __future__ import annotations
 
 import argparse
+from math import sqrt
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -23,6 +25,8 @@ EVAL_MIN_HISTORY_POINTS = 4
 EVAL_MAX_HOLDOUT_DAYS = 3
 INTERMITTENT_ZERO_RATIO = 0.4
 CROSTON_MIN_DEMAND_EVENTS = 2
+UNCERTAINTY_Z_80 = 1.28155
+UNCERTAINTY_MIN_RESIDUALS = 3
 
 WINDOW_BY_HORIZON = {
     7: 7,
@@ -362,6 +366,167 @@ def history_points_from_series(series_frame) -> list[dict[str, Any]]:
     ]
 
 
+def collect_one_step_residuals(
+    history: Sequence[dict[str, Any]] | Sequence[float],
+    *,
+    horizon_days: int | None = None,
+    window: int | None = None,
+    alpha: float | None = None,
+    method: str = "auto",
+) -> list[float]:
+    options = resolve_forecast_options(horizon_days, window, alpha)
+    quantities = extract_quantities(history)
+    if len(quantities) < EVAL_MIN_HISTORY_POINTS:
+        return []
+
+    if history and isinstance(history[0], dict):
+        points: Sequence[Any] = history
+    else:
+        points = quantities
+
+    residuals: list[float] = []
+    start_index = max(1, EVAL_MIN_HISTORY_POINTS - 1)
+    for index in range(start_index, len(quantities)):
+        predicted = _predict_next_daily(points[:index], options, method=method)
+        residuals.append(quantities[index] - predicted)
+    return residuals
+
+
+def compute_forecast_uncertainty(
+    history: Sequence[dict[str, Any]] | Sequence[float],
+    forecast: dict[str, Any],
+    *,
+    horizon_days: int | None = None,
+    window: int | None = None,
+    alpha: float | None = None,
+) -> dict[str, Any] | None:
+    """Approx. 80% residual band around horizon total demand (matches Node service)."""
+    method = str(forecast.get("forecastMethod") or "auto")
+    residuals = collect_one_step_residuals(
+        history,
+        horizon_days=horizon_days,
+        window=window,
+        alpha=alpha,
+        method=method,
+    )
+    daily_scale: float | None = None
+    residual_count = len(residuals)
+    scale_source = "residual_std"
+
+    if residuals:
+        mean = sum(residuals) / len(residuals)
+        variance = sum((value - mean) ** 2 for value in residuals) / len(residuals)
+        daily_scale = sqrt(variance)
+
+    evaluation = forecast.get("evaluation")
+    if (
+        (daily_scale is None or residual_count < UNCERTAINTY_MIN_RESIDUALS)
+        and isinstance(evaluation, dict)
+        and evaluation.get("mae") is not None
+    ):
+        daily_scale = float(evaluation["mae"]) / 0.79788456
+        residual_count = int(evaluation.get("pointsEvaluated") or residual_count)
+        scale_source = "holdout_mae"
+
+    if daily_scale is None:
+        return None
+
+    horizon = int(forecast.get("horizonDays") or DEFAULT_HORIZON_DAYS)
+    half_width = UNCERTAINTY_Z_80 * daily_scale * sqrt(horizon)
+    predicted = float(forecast.get("predictedDemand") or 0.0)
+    lower = max(0.0, predicted - half_width)
+    upper = predicted + half_width
+
+    return {
+        "level": 0.8,
+        "lower": round(lower, 4),
+        "upper": round(upper, 4),
+        "halfWidth": round(half_width, 4),
+        "residualStd": round(daily_scale, 4),
+        "residualCount": residual_count,
+        "scaleSource": scale_source,
+        "method": "residual_band",
+    }
+
+
+def build_forecast_explanation(
+    forecast: dict[str, Any], quantities: Sequence[float]
+) -> str:
+    method = forecast.get("forecastMethod")
+    points = len(quantities)
+    parts: list[str] = []
+
+    if method == "croston":
+        ratio = float(forecast.get("zeroDayRatio") or zero_day_ratio(quantities))
+        events = int(forecast.get("demandEvents") or count_demand_events(quantities))
+        parts.append(
+            f"Selected Croston because demand is intermittent "
+            f"({round(ratio * 100)}% zero days; {events} demand events). "
+            "Non-zero size and inter-demand interval are smoothed separately."
+        )
+    elif method == "exponential_smoothing":
+        parts.append(
+            f"Selected exponential smoothing (alpha={forecast.get('alpha')}) "
+            f"on {points} history days."
+        )
+    elif method == "moving_average":
+        parts.append(
+            f"Selected moving average over the last {forecast.get('window')} days "
+            f"(short or dense history; {points} points available)."
+        )
+    else:
+        parts.append("Forecast method could not be selected for this series.")
+
+    uncertainty = forecast.get("uncertainty")
+    if isinstance(uncertainty, dict):
+        parts.append(
+            f"Approx. {round(float(uncertainty['level']) * 100)}% residual band "
+            f"{uncertainty['lower']}-{uncertainty['upper']} units over "
+            f"{forecast.get('horizonDays')} days "
+            "(demo-scale one-step errors; not a calibrated probabilistic forecast)."
+        )
+    else:
+        parts.append(
+            "Uncertainty band unavailable until more demand history accumulates."
+        )
+
+    return " ".join(parts)
+
+
+def select_forecast_method(
+    history: Sequence[dict[str, Any]] | Sequence[float],
+    *,
+    horizon_days: int | None = None,
+    window: int | None = None,
+    alpha: float | None = None,
+) -> dict[str, Any]:
+    """Live-path selector: Croston / ES / MA + evaluation + uncertainty + explanation."""
+    quantities = extract_quantities(history)
+    kwargs = {
+        "horizon_days": horizon_days,
+        "window": window,
+        "alpha": alpha,
+    }
+
+    if is_intermittent_series(quantities):
+        forecast = croston_forecast(history, **kwargs)
+    elif len(quantities) >= SMOOTHING_MIN_POINTS:
+        forecast = exponential_smoothing_forecast(history, **kwargs)
+    else:
+        forecast = moving_average_forecast(history, **kwargs)
+
+    evaluation = evaluate_forecast_holdout(
+        history, **kwargs, method=str(forecast["forecastMethod"])
+    )
+    with_evaluation = {**forecast, "evaluation": evaluation}
+    uncertainty = compute_forecast_uncertainty(history, with_evaluation, **kwargs)
+    with_uncertainty = {**with_evaluation, "uncertainty": uncertainty}
+    return {
+        **with_uncertainty,
+        "explanation": build_forecast_explanation(with_uncertainty, quantities),
+    }
+
+
 def run_baselines_for_product(
     series_frame,
     *,
@@ -372,12 +537,14 @@ def run_baselines_for_product(
     ma = moving_average_forecast(history, horizon_days=horizon_days)
     es = exponential_smoothing_forecast(history, horizon_days=horizon_days)
     croston = croston_forecast(history, horizon_days=horizon_days)
+    selected = select_forecast_method(history, horizon_days=horizon_days)
     return {
         "points": len(history),
         "intermittent": is_intermittent_series(quantities),
         "moving_average": ma,
         "exponential_smoothing": es,
         "croston": croston,
+        "selected": selected,
         "holdout_moving_average": evaluate_forecast_holdout(
             history, horizon_days=horizon_days, method="moving_average"
         ),
@@ -463,6 +630,18 @@ def main() -> int:
         print(_format_holdout("ES holdout", result["holdout_exponential_smoothing"]))
         print(_format_holdout("Croston holdout", result["holdout_croston"]))
         print(_format_holdout("auto holdout", result["holdout_auto"]))
+        selected = result["selected"]
+        uncertainty = selected.get("uncertainty")
+        band = (
+            f"{uncertainty['lower']}-{uncertainty['upper']}"
+            if isinstance(uncertainty, dict)
+            else "n/a"
+        )
+        print(
+            f"  selected: method={selected['forecastMethod']}  "
+            f"predicted={selected['predictedDemand']}  band={band}"
+        )
+        print(f"  explanation: {selected.get('explanation')}")
 
     return 0
 

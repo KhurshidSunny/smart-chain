@@ -77,6 +77,7 @@ The script prints per-product day counts, date range, total quantity, and mean d
 - moving average
 - exponential smoothing
 - Croston (intermittent / zero-heavy series)
+- Live-path selector with residual uncertainty band + operator explanation (`select_forecast_method`)
 - one-step holdout MAE / MAPE
 
 Defaults match `microservices/analytics/services/forecastService.js` (horizon 7/14/30, alpha 0.3, short holdout, intermittent threshold ≥ 40% zero days).

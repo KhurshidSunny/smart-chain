@@ -9,7 +9,9 @@ import {
 } from './AnalyticsPanelState';
 import {
     formatEvaluationHint,
+    formatForecastExplanation,
     formatForecastMethod,
+    formatUncertaintyBand,
 } from './forecastDisplay';
 
 function ForecastSummaryCard() {
@@ -127,7 +129,15 @@ function ForecastSummaryCard() {
                                     {formatForecastMethod(product.forecastMethod)}
                                     {' · '}
                                     {formatEvaluationHint(product.evaluation)}
+                                    {formatUncertaintyBand(product.uncertainty)
+                                        ? ` · ${formatUncertaintyBand(product.uncertainty)}`
+                                        : ''}
                                 </p>
+                                {formatForecastExplanation(product.explanation) ? (
+                                    <p className="text-xs text-gray-400 mt-0.5 leading-snug">
+                                        {formatForecastExplanation(product.explanation)}
+                                    </p>
+                                ) : null}
                             </li>
                         ))}
                     </ul>

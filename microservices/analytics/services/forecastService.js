@@ -7,6 +7,9 @@ const EVAL_MAX_HOLDOUT_DAYS = 3;
 /** Prefer Croston when at least this share of days are zero and enough demand events exist. */
 const INTERMITTENT_ZERO_RATIO = 0.4;
 const CROSTON_MIN_DEMAND_EVENTS = 2;
+/** Approx. 80% normal z for residual bands (not a calibrated probabilistic forecast). */
+const UNCERTAINTY_Z_80 = 1.28155;
+const UNCERTAINTY_MIN_RESIDUALS = 3;
 
 // Lookback windows sized for sparse demo catalog history
 const WINDOW_BY_HORIZON = {
@@ -329,6 +332,120 @@ function forecastWithExponentialSmoothing(history, options = {}) {
   };
 }
 
+/**
+ * Expanding-window one-step residuals for the chosen classical method.
+ * Used only to size an approximate residual band — not a formal prediction interval.
+ */
+function collectOneStepResiduals(history, options = {}, method = 'auto') {
+  const quantities = extractQuantities(history);
+  if (quantities.length < EVAL_MIN_HISTORY_POINTS) {
+    return [];
+  }
+
+  const residuals = [];
+  const startIndex = Math.max(1, EVAL_MIN_HISTORY_POINTS - 1);
+
+  for (let index = startIndex; index < quantities.length; index += 1) {
+    const trainHistory = history.slice(0, index);
+    const predictedDaily = predictNextWithMethod(trainHistory, options, method);
+    residuals.push(quantities[index] - predictedDaily);
+  }
+
+  return residuals;
+}
+
+function residualStd(residuals) {
+  if (!residuals.length) {
+    return null;
+  }
+  const mean = average(residuals);
+  const variance =
+    residuals.reduce((sum, value) => sum + (value - mean) ** 2, 0) / residuals.length;
+  return Math.sqrt(variance);
+}
+
+/**
+ * Approx. 80% band around horizon total demand using residual std × √H.
+ * Returns null when history is too short for a stable residual scale.
+ */
+function computeForecastUncertainty(history, forecast, options = {}) {
+  const method = forecast.forecastMethod || 'auto';
+  const residuals = collectOneStepResiduals(history, options, method);
+  let dailyScale = residualStd(residuals);
+  let residualCount = residuals.length;
+  let scaleSource = 'residual_std';
+
+  if (
+    (dailyScale === null || residualCount < UNCERTAINTY_MIN_RESIDUALS) &&
+    forecast.evaluation &&
+    forecast.evaluation.mae != null
+  ) {
+    // MAE ≈ 0.8 σ for roughly normal errors; invert for a coarse fallback scale.
+    dailyScale = forecast.evaluation.mae / 0.79788456;
+    residualCount = forecast.evaluation.pointsEvaluated || residualCount;
+    scaleSource = 'holdout_mae';
+  }
+
+  if (dailyScale === null || !Number.isFinite(dailyScale)) {
+    return null;
+  }
+
+  const horizonDays = forecast.horizonDays || DEFAULT_HORIZON_DAYS;
+  const halfWidth = UNCERTAINTY_Z_80 * dailyScale * Math.sqrt(horizonDays);
+  const predicted = Number(forecast.predictedDemand) || 0;
+  const lower = Math.max(0, predicted - halfWidth);
+  const upper = predicted + halfWidth;
+
+  return {
+    level: 0.8,
+    lower: Number(lower.toFixed(4)),
+    upper: Number(upper.toFixed(4)),
+    halfWidth: Number(halfWidth.toFixed(4)),
+    residualStd: Number(dailyScale.toFixed(4)),
+    residualCount,
+    scaleSource,
+    method: 'residual_band',
+  };
+}
+
+function buildForecastExplanation(forecast, quantities) {
+  const method = forecast.forecastMethod;
+  const points = quantities.length;
+  const parts = [];
+
+  if (method === 'croston') {
+    const ratioPct = Math.round((forecast.zeroDayRatio || zeroDayRatio(quantities)) * 100);
+    parts.push(
+      `Selected Croston because demand is intermittent (${ratioPct}% zero days; ` +
+        `${forecast.demandEvents ?? countDemandEvents(quantities)} demand events). ` +
+        'Non-zero size and inter-demand interval are smoothed separately.'
+    );
+  } else if (method === 'exponential_smoothing') {
+    parts.push(
+      `Selected exponential smoothing (alpha=${forecast.alpha}) on ${points} history days.`
+    );
+  } else if (method === 'moving_average') {
+    parts.push(
+      `Selected moving average over the last ${forecast.window} days ` +
+        `(short or dense history; ${points} points available).`
+    );
+  } else {
+    parts.push('Forecast method could not be selected for this series.');
+  }
+
+  if (forecast.uncertainty) {
+    parts.push(
+      `Approx. ${Math.round(forecast.uncertainty.level * 100)}% residual band ` +
+        `${forecast.uncertainty.lower}-${forecast.uncertainty.upper} units over ` +
+        `${forecast.horizonDays} days (demo-scale one-step errors; not a calibrated probabilistic forecast).`
+    );
+  } else {
+    parts.push('Uncertainty band unavailable until more demand history accumulates.');
+  }
+
+  return parts.join(' ');
+}
+
 function selectForecastMethod(history, options = {}) {
   const resolved = resolveForecastOptions(options);
   const quantities = extractQuantities(history);
@@ -342,9 +459,19 @@ function selectForecastMethod(history, options = {}) {
     forecast = forecastWithMovingAverage(history, resolved);
   }
 
-  return {
+  const withEvaluation = {
     ...forecast,
     evaluation: evaluateForecastHoldout(history, resolved, forecast.forecastMethod),
+  };
+  const uncertainty = computeForecastUncertainty(history, withEvaluation, resolved);
+  const withUncertainty = {
+    ...withEvaluation,
+    uncertainty,
+  };
+
+  return {
+    ...withUncertainty,
+    explanation: buildForecastExplanation(withUncertainty, quantities),
   };
 }
 
@@ -374,6 +501,7 @@ module.exports = {
   EVAL_MIN_HISTORY_POINTS,
   INTERMITTENT_ZERO_RATIO,
   CROSTON_MIN_DEMAND_EVENTS,
+  UNCERTAINTY_Z_80,
   forecastWithMovingAverage,
   forecastWithExponentialSmoothing,
   forecastWithCroston,
@@ -382,6 +510,9 @@ module.exports = {
   resolveForecastOptions,
   evaluateForecastHoldout,
   compareClassicalForecastMethods,
+  computeForecastUncertainty,
+  buildForecastExplanation,
+  collectOneStepResiduals,
   meanAbsoluteError,
   meanAbsolutePercentageError,
 };

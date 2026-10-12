@@ -9,7 +9,9 @@ import {
 } from './AnalyticsPanelState';
 import {
     formatEvaluationHint,
+    formatForecastExplanation,
     formatForecastMethod,
+    formatUncertaintyBand,
 } from './forecastDisplay';
 
 function ReorderSuggestionsCard() {
@@ -79,7 +81,15 @@ function ReorderSuggestionsCard() {
                                         {formatForecastMethod(item.forecastMethod)}
                                         {' · '}
                                         {formatEvaluationHint(item.evaluation)}
+                                        {formatUncertaintyBand(item.uncertainty)
+                                            ? ` · ${formatUncertaintyBand(item.uncertainty)}`
+                                            : ''}
                                     </p>
+                                    {formatForecastExplanation(item.explanation) ? (
+                                        <p className="text-xs text-gray-400 mt-0.5 leading-snug max-w-md">
+                                            {formatForecastExplanation(item.explanation)}
+                                        </p>
+                                    ) : null}
                                 </div>
                                 <div className="text-right shrink-0">
                                     <p className="text-sm text-gray-500">Suggested qty</p>

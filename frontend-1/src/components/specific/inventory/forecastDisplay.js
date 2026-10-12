@@ -21,3 +21,19 @@ export function formatEvaluationHint(evaluation) {
 
   return `Holdout MAE ${evaluation.mae}${mapePart}`;
 }
+
+export function formatUncertaintyBand(uncertainty) {
+  if (!uncertainty || uncertainty.lower == null || uncertainty.upper == null) {
+    return null;
+  }
+
+  const levelPct = Math.round((uncertainty.level || 0.8) * 100);
+  return `~${levelPct}% band ${Math.round(uncertainty.lower)}-${Math.round(uncertainty.upper)}`;
+}
+
+export function formatForecastExplanation(explanation) {
+  if (!explanation || typeof explanation !== 'string') {
+    return null;
+  }
+  return explanation;
+}

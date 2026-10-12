@@ -168,7 +168,7 @@ Decision-support module on the same MongoDB data. It exposes JWT-protected APIs 
 | Feature | Method | Where you see it |
 |---|---|---|
 | Demand history | Daily sold quantities from sales orders (inventory `sold` only as fallback) | API: `GET /demand/:productId` |
-| Forecast | Croston when demand is intermittent (≥ 40% zero days); else exponential smoothing (≥ 7 points) or moving average | Inventory → Demand Forecast card (via reorder batch) |
+| Forecast | Croston when demand is intermittent (≥ 40% zero days); else exponential smoothing (≥ 7 points) or moving average; approx. 80% residual uncertainty band + operator explanation | Inventory → Demand Forecast card (via reorder batch) |
 | Reorder suggestions | `suggestedQty ≈ forecastDemand + reorderPoint − stock` (when positive) | Inventory → Reorder Suggestions |
 | Low-stock signal | Publishes `analytics.low_stock.predicted` when `predictedDemand > stockLevel` | Analytics logs (+ RabbitMQ); response field `lowStockEventsPublished` |
 | Anomalies | Z-score of an order line quantity vs that **product’s** past line quantities | Orders list/detail badges |

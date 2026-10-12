@@ -45,6 +45,7 @@ Orders / inventory data (MongoDB)
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
 - On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created.
 - **Live path:** Croston when demand is intermittent; otherwise moving average / exponential smoothing (forecast); z-score (anomalies).
+- Each live forecast also returns an **approx. 80% residual uncertainty band** and a short **operator explanation** (why the method was chosen; band limits). The band uses one-step residual scale × √horizon — demo-scale, not a calibrated probabilistic forecast.
 - **Offline experiments:** sklearn lag (Ridge) forecast baseline; Isolation Forest anomaly baseline. These strengthen the research comparison story; they are not required for the UI demo.
 
 ---
@@ -65,7 +66,14 @@ For a chosen horizon (default options: **7, 14, 30** days):
 | Enough daily points (≥ 7), not intermittent | Exponential smoothing (α ≈ 0.3) | Recent days weigh more than older days |
 | Short history, not intermittent | Moving average over a lookback window | Average recent daily demand × horizon |
 
-Output includes average daily demand, predicted demand over the horizon, points used, and `forecastMethod`. Croston responses may also include `demandEvents` and `zeroDayRatio`.
+Output includes average daily demand, predicted demand over the horizon, points used, and `forecastMethod`. Croston responses may also include `demandEvents` and `zeroDayRatio`. Live responses also include:
+
+| Field | Meaning |
+|-------|---------|
+| `uncertainty` | `{ level: 0.8, lower, upper, halfWidth, residualStd, residualCount, scaleSource, method: "residual_band" }` or `null` |
+| `explanation` | Short operator text: method choice + residual-band summary |
+
+Uncertainty uses expanding-window one-step residuals for the selected method. When residual count is low, holdout MAE is used as a coarse fallback scale (`scaleSource: "holdout_mae"`).
 
 When enough daily history exists, `GET /forecast/:productId` also returns an `evaluation` object from a small holdout check (recent days scored with one-step predictions): `holdoutDays`, `pointsEvaluated`, `mae`, and `mape`. If history is too short or empty, `evaluation` is `null`.
 
@@ -194,7 +202,7 @@ Exact numeric outputs depend on the demo data you place; empty history fails saf
 Possible next steps for research or a Master’s thesis direction:
 
 1. Extend the offline comparison in [forecast-comparison-results.md](./forecast-comparison-results.md) to larger public retail datasets (beyond the demo SKUs).
-2. Calibrated uncertainty and better operator explanations.
+2. Replace residual bands with calibrated prediction intervals (e.g. conformal or bootstrap) evaluated on longer holdouts.
 3. Stronger evaluation harness and regression tests around forecast/anomaly pipelines.
 4. Optionally wire Isolation Forest (or another second detector) behind a feature flag if a labelled operational set becomes available.
 

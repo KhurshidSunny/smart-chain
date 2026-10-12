@@ -27,7 +27,7 @@ Five operational Node.js/Express microservices (IAM, Sales, Inventory, Warehouse
 
 | Question | Live method (Analytics service) | Offline comparison (`experiments/`) |
 |---|---|---|
-| Demand forecast | Croston when intermittent (≥ 40% zero days); else ES (α ≈ 0.3, ≥ 7 days) or moving average | Same classical methods + sklearn lag Ridge |
+| Demand forecast | Croston when intermittent (≥ 40% zero days); else ES (α ≈ 0.3, ≥ 7 days) or moving average; approx. 80% residual band + short operator explanation | Same classical methods + sklearn lag Ridge; residual band mirrored in Python |
 | Forecast quality | One-step holdout on recent days → MAE / MAPE | Same holdout protocol for all methods |
 | Reorder | `max(0, ⌈forecast⌉ + reorderPoint − stock)` | — |
 | Low stock signal | RabbitMQ `analytics.low_stock.predicted` when `predictedDemand > stockLevel` (on `GET /reorder`) | Log subscriber in Analytics (demo) |
@@ -95,5 +95,6 @@ Blockchain and IoT were studied in the FYP report but not implemented.
 - Evaluations use small synthetic datasets with short holdout windows; rankings can change on real, longer, or noisier data.
 - Anomaly labels are injected for method testing, not real fraud labels; the detector flags unusual order sizes only.
 - Forecasts need repeated orders for the same SKU; Croston is used when demand is intermittent (≥ 40% zero days), but very sparse series with few demand events remain hard.
+- Uncertainty bands are residual-based approximations on short demo histories, not calibrated probabilistic intervals.
 - Reorder output is advisory; no purchase orders are created automatically.
 - Methods are classical statistics and lightweight ML; no deep learning models are used.
