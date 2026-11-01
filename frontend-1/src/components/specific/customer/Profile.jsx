@@ -1,6 +1,6 @@
 // src/components/specific/Profile/Profile.jsx
 import { useState, useEffect } from 'react';
-import { getAddresses, createAddress } from '../../../services/authService';
+import { getAddresses } from '../../../services/authService';
 import useAuthStore from '../../../stores/authStore';
 import useFeedbackStore from '../../../stores/feedbackStore';
 import AddressModal from './AddressModal';

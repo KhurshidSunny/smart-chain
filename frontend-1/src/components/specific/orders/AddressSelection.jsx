@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { getAddresses, createAddress } from '../../../services/authService';
-import useAuthStore from '../../../stores/authStore';
 import { MapPin } from 'lucide-react';
 
 const validationSchema = Yup.object({
@@ -39,7 +38,6 @@ function AddressSelection({ selectedAddress, onAddressChange, onNext, onBack }) 
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [hasAddresses, setHasAddresses] = useState(false);
-    const { user } = useAuthStore();
 
     useEffect(() => {
         const fetchAddresses = async () => {
@@ -49,7 +47,7 @@ function AddressSelection({ selectedAddress, onAddressChange, onNext, onBack }) 
                 const addressData = response.data || [];
                 setAddresses(addressData);
                 setHasAddresses(addressData.length > 0);
-            } catch (err) {
+            } catch {
                 // Don't show error when no addresses exist, just set empty state
                 setAddresses([]);
                 setHasAddresses(false);
@@ -84,7 +82,13 @@ function AddressSelection({ selectedAddress, onAddressChange, onNext, onBack }) 
     const handleAddAddress = async (values, { resetForm, setFieldValue }) => {
         if (values.addressId === 'new') {
             try {
-                const { addressId, ...addressData } = values;
+                const addressData = {
+                    street: values.street,
+                    city: values.city,
+                    state: values.state,
+                    zipCode: values.zipCode,
+                    country: values.country,
+                };
                 const response = await createAddress(addressData);
 
                 // Refresh addresses list
@@ -106,11 +110,6 @@ function AddressSelection({ selectedAddress, onAddressChange, onNext, onBack }) 
                 setError(err.response?.data?.message || 'Failed to add address');
             }
         }
-    };
-
-    const handleAddNewAddress = (setFieldValue) => {
-        setFieldValue('addressId', 'new');
-        onAddressChange(null);
     };
 
     if (loading) {

@@ -18,7 +18,7 @@ const MainDashboard = () => {
         pendingPickingLists: 0,
     });
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [error] = useState(null);
 
     // Fetch role-specific metrics on mount for authenticated users
     useEffect(() => {
@@ -98,40 +98,6 @@ const MainDashboard = () => {
         }
 
         const role = user.role;
-        const roleActions = {
-            admin: [
-                { label: 'Manage Users', path: '/users' },
-                { label: 'View System Dashboard', path: '/dashboard/admin' },
-            ],
-            customer: [
-                { label: 'Create New Order', path: '/orders/create' },
-                { label: 'Track My Orders', path: '/orders' },
-            ],
-            warehouse_manager: [
-                { label: 'Manage Picking Lists', path: '/warehouse/picking' },
-                { label: 'View Warehouse Dashboard', path: '/dashboard/warehouse-manager' },
-            ],
-            warehouse_staff: [
-                { label: 'View Assigned Picking Lists', path: '/warehouse/picking' },
-                { label: 'Pack Orders', path: '/warehouse/packing' },
-            ],
-            inventory_manager: [
-                { label: 'Manage Inventory', path: '/inventory' },
-                { label: 'View Inventory Dashboard', path: '/dashboard/inventory' },
-            ],
-            sales_manager: [
-                { label: 'Manage Orders', path: '/orders' },
-                { label: 'View Sales Dashboard', path: '/dashboard/sales' },
-            ],
-            logistics_manager: [
-                { label: 'Manage Shipments', path: '/logistics' },
-                { label: 'View Logistics Dashboard', path: '/dashboard/logistics' },
-            ],
-            customer_service: [
-                { label: 'View Feedback', path: '/feedback' },
-                { label: 'Manage Orders', path: '/orders' },
-            ],
-        };
 
         return (
             <div className="space-y-8">

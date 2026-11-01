@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { ROLES } from '../../../utils/constants';
-import { getShipment, updateShipmentStatus, scanDispatch } from '../../../services/logisticsService';
-import jsQR from 'jsqr';
+import { getShipment, updateShipmentStatus } from '../../../services/logisticsService';
 
 function ShipmentDetail() {
     const { id } = useParams();
@@ -11,9 +10,6 @@ function ShipmentDetail() {
     const { user, isAuthenticated } = useAuthStore();
     const [shipment, setShipment] = useState(null);
     const [error, setError] = useState(null);
-    const [scanning, setScanning] = useState(false);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
     const allowedRoles = [ROLES.LOGISTICS_MANAGER, ROLES.ADMIN];
 
     // Restrict access to allowed roles
@@ -32,52 +28,6 @@ function ShipmentDetail() {
         };
         fetchShipment();
     }, [id]);
-
-    const startScanner = () => {
-        setScanning(true);
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then((stream) => {
-            videoRef.current.srcObject = stream;
-            videoRef.current.play();
-            scanQRCode();
-        }).catch((err) => {
-            setError('Failed to access camera: ' + err.message);
-            setScanning(false);
-        });
-    };
-
-    const stopScanner = () => {
-        setScanning(false);
-        if (videoRef.current?.srcObject) {
-            videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-        }
-    };
-
-    const scanQRCode = () => {
-        if (!scanning) return;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        if (code) {
-            handleScan(code.data);
-        }
-        requestAnimationFrame(scanQRCode);
-    };
-
-    const handleScan = async (qrCode) => {
-        if (qrCode !== shipment.qrCode) {
-            setError('Invalid QR code');
-            return;
-        }
-        try {
-            await scanDispatch(id);
-            setShipment({ ...shipment, status: 'Dispatched' });
-            stopScanner();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to confirm dispatch');
-        }
-    };
 
     const handleStatusUpdate = async (status) => {
         try {

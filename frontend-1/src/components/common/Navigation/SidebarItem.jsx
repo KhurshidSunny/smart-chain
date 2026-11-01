@@ -84,7 +84,7 @@ function SidebarItem({ item, isActive, isCollapsed, level = 0 }) {
         }
     };
 
-    const handleLinkClick = (e) => {
+    const handleLinkClick = () => {
         // If it's a parent item with subitems and has a direct link
         if (hasSubItems && item.to && !isExpanded) {
             // Don't prevent default, let the navigation happen

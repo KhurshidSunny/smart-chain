@@ -17,13 +17,13 @@ function ProductCatalog() {
     const [showForm, setShowForm] = useState(false);
     const [editProduct, setEditProduct] = useState(null);
     const [productToDelete, setProductToDelete] = useState(null);
-    const allowedRoles = [ROLES.INVENTORY_MANAGER, ROLES.ADMIN];
 
     useEffect(() => {
+        const allowedRoles = [ROLES.INVENTORY_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, user, navigate]);
 
     const fetchProducts = async () => {
         try {

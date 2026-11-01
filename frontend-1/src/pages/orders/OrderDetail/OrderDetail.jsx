@@ -14,15 +14,15 @@ function OrderDetail() {
     const [anomalyLines, setAnomalyLines] = useState([]);
     const [error, setError] = useState(null);
     const qrRef = useRef(null);
-    const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
 
     // Restrict access to allowed roles and ensure customers only see their own orders
     useEffect(() => {
+        const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role) ||
             (user?.role === ROLES.CUSTOMER && order?.customerId._id !== user?._id)) {
             navigate('/login');
         }
-    }, [isAuthenticated, user, order, navigate, allowedRoles]);
+    }, [isAuthenticated, user, order, navigate]);
 
     useEffect(() => {
         const fetchOrder = async () => {

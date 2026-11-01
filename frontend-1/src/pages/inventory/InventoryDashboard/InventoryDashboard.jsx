@@ -12,13 +12,13 @@ function InventoryDashboard() {
     const { user, isAuthenticated } = useAuthStore();
     const [summary, setSummary] = useState(null);
     const [error, setError] = useState(null);
-    const allowedRoles = [ROLES.INVENTORY_MANAGER, ROLES.ADMIN];
 
     useEffect(() => {
+        const allowedRoles = [ROLES.INVENTORY_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated])
+    }, [isAuthenticated, user, navigate]);
     // Restrict access to allowed roles
 
     useEffect(() => {

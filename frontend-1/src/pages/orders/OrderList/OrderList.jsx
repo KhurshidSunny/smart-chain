@@ -14,14 +14,13 @@ function OrderList() {
     const [anomalyMap, setAnomalyMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
 
     useEffect(() => {
-        // Check if user is authenticated and has the right role
+        const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated, user, navigate, allowedRoles]);
+    }, [isAuthenticated, user, navigate]);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -79,10 +78,11 @@ function OrderList() {
             }
         };
 
+        const allowedRoles = [ROLES.CUSTOMER, ROLES.SALES_MANAGER, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
         if (isAuthenticated && allowedRoles.includes(user?.role)) {
             fetchOrders();
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, user]);
 
     const columns = [
         { key: 'orderNumber', header: 'Order Number' },

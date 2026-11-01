@@ -16,7 +16,7 @@ const useAuthStore = create((set, get) => ({
     },
 
     logout: async () => {
-        const { token, refreshToken } = get();
+        const { refreshToken } = get();
 
         // Clear local state immediately for better UX
         localStorage.removeItem('token');

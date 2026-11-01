@@ -14,14 +14,13 @@ function PickingListDetail() {
     const [scanning, setScanning] = useState(false);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
-    const allowedRoles = [ROLES.WAREHOUSE_STAFF, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
 
     useEffect(() => {
-        // Restrict access to allowed roles
+        const allowedRoles = [ROLES.WAREHOUSE_STAFF, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated, user, navigate, allowedRoles]);
+    }, [isAuthenticated, user, navigate]);
 
     useEffect(() => {
         const fetchPickingList = async () => {

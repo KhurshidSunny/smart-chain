@@ -20,14 +20,13 @@ function PackingStation() {
         weight: 0,
     });
     const [error, setError] = useState(null);
-    const allowedRoles = [ROLES.WAREHOUSE_STAFF, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
 
     useEffect(() => {
-        // Restrict access to allowed roles
+        const allowedRoles = [ROLES.WAREHOUSE_STAFF, ROLES.WAREHOUSE_MANAGER, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated, user, navigate, allowedRoles]);
+    }, [isAuthenticated, user, navigate]);
 
     useEffect(() => {
         const fetchPickingLists = async () => {

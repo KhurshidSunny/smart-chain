@@ -24,7 +24,12 @@ function RegistrationForm() {
 
     const handleSubmit = async (values, { setSubmitting }) => {
         try {
-            const { terms, confirmPassword, ...userData } = values;
+            const userData = {
+                firstName: values.firstName,
+                lastName: values.lastName,
+                email: values.email,
+                password: values.password,
+            };
             const response = await register(userData);
             setAuth(response.user, response.token);
             navigate('/dashboard');

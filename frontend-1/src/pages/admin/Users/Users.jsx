@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
 import { ROLES } from '../../../utils/constants';
@@ -52,7 +52,7 @@ function Users() {
   // Apply filters whenever users or filters change
   useEffect(() => {
     applyFilters();
-  }, [users, filters]);
+  }, [applyFilters]);
 
   const fetchUsers = async () => {
     try {
@@ -78,7 +78,7 @@ function Users() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...users];
 
     // Role filter
@@ -142,7 +142,7 @@ function Users() {
     });
 
     setFilteredUsers(filtered);
-  };
+  }, [users, filters]);
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
@@ -194,7 +194,7 @@ function Users() {
 
   const handleEditUser = async () => {
     try {
-      const response = await updateUser(selectedUser._id, {
+      await updateUser(selectedUser._id, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         roleName: formData.roleName

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { getProducts } from '../../../services/orderService';
-import useAuthStore from '../../../stores/authStore';
 import { Package, Plus, X } from 'lucide-react';
 
 const validationSchema = Yup.object({
@@ -17,7 +16,6 @@ function ProductSelector({ selectedItems, onItemsChange, onNext }) {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const { user } = useAuthStore();
 
     useEffect(() => {
         const fetchProducts = async () => {
@@ -25,7 +23,7 @@ function ProductSelector({ selectedItems, onItemsChange, onNext }) {
                 setLoading(true);
                 const response = await getProducts();
                 setProducts(response.data);
-            } catch (err) {
+            } catch {
                 setError('Failed to load products');
             } finally {
                 setLoading(false);
@@ -62,7 +60,7 @@ function ProductSelector({ selectedItems, onItemsChange, onNext }) {
             resetForm();
             setSelectedProduct(null);
             setError(null);
-        } catch (err) {
+        } catch {
             setError('Failed to add item');
         }
     };
@@ -101,7 +99,7 @@ function ProductSelector({ selectedItems, onItemsChange, onNext }) {
                     validationSchema={validationSchema}
                     onSubmit={handleAddItem}
                 >
-                    {({ values, setFieldValue, isSubmitting }) => (
+                    {({ setFieldValue, isSubmitting }) => (
                         <Form className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="md:col-span-2">

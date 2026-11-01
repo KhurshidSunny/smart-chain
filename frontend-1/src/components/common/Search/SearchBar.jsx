@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 // import { searchItems } from '../../../services/apiClient';
 
 function SearchBar() {
     const [query, setQuery] = useState('');
-    const navigate = useNavigate();
 
     // const handleSearch = async (e) => {
     //     e.preventDefault();

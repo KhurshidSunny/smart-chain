@@ -13,14 +13,13 @@ function PickingDashboard() {
     const [warehouseStaff, setWarehouseStaff] = useState([]);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(true);
-    const allowedRoles = [ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN];
 
     useEffect(() => {
-        // Restrict access to allowed roles
+        const allowedRoles = [ROLES.WAREHOUSE_MANAGER, ROLES.WAREHOUSE_STAFF, ROLES.ADMIN];
         if (!isAuthenticated || !allowedRoles.includes(user?.role)) {
             navigate('/login');
         }
-    }, [isAuthenticated, user, navigate, allowedRoles]);
+    }, [isAuthenticated, user, navigate]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,14 +77,6 @@ function PickingDashboard() {
             console.log(err);
             setError(err.response?.data?.message || 'Failed to update status');
         }
-    };
-
-    // Helper function to get staff member name by ID
-    const getStaffName = (staffMember) => {
-        if (staffMember && staffMember.firstName && staffMember.lastName) {
-            return `${staffMember.firstName} ${staffMember.lastName}`;
-        }
-        return 'Unknown Staff';
     };
 
     const columns = [
