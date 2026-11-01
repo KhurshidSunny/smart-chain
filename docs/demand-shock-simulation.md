@@ -54,10 +54,22 @@ this table only shows how a sudden jump stands out on the demo series.
 - Spike is applied in memory; the input JSON file is not modified.
 - Not a production stress test or claim about retail-scale demand shocks.
 
-## How to regenerate
+## Reproducibility
+
+- Command: `python generate_reports.py`
+- Random seed: **42**
+- Python: **3.13**
+- Packages: numpy 2.1.3, pandas 2.2.3, scikit-learn 1.8.0
+
+Dataset SHA-256:
+
+- `experiments/data/demo_daily_demand.json`: `5a2e850770532f9c13390ad04bd10029a9f2eb79c3bfc2506581605313cbc912`
+
+Regenerate or check drift (writes to a temp folder in `--check`;
+does not overwrite committed files during validation):
 
 ```powershell
 cd experiments
-python simulate_demand_shock.py --write-md
-python simulate_demand_shock.py --product-id sku-oil-1l --spike-factor 4 --write-md
+python generate_reports.py
+python generate_reports.py --check
 ```

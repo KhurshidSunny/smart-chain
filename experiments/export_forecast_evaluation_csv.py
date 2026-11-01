@@ -37,7 +37,7 @@ def evaluation_rows(
     n_lags: int,
 ) -> list[dict[str, str]]:
     series = load_daily_demand(input_path, product_id=product_id)
-    product_ids = list(series["productId"].drop_duplicates())
+    product_ids = sorted(series["productId"].drop_duplicates())
     rows: list[dict[str, str]] = []
 
     for pid in product_ids:
@@ -63,12 +63,24 @@ def evaluation_rows(
     return rows
 
 
+def render_csv(rows: list[dict[str, str]]) -> str:
+    from io import StringIO
+
+    buffer = StringIO()
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=list(CSV_FIELDS),
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    writer.writerows(rows)
+    return buffer.getvalue()
+
+
 def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(CSV_FIELDS))
-        writer.writeheader()
-        writer.writerows(rows)
+    from report_reproducibility import write_text
+
+    write_text(path, render_csv(rows))
 
 
 def main() -> int:

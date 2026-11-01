@@ -21,6 +21,7 @@ from classical_forecast import (
     moving_average_forecast,
 )
 from load_demand_history import load_daily_demand
+from report_reproducibility import append_reproducibility, write_text
 from sklearn_lag_forecast import evaluate_sklearn_lag_holdout, sklearn_lag_forecast
 
 DEFAULT_INPUT = Path(__file__).resolve().parent / "data" / "demo_daily_demand.json"
@@ -201,17 +202,41 @@ def render_markdown(
             "- Sklearn needs enough history to build lag rows; very short SKUs are skipped.",
             "- This is decision-support evaluation, not a claim of production deep learning.",
             "",
-            "## How to regenerate",
-            "",
-            "```powershell",
-            "cd experiments",
-            "python compare_forecast_methods.py",
-            "python compare_forecast_methods.py --product-id sku-rice-1kg --write-md",
-            "```",
-            "",
         ]
     )
     return "\n".join(lines)
+
+
+def build_forecast_report(
+    *,
+    input_path: Path = DEFAULT_INPUT,
+    product_id: str | None = None,
+    horizon_days: int = DEFAULT_HORIZON_DAYS,
+    n_lags: int = 7,
+) -> tuple[str, list[tuple[str, list[dict[str, Any]]]]]:
+    series = load_daily_demand(input_path, product_id=product_id)
+    product_ids = sorted(series["productId"].drop_duplicates())
+    product_blocks: list[tuple[str, list[dict[str, Any]]]] = []
+    for pid in product_ids:
+        product_series = series[series["productId"] == pid]
+        product_blocks.append(
+            (
+                pid,
+                compare_product(
+                    product_series, horizon_days=horizon_days, n_lags=n_lags
+                ),
+            )
+        )
+    markdown = append_reproducibility(
+        render_markdown(
+            input_path=input_path,
+            horizon_days=horizon_days,
+            n_lags=n_lags,
+            product_blocks=product_blocks,
+        ),
+        datasets=[input_path],
+    )
+    return markdown, product_blocks
 
 
 def main() -> int:
@@ -243,21 +268,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    series = load_daily_demand(args.input, product_id=args.product_id)
-    product_ids = list(series["productId"].drop_duplicates())
-    product_blocks: list[tuple[str, list[dict[str, Any]]]] = []
+    markdown, product_blocks = build_forecast_report(
+        input_path=args.input,
+        product_id=args.product_id,
+        horizon_days=args.horizon_days,
+        n_lags=args.n_lags,
+    )
 
     print(
         f"Comparing methods on {args.input}  "
         f"horizonDays={args.horizon_days}  nLags={args.n_lags}"
     )
-
-    for product_id in product_ids:
-        product_series = series[series["productId"] == product_id]
-        rows = compare_product(
-            product_series, horizon_days=args.horizon_days, n_lags=args.n_lags
-        )
-        product_blocks.append((product_id, rows))
+    for product_id, rows in product_blocks:
         print(f"\nproductId={product_id}")
         for row in rows:
             mae, mape, note = _holdout_cells(row["holdout"])
@@ -266,19 +288,10 @@ def main() -> int:
                 f"  {row['method']}: avgDaily={avg}  mae={mae}  mape={mape}  ({note})"
             )
 
-    markdown = render_markdown(
-        input_path=args.input,
-        horizon_days=args.horizon_days,
-        n_lags=args.n_lags,
-        product_blocks=product_blocks,
-    )
-
     if args.write_md:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(markdown, encoding="utf-8")
+        write_text(args.output, markdown)
         print(f"\nWrote {args.output}")
     else:
-        # Still useful to preview in the terminal when not writing.
         print("\n--- markdown preview ---\n")
         print(markdown)
 

@@ -25,9 +25,10 @@ from evaluate_zscore_anomalies import (
     mean,
     precision_recall_f1,
 )
+from report_reproducibility import RANDOM_SEED, append_reproducibility, write_text
 
 DEFAULT_CONTAMINATIONS = (0.1, 0.15, 0.2)
-RANDOM_STATE = 42
+RANDOM_STATE = RANDOM_SEED
 
 
 def _fmt_metric(value: float | None) -> str:
@@ -84,6 +85,10 @@ def evaluate_isolation_forest(
         model = IsolationForest(
             n_estimators=n_estimators,
             contamination=contamination,
+            max_samples="auto",
+            max_features=1.0,
+            bootstrap=False,
+            n_jobs=1,
             random_state=RANDOM_STATE,
         )
         model.fit(train)
@@ -145,6 +150,7 @@ def render_markdown(
         f"- Min history points: **{MIN_HISTORY_POINTS}**",
         "- Z-score rule aligned with `microservices/analytics/services/anomalyService.js`",
         "- Isolation Forest features: `[quantity, quantity - peer_mean]`",
+        f"- Isolation Forest seed: **{RANDOM_STATE}**, n_estimators=50, n_jobs=1",
         f"- Rows: **{label_counts['total']}** "
         f"(normal={label_counts['normal']}, anomaly={label_counts['anomaly']})",
         "",
@@ -238,18 +244,53 @@ def render_markdown(
             "- Demo labels only (`experiments/data/anomaly_labels.json`).",
             "- Injected extremes are for method evaluation, not claims about fraud.",
             "- Isolation Forest is an offline baseline; the live Analytics path still uses z-score.",
-            "",
-            "## How to regenerate",
-            "",
-            "```powershell",
-            "cd experiments",
-            "python evaluate_zscore_anomalies.py --write-md",
-            "python compare_isolation_forest_anomalies.py --write-md",
-            "```",
+            "- Isolation Forest scores can shift across scikit-learn versions; use the pinned",
+            "  `experiments/requirements.txt` and `python generate_reports.py --check`.",
             "",
         ]
     )
     return "\n".join(lines)
+
+
+def build_anomaly_report(
+    *,
+    input_path: Path = DEFAULT_INPUT,
+    thresholds: list[float] | None = None,
+    contaminations: list[float] | None = None,
+) -> tuple[str, list[dict[str, Any]], list[dict[str, Any]]]:
+    rows = load_anomaly_rows(input_path)
+    threshold_values = list(thresholds or DEFAULT_THRESHOLDS)
+    contamination_values = list(contaminations or DEFAULT_CONTAMINATIONS)
+    z_results = [
+        evaluate_threshold(rows, threshold=value) for value in threshold_values
+    ]
+    z_best = choose_best_threshold(z_results)
+    if_results = [
+        evaluate_isolation_forest(rows, contamination=value)
+        for value in contamination_values
+    ]
+    if_best = choose_best_isolation(if_results)
+    label_counts = {
+        "total": len(rows),
+        "normal": sum(1 for row in rows if row["label"] == 0),
+        "anomaly": sum(1 for row in rows if row["label"] == 1),
+    }
+    try:
+        display_input = input_path.resolve().relative_to(Path(__file__).resolve().parents[1])
+    except ValueError:
+        display_input = input_path
+    markdown = append_reproducibility(
+        render_markdown(
+            input_path=display_input,
+            z_results=z_results,
+            z_best=z_best,
+            if_results=if_results,
+            if_best=if_best,
+            label_counts=label_counts,
+        ),
+        datasets=[input_path],
+    )
+    return markdown, z_results, if_results
 
 
 def main() -> int:
@@ -277,18 +318,16 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
-    rows = load_anomaly_rows(args.input)
     thresholds = parse_floats(args.thresholds)
     contaminations = parse_floats(args.contaminations)
-
-    z_results = [evaluate_threshold(rows, threshold=value) for value in thresholds]
+    markdown, z_results, if_results = build_anomaly_report(
+        input_path=args.input,
+        thresholds=thresholds,
+        contaminations=contaminations,
+    )
+    rows = load_anomaly_rows(args.input)
     z_best = choose_best_threshold(z_results)
-    if_results = [
-        evaluate_isolation_forest(rows, contamination=value)
-        for value in contaminations
-    ]
     if_best = choose_best_isolation(if_results)
-
     label_counts = {
         "total": len(rows),
         "normal": sum(1 for row in rows if row["label"] == 0),
@@ -339,22 +378,7 @@ def main() -> int:
     )
 
     if args.write_md:
-        try:
-            display_input = args.input.resolve().relative_to(
-                Path(__file__).resolve().parents[1]
-            )
-        except ValueError:
-            display_input = args.input
-        markdown = render_markdown(
-            input_path=display_input,
-            z_results=z_results,
-            z_best=z_best,
-            if_results=if_results,
-            if_best=if_best,
-            label_counts=label_counts,
-        )
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(markdown, encoding="utf-8")
+        write_text(args.output, markdown)
         print(f"Wrote {args.output}")
 
     return 0

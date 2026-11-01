@@ -34,6 +34,8 @@ experiments/
   load_demand_history.py
   classical_forecast.py
   sklearn_lag_forecast.py
+  report_reproducibility.py
+  generate_reports.py
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
   compare_isolation_forest_anomalies.py
@@ -102,9 +104,20 @@ python sklearn_lag_forecast.py --model random_forest --horizon-days 7
 
 Importable helpers: `build_lag_feature_matrix`, `sklearn_lag_forecast`, `evaluate_sklearn_lag_holdout`.
 
+## Generate or check committed reports
+
+`generate_reports.py` writes the forecast, anomaly, demand-shock, and CSV reports plus a run manifest. `--check` regenerates into a temporary folder and fails if those files drifted; it does not overwrite `docs/`.
+
+```powershell
+python generate_reports.py
+python generate_reports.py --check
+```
+
+Two clean runs of `python generate_reports.py` should produce the same bytes. After a successful `--check`, `git status` should stay clean.
+
 ## Method comparison report
 
-`compare_forecast_methods.py` runs MA, exponential smoothing, Croston, and sklearn lag (Ridge) on the same holdout protocol and can write `docs/forecast-comparison-results.md`.
+`compare_forecast_methods.py` runs MA, exponential smoothing, Croston, and sklearn lag (Ridge) on the same holdout protocol and can write `docs/forecast-comparison-results.md`. Prefer `generate_reports.py` when updating committed files.
 
 ```powershell
 python compare_forecast_methods.py
@@ -139,8 +152,7 @@ set and leave-one-out protocol, then writes a combined comparison into
 
 ```powershell
 python compare_isolation_forest_anomalies.py
-python compare_isolation_forest_anomalies.py --write-md
-python compare_isolation_forest_anomalies.py --contaminations 0.1,0.15,0.2 --write-md
+python generate_reports.py --check
 ```
 
 ## Demand shock simulation

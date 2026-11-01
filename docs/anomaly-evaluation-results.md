@@ -11,6 +11,7 @@ not production fraud labels.
 - Min history points: **3**
 - Z-score rule aligned with `microservices/analytics/services/anomalyService.js`
 - Isolation Forest features: `[quantity, quantity - peer_mean]`
+- Isolation Forest seed: **42**, n_estimators=50, n_jobs=1
 - Rows: **42** (normal=34, anomaly=8)
 
 ## Z-score threshold sweep
@@ -29,16 +30,16 @@ Best z-score threshold by F1: **2.0** (precision=1.0000, recall=0.5000, F1=0.666
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 0.10 | 42 | 6 | 0 | 34 | 2 | 1.0000 | 0.7500 | 0.8571 |
 | 0.15 | 42 | 6 | 0 | 34 | 2 | 1.0000 | 0.7500 | 0.8571 |
-| 0.20 | 42 | 8 | 1 | 33 | 0 | 0.8889 | 1.0000 | 0.9412 |
+| 0.20 | 42 | 7 | 0 | 34 | 1 | 1.0000 | 0.8750 | 0.9333 |
 
-Best Isolation Forest contamination by F1: **0.20** (precision=0.8889, recall=1.0000, F1=0.9412)
+Best Isolation Forest contamination by F1: **0.20** (precision=1.0000, recall=0.8750, F1=0.9333)
 
 ## Method comparison (best of each)
 
 | Method | Setting | Precision | Recall | F1 | Notes |
 |---|---|---:|---:|---:|---|
 | Z-score | threshold=2.0 | 1.0000 | 0.5000 | 0.6667 | Live Analytics default is 2.5 |
-| Isolation Forest | contamination=0.20 | 0.8889 | 1.0000 | 0.9412 | sklearn; quantity + peer deviation |
+| Isolation Forest | contamination=0.20 | 1.0000 | 0.8750 | 0.9333 | sklearn; quantity + peer deviation |
 
 ## Interpretation
 
@@ -52,11 +53,25 @@ Best Isolation Forest contamination by F1: **0.20** (precision=0.8889, recall=1.
 - Demo labels only (`experiments/data/anomaly_labels.json`).
 - Injected extremes are for method evaluation, not claims about fraud.
 - Isolation Forest is an offline baseline; the live Analytics path still uses z-score.
+- Isolation Forest scores can shift across scikit-learn versions; use the pinned
+  `experiments/requirements.txt` and `python generate_reports.py --check`.
 
-## How to regenerate
+## Reproducibility
+
+- Command: `python generate_reports.py`
+- Random seed: **42**
+- Python: **3.13**
+- Packages: numpy 2.1.3, pandas 2.2.3, scikit-learn 1.8.0
+
+Dataset SHA-256:
+
+- `experiments/data/anomaly_labels.json`: `83bad583c3f1a5d6fe7a078b44106476a9227e903e398d00867e1b2269714847`
+
+Regenerate or check drift (writes to a temp folder in `--check`;
+does not overwrite committed files during validation):
 
 ```powershell
 cd experiments
-python evaluate_zscore_anomalies.py --write-md
-python compare_isolation_forest_anomalies.py --write-md
+python generate_reports.py
+python generate_reports.py --check
 ```

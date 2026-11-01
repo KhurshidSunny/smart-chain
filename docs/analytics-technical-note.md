@@ -159,7 +159,7 @@ This is **decision-support evaluation on demo demand**, not a claim of productio
 | Method | Best setting (by F1 on this set) | Precision | Recall | F1 |
 |--------|----------------------------------|-----------|--------|-----|
 | Z-score | threshold = 2.0 | 1.00 | 0.50 | 0.67 |
-| Isolation Forest | contamination = 0.20 | 0.89 | 1.00 | 0.94 |
+| Isolation Forest | contamination = 0.20 | 1.00 | 0.88 | 0.93 |
 
 Live Analytics still uses **z-score**. Isolation Forest is an offline second detector for comparison. Small synthetic sets can favor one method; do not treat these numbers as a production SLA.
 
@@ -167,8 +167,8 @@ Regenerate with:
 
 ```powershell
 cd experiments
-python evaluate_zscore_anomalies.py --write-md
-python compare_isolation_forest_anomalies.py --write-md
+python generate_reports.py --check
+python generate_reports.py
 ```
 
 ---

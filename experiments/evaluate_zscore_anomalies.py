@@ -13,6 +13,8 @@ import math
 from pathlib import Path
 from typing import Any
 
+from report_reproducibility import append_reproducibility, write_text
+
 DEFAULT_INPUT = Path(__file__).resolve().parent / "data" / "anomaly_labels.json"
 DEFAULT_OUTPUT = (
     Path(__file__).resolve().parents[1] / "docs" / "anomaly-evaluation-results.md"
@@ -241,14 +243,6 @@ def render_markdown(
             "- Injected extremes are for method evaluation, not claims about fraud.",
             "- Leave-one-out on a tiny SKU set is a controlled check, not a production SLA.",
             "",
-            "## How to regenerate",
-            "",
-            "```powershell",
-            "cd experiments",
-            "python evaluate_zscore_anomalies.py",
-            "python evaluate_zscore_anomalies.py --write-md",
-            "```",
-            "",
         ]
     )
     return "\n".join(lines)
@@ -328,14 +322,16 @@ def main() -> int:
             )
         except ValueError:
             display_input = args.input
-        markdown = render_markdown(
-            input_path=display_input,
-            results=results,
-            best=best,
-            label_counts=label_counts,
+        markdown = append_reproducibility(
+            render_markdown(
+                input_path=display_input,
+                results=results,
+                best=best,
+                label_counts=label_counts,
+            ),
+            datasets=[args.input],
         )
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(markdown, encoding="utf-8")
+        write_text(args.output, markdown)
         print(f"Wrote {args.output}")
 
     return 0

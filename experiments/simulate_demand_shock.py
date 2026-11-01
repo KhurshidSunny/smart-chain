@@ -22,6 +22,7 @@ from classical_forecast import (
     moving_average_forecast,
 )
 from load_demand_history import load_daily_demand
+from report_reproducibility import append_reproducibility, write_text
 
 DEFAULT_INPUT = Path(__file__).resolve().parent / "data" / "demo_daily_demand.json"
 DEFAULT_OUTPUT = (
@@ -236,16 +237,42 @@ def render_markdown(
         "- Spike is applied in memory; the input JSON file is not modified.",
         "- Not a production stress test or claim about retail-scale demand shocks.",
         "",
-        "## How to regenerate",
-        "",
-        "```powershell",
-        "cd experiments",
-        "python simulate_demand_shock.py --write-md",
-        "python simulate_demand_shock.py --product-id sku-oil-1l --spike-factor 4 --write-md",
-        "```",
-        "",
     ]
     return "\n".join(lines)
+
+
+def build_shock_report(
+    *,
+    input_path: Path = DEFAULT_INPUT,
+    product_id: str = DEFAULT_PRODUCT_ID,
+    horizon_days: int = DEFAULT_HORIZON_DAYS,
+    spike_factor: float = DEFAULT_SPIKE_FACTOR,
+    spike_days: int = DEFAULT_SPIKE_DAYS,
+) -> tuple[str, dict[str, Any], dict[str, Any]]:
+    frame = load_daily_demand(input_path, product_id=product_id)
+    if frame.empty:
+        raise ValueError(f"No rows for productId={product_id} in {input_path}")
+    baseline_history = history_points_from_series(frame)
+    shocked_history = apply_spike(
+        baseline_history,
+        spike_factor=spike_factor,
+        spike_days=spike_days,
+    )
+    baseline = evaluate_series(baseline_history, horizon_days=horizon_days)
+    shocked = evaluate_series(shocked_history, horizon_days=horizon_days)
+    markdown = append_reproducibility(
+        render_markdown(
+            input_path=input_path,
+            product_id=product_id,
+            horizon_days=horizon_days,
+            spike_factor=spike_factor,
+            spike_days=spike_days,
+            baseline=baseline,
+            shocked=shocked,
+        ),
+        datasets=[input_path],
+    )
+    return markdown, baseline, shocked
 
 
 def main() -> int:
@@ -285,19 +312,16 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    frame = load_daily_demand(args.input, product_id=args.product_id)
-    if frame.empty:
-        raise SystemExit(f"No rows for productId={args.product_id} in {args.input}")
-
-    baseline_history = history_points_from_series(frame)
-    shocked_history = apply_spike(
-        baseline_history,
-        spike_factor=args.spike_factor,
-        spike_days=args.spike_days,
-    )
-
-    baseline = evaluate_series(baseline_history, horizon_days=args.horizon_days)
-    shocked = evaluate_series(shocked_history, horizon_days=args.horizon_days)
+    try:
+        markdown, baseline, shocked = build_shock_report(
+            input_path=args.input,
+            product_id=args.product_id,
+            horizon_days=args.horizon_days,
+            spike_factor=args.spike_factor,
+            spike_days=args.spike_days,
+        )
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
     print(
         f"Demand shock on {args.product_id}  "
@@ -324,19 +348,8 @@ def main() -> int:
         )
         print(f"  [{label}] last-day z={_metric_cell(z.get('zScore'))}")
 
-    markdown = render_markdown(
-        input_path=args.input,
-        product_id=args.product_id,
-        horizon_days=args.horizon_days,
-        spike_factor=args.spike_factor,
-        spike_days=args.spike_days,
-        baseline=baseline,
-        shocked=shocked,
-    )
-
     if args.write_md:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(markdown, encoding="utf-8")
+        write_text(args.output, markdown)
         print(f"\nWrote {args.output}")
     else:
         print("\n--- markdown preview ---\n")

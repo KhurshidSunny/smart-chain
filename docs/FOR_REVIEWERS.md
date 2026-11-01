@@ -52,7 +52,7 @@ On the intermittent SKU, Croston cuts MAPE roughly in half vs MA/ES while MAE st
 | Method | Best setting by F1 | Precision | Recall | F1 |
 |---|---|---:|---:|---:|
 | Z-score | threshold = 2.0 | 1.00 | 0.50 | 0.67 |
-| Isolation Forest | contamination = 0.20 | 0.89 | 1.00 | 0.94 |
+| Isolation Forest | contamination = 0.20 | 1.00 | 0.88 | 0.93 |
 
 The live service keeps z-score (default 2.5) because it is simple to explain to operators; Isolation Forest is an offline comparison. Full tables: [anomaly-evaluation-results.md](./anomaly-evaluation-results.md)
 
@@ -67,18 +67,15 @@ The live service keeps z-score (default 2.5) because it is simple to explain to 
    ```powershell
    cd experiments
    pip install -r requirements.txt
-   python compare_forecast_methods.py --write-md
-   python evaluate_zscore_anomalies.py --write-md
-   python compare_isolation_forest_anomalies.py --write-md
-   python simulate_demand_shock.py --write-md
-   python export_forecast_evaluation_csv.py
+   python generate_reports.py --check
+   python generate_reports.py
    ```
 
 Health check without login: http://localhost:3006/health
 
 Optional stress check: [demand-shock-simulation.md](./demand-shock-simulation.md) shows how MA/ES and a last-day z-score change when the end of a demo series is spiked.
 
-Downloadable forecast holdout rows (productId, method, mae, mape): [samples/evaluation_rows.csv](./samples/evaluation_rows.csv). Regenerate with `python export_forecast_evaluation_csv.py` from `experiments/`.
+Downloadable forecast holdout rows (productId, method, mae, mape): [samples/evaluation_rows.csv](./samples/evaluation_rows.csv). Run metadata: [samples/experiment-run-manifest.json](./samples/experiment-run-manifest.json). Regenerate or check both with `python generate_reports.py` / `python generate_reports.py --check` from `experiments/`.
 
 ## 6. FYP vs post-FYP work
 
