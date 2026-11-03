@@ -31,6 +31,8 @@ The post-FYP analytics extension was evaluated offline on small synthetic demo d
 | [Forecast evaluation CSV](docs/samples/evaluation_rows.csv) | Holdout MAE/MAPE rows (productId, method, mae, mape) for offline review |
 | [Analytics technical note](docs/analytics-technical-note.md) | Algorithms, evaluation protocols, limitations, future work |
 
+Pushes and pull requests run Analytics tests, frontend-1 lint/build, experiment report `--check`, and a package/syntax check for IAM, Sales, Inventory, Warehouse, and Logistics. Deployment on `main` starts only after those checks pass. Commands: [Project overview](docs/FOR_REVIEWERS.md#5-reproduce-the-demo-5-steps).
+
 ## Stack
 
 | Layer | Tech |

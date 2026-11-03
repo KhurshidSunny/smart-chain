@@ -73,6 +73,25 @@ The live service keeps z-score (default 2.5) because it is simple to explain to 
 
 Health check without login: http://localhost:3006/health
 
+Pushes and pull requests run the same checks in GitHub Actions (Node 20, Python 3.13). Deployment on `main` starts only after that workflow succeeds:
+
+```powershell
+cd microservices/analytics
+npm ci
+npm test
+
+cd ../../frontend-1
+npm ci
+npm run lint
+npm run build
+
+cd ../experiments
+pip install -r requirements.txt
+python generate_reports.py --check
+```
+
+Operational services (IAM, Sales, Inventory, Warehouse, Logistics) also run `npm ci` and `node --check app.js`. Do not run their `npm test` scripts; those are placeholders that exit 1.
+
 Optional stress check: [demand-shock-simulation.md](./demand-shock-simulation.md) shows how MA/ES and a last-day z-score change when the end of a demo series is spiked.
 
 Downloadable forecast holdout rows (productId, method, mae, mape): [samples/evaluation_rows.csv](./samples/evaluation_rows.csv). Run metadata: [samples/experiment-run-manifest.json](./samples/experiment-run-manifest.json). Regenerate or check both with `python generate_reports.py` / `python generate_reports.py --check` from `experiments/`.

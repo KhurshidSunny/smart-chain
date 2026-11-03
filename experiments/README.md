@@ -113,7 +113,7 @@ python generate_reports.py
 python generate_reports.py --check
 ```
 
-Two clean runs of `python generate_reports.py` should produce the same bytes. After a successful `--check`, `git status` should stay clean.
+Two clean runs of `python generate_reports.py` should produce the same bytes. After a successful `--check`, `git status` should stay clean. The same `--check` command runs in GitHub Actions on pushes and pull requests.
 
 ## Method comparison report
 
