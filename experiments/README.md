@@ -39,6 +39,9 @@ experiments/
   ingest_uci_retail.py
   test_ingest_uci_retail.py
   retail_provenance.json
+  evaluate_rolling_forecast.py
+  test_rolling_forecast.py
+  rolling_forecast_config.json
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
   compare_isolation_forest_anomalies.py
@@ -54,6 +57,8 @@ experiments/
       uci_processed_sample/
         daily_demand.csv
         quality_report.json
+      rolling_forecast_sample/
+        daily_demand.csv
 ```
 
 ## Demand history format
@@ -207,6 +212,24 @@ python -m unittest test_ingest_uci_retail.py
 
 `--download` fetches the UCI zip, extracts `online_retail_II.xlsx`, checks sha256 against `retail_provenance.json`, and writes `data/uci_processed/`. `--fixture` skips the checksum and processes the sample CSV only.
 
+## Rolling-origin forecast evaluation
+
+`evaluate_rolling_forecast.py` scores five forecasts on the same daily series: seasonal naive, moving average, exponential smoothing, Croston, and a Ridge lag model. The fixed settings are in `rolling_forecast_config.json`.
+
+Origins are chronological. The latest block is the test block, and the validation block is the one immediately before it. Each origin sees demand only from earlier days. Ridge is fit on that history and then steps forward with its own predictions. Features are not scaled. The method named for a series is the one with the lowest validation MAE; a tie keeps the earlier method in the method list. Test days are not used for that choice.
+
+A series is scored only when it is a continuous daily calendar, spans at least 60 days, has at least 8 positive days and total quantity of at least 20, and is long enough for the configured origins (112 days with the committed config). Dense and intermittent are decided from the zero-day ratio before the first validation origin, using the same 0.4 cutoff as the classical intermittent check. Results are reported for all series, for dense series, and for intermittent series. Each group has a macro mean across series and a micro score on the pooled days.
+
+MAE, WAPE, and sMAPE are the comparison metrics. MAPE is stored as well. MAPE skips zero actuals, so it is not comparable to the other three when many days have zero demand.
+
+```powershell
+python evaluate_rolling_forecast.py --input data/uci_processed/daily_demand.csv --output data/uci_processed/rolling_forecast_results.json
+python evaluate_rolling_forecast.py --fixture
+python -m unittest test_rolling_forecast.py
+```
+
+`--fixture` runs the committed sample. The full processed demand file is gitignored. Two runs of the same input and config produce the same metrics; `runtime_seconds` is the only field that can change.
+
 ## Relation to the Node analytics service
 
 | Concern | Node Analytics (`:3006`) | This folder |
@@ -215,5 +238,6 @@ python -m unittest test_ingest_uci_retail.py
 | MA / ES / Croston forecast in production path | Yes (Croston when intermittent) | Reimplemented for comparison |
 | Holdout MAE / MAPE | Yes (API) | Offline tables / plots |
 | sklearn lag baseline | No | `sklearn_lag_forecast.py` |
+| Rolling-origin evaluation on a daily demand file | No | `evaluate_rolling_forecast.py` |
 
 Use the same demo demand history shape where possible so Node and Python results can be compared honestly.

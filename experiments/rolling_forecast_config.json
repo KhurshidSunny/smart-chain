@@ -1,0 +1,17 @@
+{
+  "season_length": 7,
+  "horizon_days": 7,
+  "origin_step_days": 7,
+  "min_train_days": 56,
+  "validation_origins": 4,
+  "test_origins": 4,
+  "moving_average_window": 7,
+  "smoothing_alpha": 0.3,
+  "ridge_alpha": 1.0,
+  "n_lags": 7,
+  "include_rolling_mean": true,
+  "intermittent_zero_ratio": 0.4,
+  "min_positive_days": 8,
+  "min_span_days": 60,
+  "min_total_quantity": 20
+}

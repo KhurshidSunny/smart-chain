@@ -77,7 +77,8 @@ def load_demand_rows(path: str | Path) -> pd.DataFrame:
             raise ValueError(f"{source}: JSON must be a list of objects.")
         frame = pd.DataFrame(payload)
     elif suffix == ".csv":
-        frame = pd.read_csv(source)
+        # Product codes mix digits and letters. Reading as text keeps "10002" and "10123C" in one column type.
+        frame = pd.read_csv(source, dtype=str)
     else:
         raise ValueError(f"{source}: unsupported format (use .json or .csv).")
 
