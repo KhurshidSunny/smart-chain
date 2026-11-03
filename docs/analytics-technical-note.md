@@ -138,7 +138,19 @@ Rankings can change with longer or noisier series. Sklearn needs enough history 
 
 **Live API:** `GET /forecast/:productId/compare` (JWT) returns classical MA/ES metrics from MongoDB history and optional sklearn metrics from a small cache file when a `sklearnKey` is provided.
 
-This is **decision-support evaluation on demo demand**, not a claim of production deep learning or retail-scale forecasting.
+This is **decision-support evaluation on demo demand**, not a claim of production deep learning.
+
+---
+
+## 4.1 Public retail rolling-origin evaluation
+
+**Detail file:** [retail-forecast-evaluation.md](./retail-forecast-evaluation.md)
+
+Daily demand comes from UCI Online Retail II through `experiments/ingest_uci_retail.py`. `experiments/evaluate_rolling_forecast.py` then scores seasonal naive, moving average, exponential smoothing, Croston, and Ridge on identical rolling-origin folds. The test block is the latest origins. Validation is only used to record which method each series would have selected. Dense and intermittent series are split from the zero-day ratio before the first validation origin.
+
+The markdown tables are rendered from `docs/samples/retail_rolling_forecast_summary.json`. Regenerate the summary from the processed demand file, then run `python generate_reports.py`. `--check` rebuilds the markdown from the committed summary and does not download the workbook.
+
+This remains an offline comparison. The live service still uses its short holdout and the classical method switch.
 
 ---
 
@@ -191,7 +203,8 @@ Exact numeric outputs depend on the demo data you place; empty history fails saf
 - Sparse or intermittent order history still challenges MA/ES; Croston helps on zero-heavy SKUs but needs enough demand events to smooth size and interval.
 - Anomalies require **repeated purchases of the same product**; unrelated SKUs may show no flags.
 - Reorder output is advisory only—no automatic purchase orders are created.
-- Forecast and anomaly evaluations use **small synthetic / demo datasets**; holdout windows are short by design (aligned with the live service).
+- The demo forecast and anomaly tables use **small synthetic datasets**; those holdout windows are short by design (aligned with the live service).
+- The public retail evaluation is a separate offline comparison. It is not the live forecast path.
 - Sklearn and Isolation Forest baselines are **offline / optional**; they are not the production UI path.
 - No deep learning models are claimed or deployed.
 
@@ -199,12 +212,11 @@ Exact numeric outputs depend on the demo data you place; empty history fails saf
 
 ## 8. Future work
 
-Possible next steps for research or a Master’s thesis direction:
+Possible next steps:
 
-1. Extend the offline comparison in [forecast-comparison-results.md](./forecast-comparison-results.md) to larger public retail datasets (beyond the demo SKUs).
-2. Replace residual bands with calibrated prediction intervals (e.g. conformal or bootstrap) evaluated on longer holdouts.
-3. Stronger evaluation harness and regression tests around forecast/anomaly pipelines.
-4. Optionally wire Isolation Forest (or another second detector) behind a feature flag if a labelled operational set becomes available.
+1. Replace residual bands with calibrated prediction intervals (for example conformal or bootstrap) evaluated on longer holdouts.
+2. Stronger regression tests around the live forecast and anomaly paths.
+3. Optionally wire Isolation Forest (or another second detector) behind a feature flag if a labelled operational set becomes available.
 
 ---
 
@@ -218,7 +230,8 @@ See the root [README](../README.md) — Analytics service section. Typical path:
 
 | Document | Role |
 |----------|------|
-| [forecast-comparison-results.md](./forecast-comparison-results.md) | MA / ES / Croston / sklearn holdout tables |
+| [forecast-comparison-results.md](./forecast-comparison-results.md) | MA / ES / Croston / sklearn holdout tables on synthetic demo series |
+| [retail-forecast-evaluation.md](./retail-forecast-evaluation.md) | Rolling-origin scores on UCI Online Retail II |
 | [anomaly-evaluation-results.md](./anomaly-evaluation-results.md) | Z-score vs Isolation Forest metrics |
 | [demand-shock-simulation.md](./demand-shock-simulation.md) | Before/after forecast metrics under an injected demand spike |
 | [samples/evaluation_rows.csv](./samples/evaluation_rows.csv) | Holdout MAE/MAPE CSV export (productId, method, mae, mape) |

@@ -56,6 +56,12 @@ On the intermittent SKU, Croston cuts MAPE roughly in half vs MA/ES while MAE st
 
 The live service keeps z-score (default 2.5) because it is simple to explain to operators; Isolation Forest is an offline comparison. Full tables: [anomaly-evaluation-results.md](./anomaly-evaluation-results.md)
 
+## 4b. Public retail forecast evaluation
+
+A separate offline run scores seasonal naive, moving average, exponential smoothing, Croston, and a Ridge lag model on daily demand from UCI Online Retail II. Origins are chronological. Each origin trains only on earlier days. Validation chooses a method per series; the published comparison is the later test block. Dense and intermittent series are reported separately, including how test error moves across folds.
+
+Every retail number is in [retail-forecast-evaluation.md](./retail-forecast-evaluation.md), rendered from [samples/retail_rolling_forecast_summary.json](./samples/retail_rolling_forecast_summary.json). `python generate_reports.py --check` rebuilds that markdown from the summary. It does not re-score the workbook. The demo table in section 4 stays a controlled synthetic check.
+
 ## 5. Reproduce the demo (5 steps)
 
 1. **Start dependencies.** RabbitMQ on `5672` (`docker compose up -d rabbitmq`) and MongoDB (Atlas URI in each service `.env`, or local). Copy every `.env.example` to `.env`.
@@ -108,7 +114,8 @@ Blockchain and IoT were studied in the FYP report but not implemented.
 
 ## 7. Limitations
 
-- Evaluations use small synthetic datasets with short holdout windows; rankings can change on real, longer, or noisier data.
+- The demo forecast and anomaly tables use small synthetic datasets with short holdout windows.
+- The public retail evaluation is offline only. It does not replace the live Analytics forecast. Measured rankings are in the retail results document, not in the demo table.
 - Anomaly labels are injected for method testing, not real fraud labels; the detector flags unusual order sizes only.
 - Forecasts need repeated orders for the same SKU; Croston is used when demand is intermittent (≥ 40% zero days), but very sparse series with few demand events remain hard.
 - Uncertainty bands are residual-based approximations on short demo histories, not calibrated probabilistic intervals.

@@ -40,7 +40,9 @@ experiments/
   test_ingest_uci_retail.py
   retail_provenance.json
   evaluate_rolling_forecast.py
+  render_retail_forecast_report.py
   test_rolling_forecast.py
+  test_render_retail_forecast.py
   rolling_forecast_config.json
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
@@ -223,12 +225,13 @@ A series is scored only when it is a continuous daily calendar, spans at least 6
 MAE, WAPE, and sMAPE are the comparison metrics. MAPE is stored as well. MAPE skips zero actuals, so it is not comparable to the other three when many days have zero demand.
 
 ```powershell
-python evaluate_rolling_forecast.py --input data/uci_processed/daily_demand.csv --output data/uci_processed/rolling_forecast_results.json
+python evaluate_rolling_forecast.py --input data/uci_processed/daily_demand.csv --summary-output ../docs/samples/retail_rolling_forecast_summary.json
+python generate_reports.py
 python evaluate_rolling_forecast.py --fixture
-python -m unittest test_rolling_forecast.py
+python -m unittest test_rolling_forecast.py test_render_retail_forecast.py
 ```
 
-`--fixture` runs the committed sample. The full processed demand file is gitignored. Two runs of the same input and config produce the same metrics; `runtime_seconds` is the only field that can change.
+`--fixture` runs the committed sample. The full processed demand file is gitignored. Two runs of the same input and config produce the same metrics; `runtime_seconds` is the only field that can change. `docs/retail-forecast-evaluation.md` is rendered from the summary JSON. `python generate_reports.py --check` rebuilds that markdown and does not re-score the workbook.
 
 ## Relation to the Node analytics service
 

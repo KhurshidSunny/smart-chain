@@ -20,12 +20,13 @@ Blockchain and IoT were studied in the FYP report but were **not** implemented i
 
 ## Evaluation and documentation
 
-The post-FYP analytics extension was evaluated offline on small synthetic demo datasets: forecast methods (moving average, exponential smoothing, Croston for intermittent demand, sklearn Ridge lag model) by holdout MAE/MAPE, and order-quantity anomaly detectors (z-score, Isolation Forest) by precision, recall, and F1 on 42 labeled rows. The numbers show that the evaluation pipeline works; they are not production results.
+The post-FYP analytics extension was evaluated offline in two places. Small synthetic demo datasets check forecast methods (moving average, exponential smoothing, Croston for intermittent demand, sklearn Ridge lag model) by holdout MAE/MAPE, and order-quantity anomaly detectors (z-score, Isolation Forest) by precision, recall, and F1 on 42 labeled rows. A separate rolling-origin run scores those forecasts plus a seasonal naive baseline on daily demand from UCI Online Retail II. The demo numbers show that the evaluation pipeline works; they are not the retail results.
 
 | Document | Contents |
 |---|---|
 | [Project overview](docs/FOR_REVIEWERS.md) | Problem, architecture, methods, key metrics, 5-step demo, FYP vs post-FYP work, limitations |
 | [Forecast comparison results](docs/forecast-comparison-results.md) | MA vs ES vs Croston vs sklearn Ridge holdout MAE/MAPE per demo SKU |
+| [Public retail forecast evaluation](docs/retail-forecast-evaluation.md) | Rolling-origin MAE, WAPE, and sMAPE on UCI Online Retail II, dense and intermittent |
 | [Anomaly evaluation results](docs/anomaly-evaluation-results.md) | Z-score threshold sweep, Isolation Forest contamination sweep, best-of-each comparison |
 | [Demand shock simulation](docs/demand-shock-simulation.md) | Before/after MA and ES metrics after an injected demand spike on a demo SKU |
 | [Forecast evaluation CSV](docs/samples/evaluation_rows.csv) | Holdout MAE/MAPE rows (productId, method, mae, mape) for offline review |

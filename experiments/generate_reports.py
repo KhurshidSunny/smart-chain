@@ -35,6 +35,8 @@ from report_reproducibility import (
     run_manifest,
     write_text,
 )
+from render_retail_forecast_report import REPORT_PATH as RETAIL_REPORT_OUTPUT
+from render_retail_forecast_report import render_retail_report
 from simulate_demand_shock import DEFAULT_OUTPUT as SHOCK_OUTPUT
 from simulate_demand_shock import build_shock_report
 
@@ -60,6 +62,7 @@ def _artifact_contents() -> dict[Path, str]:
         SHOCK_OUTPUT: shock_md,
         CSV_OUTPUT: csv_text,
         MANIFEST_OUTPUT: format_json_manifest(manifest),
+        RETAIL_REPORT_OUTPUT: render_retail_report(),
     }
 
 

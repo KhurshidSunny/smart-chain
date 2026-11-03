@@ -1,0 +1,804 @@
+{
+  "config": {
+    "horizon_days": 7,
+    "include_rolling_mean": true,
+    "intermittent_zero_ratio": 0.4,
+    "min_positive_days": 8,
+    "min_span_days": 60,
+    "min_total_quantity": 20,
+    "min_train_days": 56,
+    "moving_average_window": 7,
+    "n_lags": 7,
+    "origin_step_days": 7,
+    "ridge_alpha": 1.0,
+    "season_length": 7,
+    "smoothing_alpha": 0.3,
+    "test_origins": 4,
+    "validation_origins": 4
+  },
+  "inclusion": {
+    "excluded_low_total_quantity": 0,
+    "excluded_non_daily": 0,
+    "excluded_too_few_origins": 0,
+    "excluded_too_few_positive_days": 0,
+    "excluded_too_short": 217,
+    "included": 3765,
+    "series_seen": 3982
+  },
+  "input_name": "daily_demand.csv",
+  "input_sha256": "0edbfa977962b2a0f7add1e3ac9f484f00edcf9078299322de75c9b94b0a06f9",
+  "preparation": {
+    "row_counts": {
+      "cancellations": 19104,
+      "duplicate_rows_removed": 34335,
+      "invalid_price": 2626,
+      "missing_customer_id_kept": 228488,
+      "missing_or_invalid_invoice_date": 0,
+      "missing_stock_code": 0,
+      "returns": 3393,
+      "rows_kept_for_demand": 1007913,
+      "rows_read": 1067371,
+      "zero_or_invalid_quantity": 0
+    },
+    "workbook_sha256": "bcbe73b35f5b7babf197fb0cb983a11f5d9ff929078d4aa53d171b1f2df2e980"
+  },
+  "protocol": {
+    "alignment": "The latest origins are kept. The validation block is immediately before the test block.",
+    "demand_class": "Dense or intermittent is decided from the zero-day ratio before the first validation origin.",
+    "folds": "Fold 1 is the earliest origin in the kept block and the last fold is the latest. A fold score pools every series at that protocol position. Calendar dates are not aligned across series.",
+    "history": "Each origin uses only demand strictly before the origin date.",
+    "macro": "Unweighted mean of per-series scores.",
+    "mape_caveat": "MAPE skips zero actuals. It is not comparable to MAE, WAPE, or sMAPE when many days have zero demand.",
+    "methods": [
+      "seasonal_naive",
+      "moving_average",
+      "exponential_smoothing",
+      "croston",
+      "ridge_lag"
+    ],
+    "micro": "One score on the pooled points of every series in the group.",
+    "model_selection": "The selected method is the lowest validation MAE. Ties keep the earlier method in the method list. Test rows are not used.",
+    "ridge": "Ridge is fit on lag rows inside the history. Later horizon days use predicted values.",
+    "scaling": "Ridge features are not scaled.",
+    "seasonal_naive": "The forecast repeats the previous season, walking forward with its own predictions when the horizon is longer than one season.",
+    "series_mae_std": "Sample standard deviation of per-series MAE inside the group.",
+    "split": "rolling_origin"
+  },
+  "runtime_seconds": 160.306,
+  "summary": {
+    "all": {
+      "series_count": 3765,
+      "test": {
+        "croston": {
+          "fold_micro_mae": [
+            8.54252,
+            7.752156,
+            7.335685,
+            9.715347
+          ],
+          "fold_micro_mae_mean": 8.336427,
+          "fold_micro_mae_std": 1.046701,
+          "macro_mae": 8.336427,
+          "macro_mape": 143.743618,
+          "macro_smape": 163.275557,
+          "macro_wape": 347.959439,
+          "mape_series": 3765,
+          "micro_mae": 8.336427,
+          "micro_mape": 180.009433,
+          "micro_smape": 163.275557,
+          "micro_wape": 118.821787,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 18.8487,
+          "zero_actual_points": 69034
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            8.309143,
+            7.549306,
+            7.063357,
+            9.500012
+          ],
+          "fold_micro_mae_mean": 8.105455,
+          "fold_micro_mae_std": 1.061689,
+          "macro_mae": 8.105454,
+          "macro_mape": 143.725508,
+          "macro_smape": 142.678664,
+          "macro_wape": 161.108707,
+          "mape_series": 3765,
+          "micro_mae": 8.105454,
+          "micro_mape": 187.56442,
+          "micro_smape": 142.678664,
+          "micro_wape": 115.529658,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 18.05633,
+          "zero_actual_points": 69034
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            7.942577,
+            7.397671,
+            6.675054,
+            9.045506
+          ],
+          "fold_micro_mae_mean": 7.765202,
+          "fold_micro_mae_std": 0.999023,
+          "macro_mae": 7.765202,
+          "macro_mape": 134.347969,
+          "macro_smape": 110.770468,
+          "macro_wape": 152.744914,
+          "mape_series": 3765,
+          "micro_mae": 7.765202,
+          "micro_mape": 167.839308,
+          "micro_smape": 110.770468,
+          "micro_wape": 110.679933,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 17.932422,
+          "zero_actual_points": 69034
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            7.903926,
+            7.308532,
+            6.873001,
+            9.187221
+          ],
+          "fold_micro_mae_mean": 7.81817,
+          "fold_micro_mae_std": 1.005772,
+          "macro_mae": 7.81817,
+          "macro_mape": 139.81911,
+          "macro_smape": 161.369843,
+          "macro_wape": 432.946925,
+          "mape_series": 3765,
+          "micro_mae": 7.81817,
+          "micro_mape": 164.877871,
+          "micro_smape": 161.369843,
+          "micro_wape": 111.434902,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 16.563755,
+          "zero_actual_points": 69034
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            8.314475,
+            8.13155,
+            7.195788,
+            9.330601
+          ],
+          "fold_micro_mae_mean": 8.243104,
+          "fold_micro_mae_std": 0.875035,
+          "macro_mae": 8.243104,
+          "macro_mape": 168.596105,
+          "macro_smape": 66.083874,
+          "macro_wape": 160.095168,
+          "mape_series": 3765,
+          "micro_mae": 8.243104,
+          "micro_mape": 219.526126,
+          "micro_smape": 66.083874,
+          "micro_wape": 117.491621,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 18.342252,
+          "zero_actual_points": 69034
+        }
+      },
+      "validation": {
+        "croston": {
+          "fold_micro_mae": [
+            8.75572,
+            8.274542,
+            8.018158,
+            8.291984
+          ],
+          "fold_micro_mae_mean": 8.335101,
+          "fold_micro_mae_std": 0.307083,
+          "macro_mae": 8.335101,
+          "macro_mape": 140.515867,
+          "macro_smape": 170.069786,
+          "macro_wape": 317.921659,
+          "mape_series": 3266,
+          "micro_mae": 8.335101,
+          "micro_mape": 176.008761,
+          "micro_smape": 170.069786,
+          "micro_wape": 130.834776,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 32.516988,
+          "zero_actual_points": 76048
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            8.509313,
+            9.689814,
+            7.680054,
+            8.295374
+          ],
+          "fold_micro_mae_mean": 8.543639,
+          "fold_micro_mae_std": 0.841093,
+          "macro_mae": 8.543639,
+          "macro_mape": 150.38998,
+          "macro_smape": 146.89775,
+          "macro_wape": 190.7193,
+          "mape_series": 3266,
+          "micro_mae": 8.543639,
+          "micro_mape": 189.605486,
+          "micro_smape": 146.89775,
+          "micro_wape": 134.108158,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 36.611035,
+          "zero_actual_points": 76048
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            8.229462,
+            8.649486,
+            6.778163,
+            7.599124
+          ],
+          "fold_micro_mae_mean": 7.814059,
+          "fold_micro_mae_std": 0.814407,
+          "macro_mae": 7.814059,
+          "macro_mape": 133.245419,
+          "macro_smape": 109.826121,
+          "macro_wape": 177.978435,
+          "mape_series": 3266,
+          "micro_mae": 7.814059,
+          "micro_mape": 160.648425,
+          "micro_smape": 109.826121,
+          "micro_wape": 122.656054,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 32.683635,
+          "zero_actual_points": 76048
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            8.800595,
+            105.979145,
+            7.084121,
+            7.74595
+          ],
+          "fold_micro_mae_mean": 32.402453,
+          "fold_micro_mae_std": 49.056221,
+          "macro_mae": 32.402453,
+          "macro_mape": 129.927583,
+          "macro_smape": 168.045666,
+          "macro_wape": 495.763197,
+          "mape_series": 3266,
+          "micro_mae": 32.402453,
+          "micro_mape": 155.591069,
+          "micro_smape": 168.045666,
+          "micro_wape": 508.616222,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 1345.477039,
+          "zero_actual_points": 76048
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            8.402808,
+            9.045267,
+            7.644204,
+            8.097666
+          ],
+          "fold_micro_mae_mean": 8.297486,
+          "fold_micro_mae_std": 0.587927,
+          "macro_mae": 8.297486,
+          "macro_mape": 177.544836,
+          "macro_smape": 59.562292,
+          "macro_wape": 184.793701,
+          "mape_series": 3266,
+          "micro_mae": 8.297486,
+          "micro_mape": 220.263812,
+          "micro_smape": 59.562292,
+          "micro_wape": 130.244342,
+          "points": 105420,
+          "series_count": 3765,
+          "series_mae_std": 33.395935,
+          "zero_actual_points": 76048
+        }
+      }
+    },
+    "dense": {
+      "series_count": 272,
+      "test": {
+        "croston": {
+          "fold_micro_mae": [
+            31.833022,
+            27.574005,
+            27.491017,
+            29.747331
+          ],
+          "fold_micro_mae_mean": 29.161344,
+          "fold_micro_mae_std": 2.064855,
+          "macro_mae": 29.161344,
+          "macro_mape": 282.019781,
+          "macro_smape": 108.605677,
+          "macro_wape": 152.114857,
+          "mape_series": 272,
+          "micro_mae": 29.161344,
+          "micro_mape": 266.250121,
+          "micro_smape": 108.605677,
+          "micro_wape": 100.335121,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 41.360664,
+          "zero_actual_points": 1853
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            32.381291,
+            27.465333,
+            27.678145,
+            30.451222
+          ],
+          "fold_micro_mae_mean": 29.493998,
+          "fold_micro_mae_std": 2.356943,
+          "macro_mae": 29.493998,
+          "macro_mape": 276.152335,
+          "macro_smape": 109.198811,
+          "macro_wape": 119.795152,
+          "mape_series": 272,
+          "micro_mae": 29.493998,
+          "micro_mape": 273.210942,
+          "micro_smape": 109.198811,
+          "micro_wape": 101.47968,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 42.062453,
+          "zero_actual_points": 1853
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            30.844312,
+            26.909289,
+            26.367347,
+            28.008104
+          ],
+          "fold_micro_mae_mean": 28.032263,
+          "fold_micro_mae_std": 1.995096,
+          "macro_mae": 28.032263,
+          "macro_mape": 250.218922,
+          "macro_smape": 105.444642,
+          "macro_wape": 115.624031,
+          "mape_series": 272,
+          "micro_mae": 28.032263,
+          "micro_mape": 240.09578,
+          "micro_smape": 105.444642,
+          "micro_wape": 96.450305,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 40.599991,
+          "zero_actual_points": 1853
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            27.958231,
+            25.72324,
+            25.891444,
+            27.219512
+          ],
+          "fold_micro_mae_mean": 26.698107,
+          "fold_micro_mae_std": 1.074065,
+          "macro_mae": 26.698107,
+          "macro_mape": 269.962234,
+          "macro_smape": 108.17929,
+          "macro_wape": 237.472656,
+          "mape_series": 272,
+          "micro_mae": 26.698107,
+          "micro_mape": 252.10285,
+          "micro_smape": 108.17929,
+          "micro_wape": 91.859888,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 36.035973,
+          "zero_actual_points": 1853
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            30.831408,
+            30.120273,
+            27.545168,
+            28.472689
+          ],
+          "fold_micro_mae_mean": 29.242385,
+          "fold_micro_mae_std": 1.502072,
+          "macro_mae": 29.242384,
+          "macro_mape": 271.688151,
+          "macro_smape": 85.887596,
+          "macro_wape": 124.55216,
+          "mape_series": 272,
+          "micro_mae": 29.242384,
+          "micro_mape": 276.918391,
+          "micro_smape": 85.887596,
+          "micro_wape": 100.613957,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 40.556617,
+          "zero_actual_points": 1853
+        }
+      },
+      "validation": {
+        "croston": {
+          "fold_micro_mae": [
+            26.930489,
+            33.244635,
+            30.845375,
+            32.694157
+          ],
+          "fold_micro_mae_mean": 30.928664,
+          "fold_micro_mae_std": 2.856165,
+          "macro_mae": 30.928664,
+          "macro_mape": 291.890298,
+          "macro_smape": 116.538898,
+          "macro_wape": 260.248111,
+          "mape_series": 271,
+          "micro_mae": 30.928664,
+          "micro_mape": 292.672406,
+          "micro_smape": 116.538898,
+          "micro_wape": 113.834822,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 50.412003,
+          "zero_actual_points": 2204
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            26.765338,
+            33.560119,
+            32.667003,
+            32.799667
+          ],
+          "fold_micro_mae_mean": 31.448032,
+          "fold_micro_mae_std": 3.146498,
+          "macro_mae": 31.448032,
+          "macro_mape": 290.258717,
+          "macro_smape": 117.603729,
+          "macro_wape": 143.684976,
+          "mape_series": 271,
+          "micro_mae": 31.448032,
+          "micro_mape": 298.816836,
+          "micro_smape": 117.603729,
+          "micro_wape": 115.746387,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 51.249284,
+          "zero_actual_points": 2204
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            24.727941,
+            30.304922,
+            25.844088,
+            30.448005
+          ],
+          "fold_micro_mae_mean": 27.831239,
+          "fold_micro_mae_std": 2.97466,
+          "macro_mae": 27.831239,
+          "macro_mape": 226.377548,
+          "macro_smape": 115.630628,
+          "macro_wape": 139.870242,
+          "mape_series": 271,
+          "micro_mae": 27.831239,
+          "micro_mape": 232.486686,
+          "micro_smape": 115.630628,
+          "micro_wape": 102.434561,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 41.599091,
+          "zero_actual_points": 2204
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            26.545456,
+            30.22106,
+            24.72534,
+            30.455419
+          ],
+          "fold_micro_mae_mean": 27.986819,
+          "fold_micro_mae_std": 2.816652,
+          "macro_mae": 27.986819,
+          "macro_mape": 281.43746,
+          "macro_smape": 115.72546,
+          "macro_wape": 219.236652,
+          "mape_series": 271,
+          "micro_mae": 27.986819,
+          "micro_mape": 271.210086,
+          "micro_smape": 115.72546,
+          "micro_wape": 103.007182,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 36.305515,
+          "zero_actual_points": 2204
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            24.801471,
+            30.74895,
+            31.180672,
+            31.33666
+          ],
+          "fold_micro_mae_mean": 29.516938,
+          "fold_micro_mae_std": 3.153457,
+          "macro_mae": 29.516938,
+          "macro_mape": 275.450154,
+          "macro_smape": 95.28725,
+          "macro_wape": 147.492307,
+          "mape_series": 271,
+          "micro_mae": 29.516938,
+          "micro_mape": 279.254036,
+          "micro_smape": 95.28725,
+          "micro_wape": 108.638879,
+          "points": 7616,
+          "series_count": 272,
+          "series_mae_std": 45.340606,
+          "zero_actual_points": 2204
+        }
+      }
+    },
+    "intermittent": {
+      "series_count": 3493,
+      "test": {
+        "croston": {
+          "fold_micro_mae": [
+            6.728888,
+            6.208628,
+            5.766189,
+            8.155456
+          ],
+          "fold_micro_mae_mean": 6.71479,
+          "fold_micro_mae_std": 1.037908,
+          "macro_mae": 6.71479,
+          "macro_mape": 132.976049,
+          "macro_smape": 167.532703,
+          "macro_wape": 363.209862,
+          "mape_series": 3493,
+          "micro_mae": 6.71479,
+          "micro_mape": 163.779636,
+          "micro_smape": 167.532702,
+          "micro_wape": 126.717427,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 14.621051,
+          "zero_actual_points": 67181
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            6.434644,
+            5.998444,
+            5.458083,
+            7.86854
+          ],
+          "fold_micro_mae_mean": 6.439928,
+          "fold_micro_mae_std": 1.032777,
+          "macro_mae": 6.439928,
+          "macro_mape": 133.413428,
+          "macro_smape": 145.285741,
+          "macro_wape": 164.325794,
+          "mape_series": 3493,
+          "micro_mae": 6.439928,
+          "micro_mape": 171.44644,
+          "micro_smape": 145.285741,
+          "micro_wape": 121.530393,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 13.255711,
+          "zero_actual_points": 67181
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            6.159218,
+            5.878301,
+            5.141615,
+            7.568888
+          ],
+          "fold_micro_mae_mean": 6.187005,
+          "fold_micro_mae_std": 1.016286,
+          "macro_mae": 6.187005,
+          "macro_mape": 125.325094,
+          "macro_smape": 111.18519,
+          "macro_wape": 155.635518,
+          "mape_series": 3493,
+          "micro_mae": 6.187005,
+          "micro_mape": 154.241227,
+          "micro_smape": 111.18519,
+          "micro_wape": 116.757396,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 13.572444,
+          "zero_actual_points": 67181
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            6.342297,
+            5.874578,
+            5.392034,
+            7.783046
+          ],
+          "fold_micro_mae_mean": 6.347989,
+          "fold_micro_mae_std": 1.032374,
+          "macro_mae": 6.347989,
+          "macro_mape": 129.684861,
+          "macro_smape": 165.511793,
+          "macro_wape": 448.168512,
+          "mape_series": 3493,
+          "micro_mae": 6.347989,
+          "micro_mape": 148.462838,
+          "micro_smape": 165.511793,
+          "micro_wape": 119.795375,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 12.846127,
+          "zero_actual_points": 67181
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            6.561081,
+            6.419288,
+            5.611182,
+            7.840007
+          ],
+          "fold_micro_mae_mean": 6.607889,
+          "fold_micro_mae_std": 0.921828,
+          "macro_mae": 6.607889,
+          "macro_mape": 160.568325,
+          "macro_smape": 64.541758,
+          "macro_wape": 162.862903,
+          "mape_series": 3493,
+          "micro_mae": 6.607889,
+          "micro_mape": 208.725368,
+          "micro_smape": 64.541758,
+          "micro_wape": 124.700057,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 14.070252,
+          "zero_actual_points": 67181
+        }
+      },
+      "validation": {
+        "croston": {
+          "fold_micro_mae": [
+            7.340451,
+            6.33012,
+            6.240602,
+            6.391786
+          ],
+          "fold_micro_mae_mean": 6.57574,
+          "fold_micro_mae_std": 0.513572,
+          "macro_mae": 6.57574,
+          "macro_mape": 126.818882,
+          "macro_smape": 174.238237,
+          "macro_wape": 323.140201,
+          "mape_series": 2995,
+          "micro_mae": 6.57574,
+          "micro_mape": 149.65719,
+          "micro_smape": 174.238237,
+          "micro_wape": 138.405046,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 29.99385,
+          "zero_actual_points": 73844
+        },
+        "exponential_smoothing": {
+          "fold_micro_mae": [
+            7.087716,
+            7.831033,
+            5.73432,
+            6.387224
+          ],
+          "fold_micro_mae_mean": 6.760073,
+          "fold_micro_mae_std": 0.902864,
+          "macro_mae": 6.760073,
+          "macro_mape": 137.734077,
+          "macro_smape": 149.178877,
+          "macro_wape": 194.97516,
+          "mape_series": 2995,
+          "micro_mae": 6.760073,
+          "micro_mape": 164.937213,
+          "micro_smape": 149.178877,
+          "micro_wape": 142.284861,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 34.596183,
+          "zero_actual_points": 73844
+        },
+        "moving_average": {
+          "fold_micro_mae": [
+            6.944725,
+            6.963176,
+            5.293499,
+            5.819881
+          ],
+          "fold_micro_mae_mean": 6.25532,
+          "fold_micro_mae_std": 0.834874,
+          "macro_mae": 6.25532,
+          "macro_mape": 124.818438,
+          "macro_smape": 109.374123,
+          "macro_wape": 181.426622,
+          "mape_series": 2995,
+          "micro_mae": 6.25532,
+          "micro_mape": 144.421853,
+          "micro_smape": 109.374123,
+          "micro_wape": 131.660912,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 31.360635,
+          "zero_actual_points": 73844
+        },
+        "ridge_lag": {
+          "fold_micro_mae": [
+            7.418802,
+            111.878429,
+            5.710399,
+            5.977563
+          ],
+          "fold_micro_mae_mean": 32.746298,
+          "fold_micro_mae_std": 52.76009,
+          "macro_mae": 32.746298,
+          "macro_mape": 116.218342,
+          "macro_smape": 172.119842,
+          "macro_wape": 520.784464,
+          "mape_series": 2995,
+          "micro_mae": 32.746298,
+          "micro_mape": 129.475455,
+          "micro_smape": 172.119842,
+          "micro_wape": 689.238486,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 1396.8585,
+          "zero_actual_points": 73844
+        },
+        "seasonal_naive": {
+          "fold_micro_mae": [
+            7.125844,
+            7.3552,
+            5.811419,
+            6.288045
+          ],
+          "fold_micro_mae_mean": 6.645127,
+          "fold_micro_mae_std": 0.720618,
+          "macro_mae": 6.645127,
+          "macro_mape": 168.685958,
+          "macro_smape": 56.780389,
+          "macro_wape": 188.168886,
+          "mape_series": 2995,
+          "micro_mae": 6.645127,
+          "micro_mape": 206.939308,
+          "micro_smape": 56.780389,
+          "micro_wape": 139.865497,
+          "points": 97804,
+          "series_count": 3493,
+          "series_mae_std": 31.698857,
+          "zero_actual_points": 73844
+        }
+      }
+    },
+    "validation_selected_method_counts": {
+      "all": {
+        "croston": 548,
+        "exponential_smoothing": 700,
+        "moving_average": 512,
+        "ridge_lag": 950,
+        "seasonal_naive": 1055
+      },
+      "dense": {
+        "croston": 15,
+        "exponential_smoothing": 26,
+        "moving_average": 73,
+        "ridge_lag": 87,
+        "seasonal_naive": 71
+      },
+      "intermittent": {
+        "croston": 533,
+        "exponential_smoothing": 674,
+        "moving_average": 439,
+        "ridge_lag": 863,
+        "seasonal_naive": 984
+      }
+    }
+  }
+}

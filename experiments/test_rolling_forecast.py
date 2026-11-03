@@ -109,6 +109,10 @@ class RollingForecastTest(unittest.TestCase):
         dense_naive = first["summary"]["dense"]["test"]["seasonal_naive"]
         self.assertEqual(dense_naive["macro_mae"], 0.0)
         self.assertEqual(dense_naive["micro_mae"], 0.0)
+        self.assertEqual(dense_naive["fold_micro_mae"], [0.0, 0.0, 0.0, 0.0])
+        self.assertEqual(dense_naive["fold_micro_mae_std"], 0.0)
+        counts = first["summary"]["validation_selected_method_counts"]["all"]
+        self.assertEqual(sum(counts.values()), 2)
         self.assertEqual(first["summary"]["dense"]["series_count"], 1)
         self.assertEqual(first["summary"]["intermittent"]["series_count"], 1)
         self.assertEqual(first["summary"]["all"]["series_count"], 2)

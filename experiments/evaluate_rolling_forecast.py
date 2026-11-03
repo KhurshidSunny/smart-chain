@@ -12,7 +12,9 @@ actuals, so it is not comparable to the other three on intermittent series.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 import os
 import time
 from pathlib import Path
@@ -328,6 +330,42 @@ class _Pool:
             "micro_wape": _round_metric(micro_wape),
             "micro_smape": _round_metric(micro_smape),
             "micro_mape": _round_metric(micro_mape),
+            "series_mae_std": _sample_std([score["mae"] for score in self.series_scores if score["mae"] is not None]),
+        }
+
+
+def _sample_std(values: list[float]) -> float | None:
+    if len(values) < 2:
+        return None
+    mean = sum(values) / len(values)
+    variance = sum((value - mean) ** 2 for value in values) / (len(values) - 1)
+    return _round_metric(math.sqrt(variance))
+
+
+class _FoldStats:
+    """Micro MAE at each protocol fold. Fold 0 is the earliest kept origin."""
+
+    def __init__(self, n_folds: int) -> None:
+        self.absolute_error = [0.0] * n_folds
+        self.points = [0] * n_folds
+
+    def add(self, fold_index: int, actuals: list[float], predictions: list[float]) -> None:
+        self.points[fold_index] += len(actuals)
+        self.absolute_error[fold_index] += sum(
+            abs(actual - predicted) for actual, predicted in zip(actuals, predictions)
+        )
+
+    def as_dict(self) -> dict:
+        fold_mae = [
+            None if count == 0 else _round_metric(error / count)
+            for error, count in zip(self.absolute_error, self.points)
+        ]
+        present = [value for value in fold_mae if value is not None]
+        mean = None if not present else _round_metric(sum(present) / len(present))
+        return {
+            "fold_micro_mae": fold_mae,
+            "fold_micro_mae_mean": mean,
+            "fold_micro_mae_std": _sample_std(present),
         }
 
 
@@ -392,6 +430,20 @@ def evaluate_frame(frame: pd.DataFrame, config: dict | None = None) -> dict:
         group: {split: {method: _Pool() for method in METHODS} for split in ("validation", "test")}
         for group in ("all", "dense", "intermittent")
     }
+    fold_counts = {
+        "validation": int(config["validation_origins"]),
+        "test": int(config["test_origins"]),
+    }
+    fold_stats = {
+        group: {
+            split: {method: _FoldStats(fold_counts[split]) for method in METHODS}
+            for split in ("validation", "test")
+        }
+        for group in ("all", "dense", "intermittent")
+    }
+    selection_counts = {
+        group: {method: 0 for method in METHODS} for group in ("all", "dense", "intermittent")
+    }
 
     for product_id, group in working.groupby("productId", sort=True):
         counts["series_seen"] += 1
@@ -413,13 +465,23 @@ def evaluate_frame(frame: pd.DataFrame, config: dict | None = None) -> dict:
             for method in METHODS:
                 actuals: list[float] = []
                 predictions: list[float] = []
-                for origin in origins[split]:
-                    actuals.extend(float(value) for value in quantities[origin : origin + horizon])
-                    predictions.extend(forecast_at_origin(quantities, origin, method, config))
+                for fold_index, origin in enumerate(origins[split]):
+                    origin_actuals = [float(value) for value in quantities[origin : origin + horizon]]
+                    origin_predictions = forecast_at_origin(quantities, origin, method, config)
+                    actuals.extend(origin_actuals)
+                    predictions.extend(origin_predictions)
+                    for group_name in ("all", demand_class):
+                        fold_stats[group_name][split][method].add(
+                            fold_index, origin_actuals, origin_predictions
+                        )
                 scores[method] = score_points(actuals, predictions)
                 for group_name in ("all", demand_class):
                     pools[group_name][split][method].add_series(actuals, predictions)
             split_scores[split] = scores
+
+        selected = select_method(split_scores["validation"])
+        selection_counts["all"][selected] += 1
+        selection_counts[demand_class][selected] += 1
 
         counts["included"] += 1
         series_reports.append(
@@ -431,7 +493,7 @@ def evaluate_frame(frame: pd.DataFrame, config: dict | None = None) -> dict:
                 "classification_days": len(prefix),
                 "validation_origin_dates": [dates.iloc[origin] for origin in origins["validation"]],
                 "test_origin_dates": [dates.iloc[origin] for origin in origins["test"]],
-                "validation_selected_method": select_method(split_scores["validation"]),
+                "validation_selected_method": selected,
                 "validation": split_scores["validation"],
                 "test": split_scores["test"],
             }
@@ -441,9 +503,16 @@ def evaluate_frame(frame: pd.DataFrame, config: dict | None = None) -> dict:
     for group_name, splits in pools.items():
         summary[group_name] = {
             "series_count": splits["test"][METHODS[0]].metrics()["series_count"],
-            "validation": {method: pool.metrics() for method, pool in splits["validation"].items()},
-            "test": {method: pool.metrics() for method, pool in splits["test"].items()},
+            "validation": {
+                method: {**pool.metrics(), **fold_stats[group_name]["validation"][method].as_dict()}
+                for method, pool in splits["validation"].items()
+            },
+            "test": {
+                method: {**pool.metrics(), **fold_stats[group_name]["test"][method].as_dict()}
+                for method, pool in splits["test"].items()
+            },
         }
+    summary["validation_selected_method_counts"] = selection_counts
 
     return {
         "config": config,
@@ -466,6 +535,8 @@ def _protocol() -> dict:
         "demand_class": "Dense or intermittent is decided from the zero-day ratio before the first validation origin.",
         "macro": "Unweighted mean of per-series scores.",
         "micro": "One score on the pooled points of every series in the group.",
+        "folds": "Fold 1 is the earliest origin in the kept block and the last fold is the latest. A fold score pools every series at that protocol position. Calendar dates are not aligned across series.",
+        "series_mae_std": "Sample standard deviation of per-series MAE inside the group.",
         "mape_caveat": "MAPE skips zero actuals. It is not comparable to MAE, WAPE, or sMAPE when many days have zero demand.",
         "methods": list(METHODS),
     }
@@ -473,6 +544,36 @@ def _protocol() -> dict:
 
 def dump_report(report: dict) -> str:
     return json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def public_summary(report: dict, source: Path) -> dict:
+    """Drop per-series rows. Keep the aggregates the write-up is rendered from."""
+    preparation = None
+    quality_path = source.parent / "quality_report.json"
+    if quality_path.is_file():
+        quality = json.loads(quality_path.read_text(encoding="utf-8"))
+        preparation = {
+            "row_counts": quality.get("row_counts"),
+            "workbook_sha256": (quality.get("source") or {}).get("workbook_sha256"),
+        }
+    return {
+        "config": report["config"],
+        "protocol": report["protocol"],
+        "inclusion": report["inclusion"],
+        "summary": report["summary"],
+        "runtime_seconds": report.get("runtime_seconds"),
+        "input_name": report.get("input_name") or source.name,
+        "input_sha256": _sha256_file(source),
+        "preparation": preparation,
+    }
 
 
 def evaluate_path(path: Path, config: dict | None = None) -> dict:
@@ -490,7 +591,12 @@ def main() -> None:
     parser.add_argument(
         "--output",
         type=Path,
-        help="Machine-readable results JSON. Printed summary only when omitted.",
+        help="Full machine-readable results JSON, including per-series rows.",
+    )
+    parser.add_argument(
+        "--summary-output",
+        type=Path,
+        help="Aggregate JSON used to render the retail results document.",
     )
     parser.add_argument(
         "--fixture",
@@ -531,6 +637,10 @@ def main() -> None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(dump_report(report), encoding="utf-8")
         print(f"Wrote {args.output}")
+    if args.summary_output is not None:
+        args.summary_output.parent.mkdir(parents=True, exist_ok=True)
+        args.summary_output.write_text(dump_report(public_summary(report, source)), encoding="utf-8")
+        print(f"Wrote {args.summary_output}")
 
 
 if __name__ == "__main__":
