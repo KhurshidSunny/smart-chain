@@ -36,6 +36,9 @@ experiments/
   sklearn_lag_forecast.py
   report_reproducibility.py
   generate_reports.py
+  ingest_uci_retail.py
+  test_ingest_uci_retail.py
+  retail_provenance.json
   compare_forecast_methods.py
   evaluate_zscore_anomalies.py
   compare_isolation_forest_anomalies.py
@@ -46,6 +49,11 @@ experiments/
     demo_daily_demand.json
     demo_daily_demand.csv
     anomaly_labels.json
+    fixtures/
+      uci_online_retail_ii_sample.csv
+      uci_processed_sample/
+        daily_demand.csv
+        quality_report.json
 ```
 
 ## Demand history format
@@ -182,6 +190,22 @@ python export_forecast_evaluation_csv.py --product-id sku-rice-1kg --output ../d
 
 Empty `mae` / `mape` cells mean that method could not be scored on that series
 (for example, too short for sklearn lag features).
+
+## UCI Online Retail II demand
+
+`ingest_uci_retail.py` turns the UCI Online Retail II workbook into daily demand (`productId`, `date`, `quantity`) plus `quality_report.json`. The source is Chen, Daqing (2015), Online Retail II, UCI Machine Learning Repository, https://doi.org/10.24432/C5CG6D, license CC BY 4.0. Provenance and the expected workbook sha256 are in `retail_provenance.json`.
+
+The raw zip and workbook stay in `data/uci_raw/`. Processed output for the full workbook stays in `data/uci_processed/`. Both directories are gitignored. A 16-row sample and its processed output live under `data/fixtures/` so the cleaning rules can be checked without the workbook.
+
+Rows are rejected in one bucket each: exact duplicates (first copy kept), blank stock codes, unparseable invoice dates, invoices whose code starts with C, negative quantities that are not cancellations, prices missing or at most zero, and quantities missing or at most zero. A sale with a missing customer id is counted and kept. Dates use the invoice timestamp's calendar day, with no timezone conversion. A selected series is a product code of five digits plus an optional letter, with at least 8 positive days, a span of at least 60 calendar days, and total quantity of at least 20. Zero quantity is written for every calendar day from that series' first positive day through its last.
+
+```powershell
+python ingest_uci_retail.py --download
+python ingest_uci_retail.py --fixture --output-dir data/fixtures/uci_processed_sample
+python -m unittest test_ingest_uci_retail.py
+```
+
+`--download` fetches the UCI zip, extracts `online_retail_II.xlsx`, checks sha256 against `retail_provenance.json`, and writes `data/uci_processed/`. `--fixture` skips the checksum and processes the sample CSV only.
 
 ## Relation to the Node analytics service
 

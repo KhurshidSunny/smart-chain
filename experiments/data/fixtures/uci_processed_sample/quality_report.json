@@ -1,0 +1,50 @@
+{
+  "row_counts": {
+    "cancellations": 1,
+    "duplicate_rows_removed": 1,
+    "invalid_price": 1,
+    "missing_customer_id_kept": 1,
+    "missing_or_invalid_invoice_date": 1,
+    "missing_stock_code": 1,
+    "returns": 1,
+    "rows_kept_for_demand": 10,
+    "rows_read": 16,
+    "zero_or_invalid_quantity": 0
+  },
+  "selection_rules": {
+    "calendar": "Zero quantity is inserted for every calendar day from the first positive day through the last positive day of each selected series. The day is the invoice timestamp's calendar date, with no timezone conversion.",
+    "excluded": [
+      "exact duplicate rows",
+      "blank stock codes",
+      "unparseable invoice dates",
+      "invoices whose code starts with C (cancellations)",
+      "negative quantities that are not cancellations (returns)",
+      "price missing or less than or equal to zero",
+      "quantity missing or less than or equal to zero"
+    ],
+    "kept_despite_missing_customer_id": true,
+    "min_positive_days": 8,
+    "min_span_days": 60,
+    "min_total_quantity": 20,
+    "product_code": "^\\d{5}[A-Z]?$"
+  },
+  "series": {
+    "calendar_rows_written": 60,
+    "positive_demand_rows_selected": 8,
+    "selected_series": [
+      "12345"
+    ],
+    "stock_codes_with_positive_demand": 3,
+    "zero_demand_days_inserted": 52
+  },
+  "source": {
+    "citation": "Chen, Daqing. (2015). Online Retail II [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5CG6D",
+    "dataset": "Online Retail II",
+    "doi": "10.24432/C5CG6D",
+    "input_name": "uci_online_retail_ii_sample.csv",
+    "license": "CC BY 4.0",
+    "page": "https://archive.ics.uci.edu/dataset/502/online+retail+ii",
+    "related_paper": "Chen, D., Sain, S. L., and Guo, K. (2012). Data mining for the online retail industry: A case study of RFM model-based customer segmentation using data mining. Journal of Database Marketing and Customer Strategy Management, 19(3), 197-208.",
+    "workbook_sha256": null
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "dataset": "Online Retail II",
+  "uci_id": 502,
+  "doi": "10.24432/C5CG6D",
+  "license": "CC BY 4.0",
+  "citation": "Chen, Daqing. (2015). Online Retail II [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5CG6D",
+  "related_paper": "Chen, D., Sain, S. L., and Guo, K. (2012). Data mining for the online retail industry: A case study of RFM model-based customer segmentation using data mining. Journal of Database Marketing and Customer Strategy Management, 19(3), 197-208.",
+  "page": "https://archive.ics.uci.edu/dataset/502/online+retail+ii",
+  "download_url": "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip",
+  "workbook_name": "online_retail_II.xlsx",
+  "sha256": "bcbe73b35f5b7babf197fb0cb983a11f5d9ff929078d4aa53d171b1f2df2e980"
+}

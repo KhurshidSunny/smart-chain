@@ -153,5 +153,7 @@ env/
 .pytest_cache/
 .ipynb_checkpoints/
 experiments/.venv/
+experiments/data/uci_raw/
+experiments/data/uci_processed/
 *.pkl
 *.joblib

@@ -29,3 +29,5 @@ Labels are **injected demo ground truth** for precision/recall experiments. Norm
 Counts in the current file: 34 normal rows, 8 anomaly rows (4 per SKU).
 
 These files are synthetic demo data for reproducible scripts. They are not live MongoDB exports and contain no credentials.
+
+`fixtures/uci_online_retail_ii_sample.csv` is a 16-row extract shaped like UCI Online Retail II. `fixtures/uci_processed_sample/` is the daily demand and quality report produced from that sample. The full workbook is downloaded separately and is not stored in this folder. See `../README.md`.
