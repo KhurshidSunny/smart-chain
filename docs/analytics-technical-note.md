@@ -54,7 +54,7 @@ Orders / inventory data (MongoDB)
 
 ### 3.1 Demand history
 
-Daily demand per product is aggregated mainly from **sales order line quantities** by day. Inventory `sold` transactions are used only as a fallback when order-based history is insufficient, to avoid double-counting reserved and sold events.
+Daily demand per product is aggregated mainly from **sales order line quantities** by day. Inventory `sold` transactions are used only as a fallback when order-based history is insufficient, to avoid double-counting reserved and sold events. The collection owners, the per-product source switch, and the shared-database limits are in [analytics-data-lineage.md](./analytics-data-lineage.md).
 
 ### 3.2 Forecast
 
@@ -236,6 +236,7 @@ See the root [README](../README.md) — Analytics service section. Typical path:
 | [demand-shock-simulation.md](./demand-shock-simulation.md) | Before/after forecast metrics under an injected demand spike |
 | [samples/evaluation_rows.csv](./samples/evaluation_rows.csv) | Holdout MAE/MAPE CSV export (productId, method, mae, mape) |
 | [order-lifecycle.md](./order-lifecycle.md) | Order sequence and RabbitMQ contracts, including advisory `LowStockPredicted` |
+| [analytics-data-lineage.md](./analytics-data-lineage.md) | Order and stock records through the daily series, forecast, reorder row, event, and UI |
 
 ---
 
