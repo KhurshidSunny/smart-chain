@@ -1,11 +1,44 @@
+x-service-env: &service_env
+  MONGO_URI: mongodb://mongodb:27017/smartchain?replicaSet=rs0
+  JWT_SECRET: ${JWT_SECRET:-smartchain-dev-jwt-secret-use-same-in-all-services}
+
+x-http-health: &http_health
+  test:
+    [
+      "CMD",
+      "node",
+      "-e",
+      "fetch('http://127.0.0.1:'+process.env.PORT+'/').then(()=>process.exit(0)).catch(()=>process.exit(1))",
+    ]
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 20s
+
 services:
   mongodb:
     image: mongo:7
     container_name: smartchain-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - smartchain_mongo_data:/data/db
+    networks:
+      - smartchain
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--quiet",
+          "--eval",
+          "try { if (rs.status().myState === 1) quit(0); } catch (e) {} rs.initiate({_id:'rs0', members:[{_id:0, host:'mongodb:27017'}]}); quit(1);",
+        ]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -14,8 +47,200 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: smartchain
+      RABBITMQ_DEFAULT_PASS: smartchain
+    volumes:
+      - smartchain_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - smartchain
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  iam:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/iam
+    ports:
+      - "3001:3001"
+    environment:
+      <<: *service_env
+      PORT: 3001
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      <<: *http_health
+
+  sales:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/sales
+    ports:
+      - "3002:3002"
+    environment:
+      <<: *service_env
+      PORT: 3002
+      RABBITMQ_URL: amqp://smartchain:smartchain@rabbitmq:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      <<: *http_health
+
+  inventory:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/inventory
+    ports:
+      - "3003:3003"
+    environment:
+      <<: *service_env
+      PORT: 3003
+      RABBITMQ_URL: amqp://smartchain:smartchain@rabbitmq:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      <<: *http_health
+
+  warehouse:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/warehouse
+    ports:
+      - "3004:3004"
+    environment:
+      <<: *service_env
+      PORT: 3004
+      RABBITMQ_URL: amqp://smartchain:smartchain@rabbitmq:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      <<: *http_health
+
+  logistics:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/logistics
+    ports:
+      - "3005:3005"
+    environment:
+      <<: *service_env
+      PORT: 3005
+      RABBITMQ_URL: amqp://smartchain:smartchain@rabbitmq:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      <<: *http_health
+
+  analytics:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      args:
+        SERVICE_DIR: microservices/analytics
+    ports:
+      - "3006:3006"
+    environment:
+      <<: *service_env
+      PORT: 3006
+      RABBITMQ_URL: amqp://smartchain:smartchain@rabbitmq:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - smartchain
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3006/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_IAM_URL: http://localhost:3001
+      VITE_API_SALES_URL: http://localhost:3002
+      VITE_API_INVENTORY_URL: http://localhost:3003
+      VITE_API_WAREHOUSE_URL: http://localhost:3004
+      VITE_API_LOGISTICS_URL: http://localhost:3005
+      VITE_API_ANALYTICS_URL: http://localhost:3006
+    depends_on:
+      iam:
+        condition: service_healthy
+      sales:
+        condition: service_healthy
+      inventory:
+        condition: service_healthy
+      warehouse:
+        condition: service_healthy
+      logistics:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+    networks:
+      - smartchain
+
+networks:
+  smartchain:
 
 volumes:
   smartchain_mongo_data:
+  smartchain_rabbitmq_data:

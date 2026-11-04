@@ -117,14 +117,27 @@ The order sequence, routing keys, payloads, and current ack behaviour are in [do
 
 ## Local setup
 
-**Requirements:** Node.js 18+, RabbitMQ on `5672` (local or Docker). MongoDB can be **Atlas** (recommended) or local `27017`.
+The container stack runs the active frontend and the six services with MongoDB and RabbitMQ on one machine. It does not need a cloud database account. Images use Node 20, the same major version as `.nvmrc`. Experiment scripts stay on the host and use Python 3.13 from `.python-version`.
 
 ```bash
-# RabbitMQ only (if MongoDB Atlas is already in each service .env)
+node scripts/local-stack.js start
+node scripts/local-stack.js seed
+```
+
+App: http://localhost:5173
+
+RabbitMQ management: http://localhost:15672 (user `smartchain`, password `smartchain`). That account is only for the container network. A service started on the host still uses `guest` at `127.0.0.1`, as in each service `.env.example`.
+
+Stop the stack with `node scripts/local-stack.js stop`. Named volumes keep the database.
+
+**Host setup, without the app containers:** Node.js 20, RabbitMQ on `5672`, and MongoDB on `27017` or a `MONGO_URI` you already have.
+
+```bash
+# RabbitMQ only (if MongoDB is already set in each service .env)
 docker compose up -d rabbitmq
 
-# Or both local MongoDB + RabbitMQ:
-# docker compose up -d
+# Or MongoDB and RabbitMQ only, with services still run on the host:
+# docker compose up -d mongodb rabbitmq
 
 # IAM: roles + demo users (once; against Atlas or local MONGO_URI in .env)
 cd microservices/iam
