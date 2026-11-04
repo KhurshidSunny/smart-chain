@@ -43,7 +43,7 @@ Orders / inventory data (MongoDB)
 
 - Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
-- On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created.
+- On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created. This event is not part of the order flow. The order events are listed in [order-lifecycle.md](./order-lifecycle.md).
 - **Live path:** Croston when demand is intermittent; otherwise moving average / exponential smoothing (forecast); z-score (anomalies).
 - Each live forecast also returns an **approx. 80% residual uncertainty band** and a short **operator explanation** (why the method was chosen; band limits). The band uses one-step residual scale × √horizon — demo-scale, not a calibrated probabilistic forecast.
 - **Offline experiments:** sklearn lag (Ridge) forecast baseline; Isolation Forest anomaly baseline. These strengthen the research comparison story; they are not required for the UI demo.
@@ -235,6 +235,7 @@ See the root [README](../README.md) — Analytics service section. Typical path:
 | [anomaly-evaluation-results.md](./anomaly-evaluation-results.md) | Z-score vs Isolation Forest metrics |
 | [demand-shock-simulation.md](./demand-shock-simulation.md) | Before/after forecast metrics under an injected demand spike |
 | [samples/evaluation_rows.csv](./samples/evaluation_rows.csv) | Holdout MAE/MAPE CSV export (productId, method, mae, mape) |
+| [order-lifecycle.md](./order-lifecycle.md) | Order sequence and RabbitMQ contracts, including advisory `LowStockPredicted` |
 
 ---
 

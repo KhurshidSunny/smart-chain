@@ -21,6 +21,7 @@ Small and mid-size supply-chain operations often keep orders, stock, and warehou
 Five operational Node.js/Express microservices (IAM, Sales, Inventory, Warehouse, Logistics) communicate through RabbitMQ and store data in MongoDB. The post-FYP **Analytics** service (port 3006) reads the same MongoDB data, validates IAM JWTs, and serves forecasts, reorder suggestions, and anomaly flags to the React frontend.
 
 - Diagram and service ownership table: [README — Architecture overview](../README.md#architecture-overview)
+- Order sequence, routing keys, and ack behaviour: [order-lifecycle.md](./order-lifecycle.md)
 - Algorithms and API details: [analytics-technical-note.md](./analytics-technical-note.md)
 
 ## 3. Methods

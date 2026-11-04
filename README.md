@@ -31,6 +31,7 @@ The post-FYP analytics extension was evaluated offline in two places. Small synt
 | [Demand shock simulation](docs/demand-shock-simulation.md) | Before/after MA and ES metrics after an injected demand spike on a demo SKU |
 | [Forecast evaluation CSV](docs/samples/evaluation_rows.csv) | Holdout MAE/MAPE rows (productId, method, mae, mape) for offline review |
 | [Analytics technical note](docs/analytics-technical-note.md) | Algorithms, evaluation protocols, limitations, future work |
+| [Order lifecycle](docs/order-lifecycle.md) | Order sequence, RabbitMQ routing keys, payloads, and current ack behaviour |
 
 Pushes and pull requests run Analytics tests, frontend-1 lint/build, experiment report `--check`, and a package/syntax check for IAM, Sales, Inventory, Warehouse, and Logistics. Deployment on `main` starts only after those checks pass. Commands: [Project overview](docs/FOR_REVIEWERS.md#5-reproduce-the-demo-5-steps).
 
@@ -97,6 +98,8 @@ flowchart LR
   Log --> DB
   An --> DB
 ```
+
+The order sequence, routing keys, payloads, and current ack behaviour are in [docs/order-lifecycle.md](docs/order-lifecycle.md). `LowStockPredicted` is advisory and is not one of the order-flow events.
 
 **Who owns what (analytics):**
 
