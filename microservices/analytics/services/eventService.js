@@ -1,6 +1,7 @@
 const amqp = require('amqplib');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
 
 function loadEvents() {
   const candidates = [
@@ -15,7 +16,7 @@ function loadEvents() {
   throw new Error('Shared event module not found');
 }
 
-const { buildEnvelope, publishEnvelope, handleDelivery } = loadEvents();
+const { buildEnvelope, publishEnvelope, assertConsumerQueues, subscribeConsumer } = loadEvents();
 const PRODUCER = 'analytics';
 
 let channel;
@@ -42,9 +43,11 @@ const connectRabbitMQ = async () => {
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
     const queue = `${queuePrefix}analytics_events`;
 
-    await channel.assertExchange(exchange, 'topic', { durable: true });
-    await channel.assertQueue(queue, { durable: true });
-    await channel.bindQueue(queue, exchange, ROUTING_LOW_STOCK_PREDICTED);
+    await assertConsumerQueues(channel, {
+      exchange,
+      queue,
+      routingKeys: [ROUTING_LOW_STOCK_PREDICTED],
+    });
 
     console.log('RabbitMQ Connected for Analytics Service');
     console.log(
@@ -112,8 +115,7 @@ const subscribeToEvents = (eventHandlers) => {
 
   activeHandlers = eventHandlers;
   const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}analytics_events`;
-
-  channel.consume(queue, (msg) => handleDelivery(channel, msg, eventHandlers), { noAck: false });
+  subscribeConsumer(channel, { queue, handlers: eventHandlers, mongoose, consumer: PRODUCER });
 
   console.log(`Subscribed to events on queue ${queue}`);
   return true;

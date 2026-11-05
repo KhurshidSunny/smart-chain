@@ -100,7 +100,7 @@ flowchart LR
   An --> DB
 ```
 
-The order sequence, routing keys, payloads, and current ack behaviour are in [docs/order-lifecycle.md](docs/order-lifecycle.md). `LowStockPredicted` is advisory and is not one of the order-flow events. How those operational records become a forecast is in [docs/analytics-data-lineage.md](docs/analytics-data-lineage.md). Analytics reads the shared `smartchain` database; it does not own a separate database.
+The order sequence, routing keys, payloads, retries, dead-letter queues, and inbox behaviour are in [docs/order-lifecycle.md](docs/order-lifecycle.md). `LowStockPredicted` is advisory and is not one of the order-flow events. How those operational records become a forecast is in [docs/analytics-data-lineage.md](docs/analytics-data-lineage.md). Analytics reads the shared `smartchain` database; it does not own a separate database.
 
 **Who owns what (analytics):**
 

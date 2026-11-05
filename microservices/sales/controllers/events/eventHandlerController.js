@@ -1,83 +1,74 @@
 const Order = require('../../models/orderModel');
-const { publishEvent } = require('../../services/eventService');
+const { publishEvent, read, save } = require('../../services/eventService');
 const QRCode = require('qrcode');
 
 exports.publishOrderCreated = async (order) => {
-    try {
-        await publishEvent('sales.order.created', {
-            orderId: order._id,
-            customerId: order.customerId,
-            items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity, shippingAddress: order.shippingAddress })),
-        });
-        console.log(`Published OrderCreated for order ${order._id}`);
-    } catch (error) {
-        console.error('Error publishing OrderCreated:', error);
-        throw error;
-    }
+  await publishEvent('sales.order.created', {
+    orderId: order._id,
+    customerId: order.customerId,
+    items: order.items.map((item) => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      shippingAddress: order.shippingAddress,
+    })),
+  });
+  console.log(`Published OrderCreated for order ${order._id}`);
 };
 
-// Subscription Handlers
-exports.handleInventoryReserved = async (message) => {
-    try {
-        const { orderId } = message;
-        const order = await Order.findById(orderId);
-        if (!order) return console.warn(`Order ${orderId} not found`);
+exports.handleInventoryReserved = async (message, envelope, session) => {
+  const { orderId } = message;
+  const order = await read(Order.findById(orderId), session);
+  if (!order) {
+    console.warn(`Order ${orderId} not found`);
+    return;
+  }
 
-        // Generate QR code with orderId
-        const qrCodeData = await QRCode.toString(order._id.toString(), { type: 'utf8' });
-        order.qrCode = qrCodeData; 
-
-        // Update order status
-        order.status = 'confirmed';
-        order.updatedAt = Date.now();
-        await order.save();
-        console.log(`Order ${orderId} status updated to Confirmed`);
-    } catch (error) {
-        console.error('Error handling InventoryReserved:', error);
-    }
+  const qrCodeData = await QRCode.toString(order._id.toString(), { type: 'utf8' });
+  order.qrCode = qrCodeData;
+  order.status = 'confirmed';
+  order.updatedAt = Date.now();
+  await save(order, session);
+  console.log(`Order ${orderId} status updated to Confirmed`);
 };
 
-exports.handleOrderPacked = async (message) => {
-    try {
-        const { orderId } = message;
-        const order = await Order.findById(orderId);
-        if (!order) return console.warn(`Order ${orderId} not found`);
+exports.handleOrderPacked = async (message, envelope, session) => {
+  const { orderId } = message;
+  const order = await read(Order.findById(orderId), session);
+  if (!order) {
+    console.warn(`Order ${orderId} not found`);
+    return;
+  }
 
-        order.status = 'packed';
-        order.updatedAt = Date.now();
-        await order.save();
-        console.log(`Order ${orderId} status updated to Packed`);
-    } catch (error) {
-        console.error('Error handling OrderPacked:', error);
-    }
+  order.status = 'packed';
+  order.updatedAt = Date.now();
+  await save(order, session);
+  console.log(`Order ${orderId} status updated to Packed`);
 };
 
-exports.handleShipmentShipping = async (message) => {
-    try {
-        const { orderId } = message;
-        const order = await Order.findById(orderId);
-        if (!order) return console.warn(`Order ${orderId} not found`);
+exports.handleShipmentShipping = async (message, envelope, session) => {
+  const { orderId } = message;
+  const order = await read(Order.findById(orderId), session);
+  if (!order) {
+    console.warn(`Order ${orderId} not found`);
+    return;
+  }
 
-        order.status = 'shipping';
-        order.updatedAt = Date.now();
-        await order.save();
-        console.log(`Order ${orderId} status updated to Shipped`);
-    } catch (error) {
-        console.error('Error handling ShipmentDispatched:', error);
-    }
+  order.status = 'shipping';
+  order.updatedAt = Date.now();
+  await save(order, session);
+  console.log(`Order ${orderId} status updated to Shipped`);
 };
 
-exports.handleOrderDelivered = async (message) => {
-    try {
-        const { orderId } = message;
-        const order = await Order.findById(orderId);
-        if (!order) return console.warn(`Order ${orderId} not found`);
+exports.handleOrderDelivered = async (message, envelope, session) => {
+  const { orderId } = message;
+  const order = await read(Order.findById(orderId), session);
+  if (!order) {
+    console.warn(`Order ${orderId} not found`);
+    return;
+  }
 
-        order.status = 'delivered';
-        order.updatedAt = Date.now();
-        await order.save();
-        console.log(`Order ${orderId} status updated to Delivered `);
-    } catch (error) {
-        console.error('Error handling OrderDelivered:', error);
-    }
+  order.status = 'delivered';
+  order.updatedAt = Date.now();
+  await save(order, session);
+  console.log(`Order ${orderId} status updated to Delivered `);
 };

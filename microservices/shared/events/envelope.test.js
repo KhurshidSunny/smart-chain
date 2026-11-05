@@ -138,7 +138,7 @@ test('publisher confirms are persistent and a nack is surfaced', async () => {
   );
 });
 
-test('an unsupported version is nacked and not requeued', () => {
+test('an unsupported version is dead-lettered once', async () => {
   const envelope = buildEnvelope({
     eventType: 'sales.order.created',
     producer: 'sales',
@@ -148,27 +148,38 @@ test('an unsupported version is nacked and not requeued', () => {
   });
   const calls = [];
   const channel = {
-    nack(msg, allUpTo, requeue) {
-      calls.push({ msg, allUpTo, requeue });
+    sendToQueue(queue, body, options, callback) {
+      calls.push({ queue, options });
+      callback(null);
     },
     ack() {
       calls.push('ack');
+    },
+    nack() {
+      calls.push('nack');
     },
   };
   const msg = {
     fields: { routingKey: 'sales.order.created' },
     content: Buffer.from(JSON.stringify({ ...envelope, eventVersion: 2 })),
+    properties: {},
   };
 
-  handleDelivery(channel, msg, {
-    'sales.order.created': () => {
-      throw new Error('handler should not run');
+  await handleDelivery(
+    channel,
+    msg,
+    {
+      'sales.order.created': () => {
+        throw new Error('handler should not run');
+      },
     },
-  });
+    { queueName: 'smart-chain-inventory_events' }
+  );
 
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].allUpTo, false);
-  assert.equal(calls[0].requeue, false);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].queue, 'smart-chain-inventory_events.dlq');
+  assert.equal(calls[1], 'ack');
+  assert.equal(calls.includes('nack'), false);
 });
 
 test('a missing channel skips publish instead of confirming', async () => {
