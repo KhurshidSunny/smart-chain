@@ -61,7 +61,7 @@ Pushes and pull requests run Analytics tests, frontend-1 lint/build, experiment 
 
 ## Architecture overview
 
-Event-driven order flow uses RabbitMQ between the operational services. Analytics is mainly a **read-side decision-support service**: it uses the same MongoDB data and IAM JWTs. It does **not** join the order-flow write path, but it may publish an advisory `LowStockPredicted` event when forecasted demand exceeds stock.
+Event-driven order flow uses RabbitMQ between the operational services. Each message is a version 1 envelope (`eventId`, `eventType`, `eventVersion`, `occurredAt`, `producer`, `correlationId`, `causationId`, `payload`) and is published as a persistent message with publisher confirms. `correlationId` follows the order id through the order flow. Analytics is mainly a **read-side decision-support service**: it uses the same MongoDB data and IAM JWTs. It does **not** join the order-flow write path, but it may publish an advisory `LowStockPredicted` event when forecasted demand exceeds stock.
 
 ```mermaid
 flowchart LR

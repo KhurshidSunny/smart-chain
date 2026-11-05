@@ -56,10 +56,10 @@ function publishLowStockPredictedIfNeeded(row) {
   return publishEvent(ROUTING_LOW_STOCK_PREDICTED, payload);
 }
 
-function publishLowStockPredictedBatch(rows) {
+async function publishLowStockPredictedBatch(rows) {
   let published = 0;
   for (const row of rows) {
-    if (publishLowStockPredictedIfNeeded(row)) {
+    if (await publishLowStockPredictedIfNeeded(row)) {
       published += 1;
     }
   }

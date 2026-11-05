@@ -1,5 +1,23 @@
 const amqp = require('amqplib');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
+
+function loadEvents() {
+  const candidates = [
+    path.join(__dirname, '../../shared/events'),
+    path.join(__dirname, '../shared/events'),
+  ];
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, 'envelope.js'))) {
+      return require(dir);
+    }
+  }
+  throw new Error('Shared event module not found');
+}
+
+const { buildEnvelope, followFrom, publishEnvelope, handleDelivery } = loadEvents();
+const PRODUCER = 'sales';
 
 let channel;
 let activeHandlers = null;
@@ -10,7 +28,7 @@ const withFrameMax = (url) =>
 const connectRabbitMQ = async () => {
   try {
     const connection = await amqp.connect(withFrameMax(process.env.RABBITMQ_URL));
-    channel = await connection.createChannel();
+    channel = await connection.createConfirmChannel();
 
     const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
     const queuePrefix = process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-';
@@ -59,16 +77,25 @@ const reconnectRabbitMQ = async () => {
   }, 5000);
 };
 
-const publishEvent = (routingKey, message) => {
-  if (!channel) {
+const publishEvent = async (routingKey, payload, context = {}) => {
+  const envelope = buildEnvelope({
+    eventType: routingKey,
+    producer: PRODUCER,
+    payload,
+    correlationId: context.correlationId,
+    causationId: context.causationId,
+  });
+  const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
+  const published = await publishEnvelope(channel, exchange, routingKey, envelope);
+  if (!published) {
     console.warn(`RabbitMQ not ready — skipped publish: ${routingKey}`);
     return false;
   }
 
-  const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
-  const msgBuffer = Buffer.from(JSON.stringify(message));
-  channel.publish(exchange, routingKey, msgBuffer);
-  console.log(`Event Published: ${routingKey}`, message);
+  console.log(
+    `Event Published: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
+  );
+  return true;
 };
 
 const subscribeToEvents = (eventHandlers) => {
@@ -80,32 +107,9 @@ const subscribeToEvents = (eventHandlers) => {
   activeHandlers = eventHandlers;
   const queue = `${process.env.RABBITMQ_QUEUE_PREFIX || 'smart-chain-'}sales_events`;
 
-  channel.consume(
-    queue,
-    (msg) => {
-      if (msg !== null) {
-        const routingKey = msg.fields.routingKey;
-        const message = JSON.parse(msg.content.toString());
-        const handler = eventHandlers[routingKey];
-        console.log(routingKey, message);
-
-        if (handler) {
-          Promise.resolve(handler(message))
-            .then(() => channel.ack(msg))
-            .catch((err) => {
-              console.error(`Handler failed for ${routingKey}:`, err);
-              channel.nack(msg, false, false);
-            });
-        } else {
-          console.warn(`No handler for routing key: ${routingKey}`);
-          channel.ack(msg);
-        }
-      }
-    },
-    { noAck: false }
-  );
+  channel.consume(queue, (msg) => handleDelivery(channel, msg, eventHandlers), { noAck: false });
 
   console.log(`Subscribed to events on queue ${queue}`);
 };
 
-module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents };
+module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents, followFrom };

@@ -73,7 +73,7 @@ exports.getReorderSuggestions = async (req, res) => {
       return b.suggestedQuantity - a.suggestedQuantity;
     });
 
-    const lowStockEventsPublished = publishLowStockPredictedBatch(data);
+    const lowStockEventsPublished = await publishLowStockPredictedBatch(data);
 
     res.status(200).json({
       horizonDays: options.horizonDays,

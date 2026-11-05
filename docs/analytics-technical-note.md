@@ -100,7 +100,7 @@ When forecasted demand exceeds current stock (`predictedDemand > stockLevel`), A
 | `forecastMethod` / `reorderPoint` / `suggestedQuantity` | Context from the reorder calculation |
 | `emittedAt` | ISO timestamp |
 
-The reorder HTTP response includes `lowStockEventsPublished` (count of events attempted). If RabbitMQ is down, reorder JSON is still returned and publish is skipped with a warning.
+The reorder HTTP response includes `lowStockEventsPublished` (count of publishes the broker confirmed). The business fields above are the envelope `payload`. `eventVersion` is 1 and `correlationId` is `productId`. If RabbitMQ is down, reorder JSON is still returned and publish is skipped with a warning. A broker rejection fails the request.
 
 ### 3.4 Order quantity anomalies
 

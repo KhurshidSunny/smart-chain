@@ -2,11 +2,12 @@
 const Product = require('../../models/productModel');
 const Reservation = require('../../models/reservationModel');
 const InventoryTransaction = require('../../models/inventoryTransactionModel');
-const { publishEvent } = require('../../services/eventService');
+const { publishEvent, followFrom } = require('../../services/eventService');
 
-exports.handleOrderCreated = async (message) => {
+exports.handleOrderCreated = async (message, envelope) => {
     try {
         const { orderId, items, customerId } = message;
+        const trace = followFrom(envelope);
 
         for (const item of items) {
             const product = await Product.findById(item.productId);
@@ -33,22 +34,22 @@ exports.handleOrderCreated = async (message) => {
             }).save();
 
             if (product.stockLevel <= product.reorderPoint) {
-                publishEvent('inventory.low_stock', {
+                await publishEvent('inventory.low_stock', {
                     productId: product._id,
                     currentLevel: product.stockLevel,
                     reorderPoint: product.reorderPoint,
-                });
+                }, trace);
             }
         }
 
-        publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items });
+        await publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items }, trace);
         console.log(`Handled OrderCreated for order ${orderId}`);
     } catch (err) {
         console.error('Error handling OrderCreated:', err);
     }
 };
 
-exports.handleOrderCancelled = async (message) => {
+exports.handleOrderCancelled = async (message, envelope) => {
     try {
         const { orderId } = message;
         const reservation = await Reservation.findOne({ orderId, status: 'reserved' }); // Lowercase
@@ -71,7 +72,7 @@ exports.handleOrderCancelled = async (message) => {
         reservation.status = 'cancelled'; // Lowercase
         await reservation.save();
 
-        publishEvent('inventory.released', { orderId, items: reservation.items });
+        await publishEvent('inventory.released', { orderId, items: reservation.items }, followFrom(envelope));
         console.log(`Handled OrderCancelled for order ${orderId}`);
     } catch (err) {
         console.error('Error handling OrderCancelled:', err);

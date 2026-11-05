@@ -32,7 +32,7 @@ exports.reserveInventory = async (req, res) => {
             }).save();
 
             if (product.stockLevel <= product.reorderPoint) {
-                publishEvent('inventory.low_stock', {
+                await publishEvent('inventory.low_stock', {
                     productId: product._id,
                     currentLevel: product.stockLevel,
                     reorderPoint: product.reorderPoint,
@@ -40,7 +40,7 @@ exports.reserveInventory = async (req, res) => {
             }
         }
 
-        publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items });
+        await publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items });
         res.status(201).json(reservation);
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
@@ -70,7 +70,7 @@ exports.releaseInventory = async (req, res) => {
         reservation.status = 'cancelled';
         await reservation.save();
 
-        publishEvent('inventory.released', { orderId, items: reservation.items });
+        await publishEvent('inventory.released', { orderId, items: reservation.items });
         res.json({ message: 'Inventory released', reservationId: reservation._id });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });

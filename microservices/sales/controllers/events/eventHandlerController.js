@@ -1,10 +1,10 @@
 const Order = require('../../models/orderModel');
 const { publishEvent } = require('../../services/eventService');
-const QRCode = require('qrcode'); // Import QRCode library
+const QRCode = require('qrcode');
 
 exports.publishOrderCreated = async (order) => {
     try {
-        publishEvent('sales.order.created', {
+        await publishEvent('sales.order.created', {
             orderId: order._id,
             customerId: order.customerId,
             items: order.items.map(item => ({ productId: item.productId, quantity: item.quantity, shippingAddress: order.shippingAddress })),
@@ -12,6 +12,7 @@ exports.publishOrderCreated = async (order) => {
         console.log(`Published OrderCreated for order ${order._id}`);
     } catch (error) {
         console.error('Error publishing OrderCreated:', error);
+        throw error;
     }
 };
 

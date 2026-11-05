@@ -27,7 +27,7 @@ exports.createProduct = async (req, res) => {
     }).save();
 
     if (stockLevel <= reorderPoint) {
-      publishEvent('inventory.low_stock', { productId: product._id, currentLevel: stockLevel, reorderPoint });
+      await publishEvent('inventory.low_stock', { productId: product._id, currentLevel: stockLevel, reorderPoint });
     }
 
     res.status(201).json(product);

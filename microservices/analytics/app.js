@@ -33,10 +33,11 @@ const start = async () => {
   const rabbitReady = await connectRabbitMQ();
   if (rabbitReady) {
     subscribeToEvents({
-      [ROUTING_LOW_STOCK_PREDICTED]: async (message) => {
+      [ROUTING_LOW_STOCK_PREDICTED]: async (message, envelope) => {
         console.log(
           `[LowStockPredicted] sku=${message.sku} stock=${message.stockLevel} ` +
-            `predictedDemand=${message.predictedDemand} horizonDays=${message.horizonDays}`
+            `predictedDemand=${message.predictedDemand} horizonDays=${message.horizonDays} ` +
+            `correlationId=${envelope.correlationId}`
         );
       },
     });

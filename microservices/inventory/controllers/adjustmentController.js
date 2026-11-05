@@ -23,7 +23,7 @@ exports.adjustInventory = async (req, res) => {
         }).save();
 
         if (product.stockLevel <= product.reorderPoint && oldStock > product.reorderPoint) {
-            publishEvent('inventory.low_stock', {
+            await publishEvent('inventory.low_stock', {
                 productId,
                 currentLevel: product.stockLevel,
                 reorderPoint: product.reorderPoint,
