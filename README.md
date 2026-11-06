@@ -100,7 +100,7 @@ flowchart LR
   An --> DB
 ```
 
-The order sequence, routing keys, payloads, retries, dead-letter queues, and inbox behaviour are in [docs/order-lifecycle.md](docs/order-lifecycle.md). `LowStockPredicted` is advisory and is not one of the order-flow events. How those operational records become a forecast is in [docs/analytics-data-lineage.md](docs/analytics-data-lineage.md). Analytics reads the shared `smartchain` database; it does not own a separate database.
+The order sequence, routing keys, payloads, retries, dead-letter queues, inbox behaviour, and transactional outbox are in [docs/order-lifecycle.md](docs/order-lifecycle.md). `LowStockPredicted` is advisory and is not one of the order-flow events. How those operational records become a forecast is in [docs/analytics-data-lineage.md](docs/analytics-data-lineage.md). Analytics reads the shared `smartchain` database; it does not own a separate database.
 
 **Who owns what (analytics):**
 
@@ -110,7 +110,7 @@ The order sequence, routing keys, payloads, retries, dead-letter queues, and inb
 | Short-horizon forecast (MA / ES) + holdout MAE/MAPE | **Analytics** | `GET /forecast/:productId` |
 | Forecast method comparison (MA vs ES vs Croston; optional sklearn cache) | **Analytics** | `GET /forecast/:productId/compare` |
 | Reorder suggestions | **Analytics** | Advisory only; does not create POs |
-| `LowStockPredicted` event | **Analytics** | RabbitMQ when `predictedDemand > stockLevel` on `GET /reorder` |
+| `LowStockPredicted` event | **Analytics** | Scheduled check when `predictedDemand > stockLevel`. `GET /reorder` does not publish |
 | Order-quantity anomaly flags (z-score) | **Analytics** | Shown on sales/admin order UI |
 | Auth / JWT issuance | **IAM** | Analytics validates the same `JWT_SECRET` |
 | Stock, picking, shipping | Inventory / Warehouse / Logistics | Unchanged by analytics |
@@ -190,7 +190,7 @@ Decision-support module on the same MongoDB data. It exposes JWT-protected APIs 
 | Demand history | Daily sold quantities from sales orders (inventory `sold` only as fallback) | API: `GET /demand/:productId` |
 | Forecast | Croston when demand is intermittent (≥ 40% zero days); else exponential smoothing (≥ 7 points) or moving average; approx. 80% residual uncertainty band + operator explanation | Inventory → Demand Forecast card (via reorder batch) |
 | Reorder suggestions | `suggestedQty ≈ forecastDemand + reorderPoint − stock` (when positive) | Inventory → Reorder Suggestions |
-| Low-stock signal | Publishes `analytics.low_stock.predicted` when `predictedDemand > stockLevel` | Analytics logs (+ RabbitMQ); response field `lowStockEventsPublished` |
+| Low-stock signal | Publishes `analytics.low_stock.predicted` when a scheduled check finds `predictedDemand > stockLevel` and the inputs changed or the cooldown elapsed | Analytics logs (+ RabbitMQ) |
 | Anomalies | Z-score of an order line quantity vs that **product’s** past line quantities | Orders list/detail badges |
 
 Default horizons: **7 / 14 / 30** days. Anomaly flagging needs enough **same-product** history (about 3+ prior lines); a few one-off orders on different SKUs will show “None”.
@@ -219,7 +219,7 @@ npm install
 npm run mongo
 ```
 
-For RabbitMQ without Docker, install [RabbitMQ for Windows](https://www.rabbitmq.com/docs/install-windows) or start a local install on `5672`. Analytics needs MongoDB always; set `RABBITMQ_URL` (see `.env.example`) if you want `LowStockPredicted` events. Without RabbitMQ, reorder still works and publish is skipped with a warning.
+For RabbitMQ without Docker, install [RabbitMQ for Windows](https://www.rabbitmq.com/docs/install-windows) or start a local install on `5672`. Analytics needs MongoDB always. `GET /reorder` stays a read. Low-stock events are written by the scheduled check when `MONGO_URI` includes a replica set, and the publisher sends them when `RABBITMQ_URL` is set. Without RabbitMQ the suggestion JSON still returns and the stored event waits.
 
 ```bash
 cd microservices/analytics
@@ -236,10 +236,10 @@ Health check: http://localhost:3006/health
 | `GET /demand/:productId` | Daily demand history for a product |
 | `GET /forecast/:productId` | Short-horizon demand forecast + optional holdout `evaluation` (`mae` / `mape`) |
 | `GET /forecast/:productId/compare` | Side-by-side MA / ES / Croston holdout on live history; sklearn metrics from offline cache when available |
-| `GET /reorder` | Reorder suggestions for active products; publishes `LowStockPredicted` when forecast exceeds stock |
+| `GET /reorder` | Reorder suggestions for active products. This route does not publish events |
 | `GET /anomalies` | Order quantity anomalies |
 
-**`LowStockPredicted` (RabbitMQ):** routing key `analytics.low_stock.predicted` on `smartchain_exchange`. Emitted from `GET /reorder` for each active product where `predictedDemand > stockLevel`. Example payload fields: `event`, `productId`, `sku`, `name`, `stockLevel`, `predictedDemand`, `horizonDays`, `forecastMethod`, `reorderPoint`, `suggestedQuantity`, `emittedAt`. Analytics binds `smart-chain-analytics_events` and logs each event for demo.
+**`LowStockPredicted` (RabbitMQ):** routing key `analytics.low_stock.predicted` on `smartchain_exchange`. A scheduled evaluation writes it for an active product where `predictedDemand > stockLevel`, unless that product and horizon already have the same forecast inputs inside the cooldown. Example payload fields: `event`, `productId`, `sku`, `name`, `stockLevel`, `predictedDemand`, `horizonDays`, `forecastMethod`, `reorderPoint`, `suggestedQuantity`, `emittedAt`. Analytics binds `smart-chain-analytics_events` and logs each event for demo.
 
 `GET /forecast/:productId` returns `data.evaluation` when there is enough daily history for a holdout check; otherwise `evaluation` is `null`. Example fields: `holdoutDays`, `pointsEvaluated`, `mae`, `mape`.
 

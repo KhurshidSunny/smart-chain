@@ -16,8 +16,23 @@ function loadEvents() {
   throw new Error('Shared event module not found');
 }
 
-const { buildEnvelope, publishEnvelope, assertConsumerQueues, subscribeConsumer } = loadEvents();
+const {
+  buildEnvelope,
+  assertConsumerQueues,
+  subscribeConsumer,
+  createProducerOutbox,
+  commitDomainAndOutbox: commitDomainAndOutboxWith,
+  replicaSetConfigured: replicaSetConfiguredWith,
+} = loadEvents();
 const PRODUCER = 'analytics';
+const outbox = createProducerOutbox({
+  mongoose,
+  producer: PRODUCER,
+  getChannel: () => channel,
+  getExchange: () => process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange',
+});
+const commitDomainAndOutbox = (work) => commitDomainAndOutboxWith(mongoose, work);
+const replicaSetConfigured = () => replicaSetConfiguredWith(mongoose);
 
 let channel;
 let activeHandlers = null;
@@ -49,6 +64,7 @@ const connectRabbitMQ = async () => {
       routingKeys: [ROUTING_LOW_STOCK_PREDICTED],
     });
 
+    outbox.start();
     console.log('RabbitMQ Connected for Analytics Service');
     console.log(
       `Queue ${queue} bound to ${exchange} with routing key '${ROUTING_LOW_STOCK_PREDICTED}'`
@@ -94,17 +110,11 @@ const publishEvent = async (routingKey, payload, context = {}) => {
     correlationId: context.correlationId,
     causationId: context.causationId,
   });
-  const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
-  const published = await publishEnvelope(channel, exchange, routingKey, envelope);
-  if (!published) {
-    console.warn(`RabbitMQ not ready — skipped publish: ${routingKey}`);
-    return false;
-  }
-
+  await outbox.store(routingKey, envelope, context.session);
   console.log(
-    `Event Published: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
+    `Event stored: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
   );
-  return true;
+  return envelope;
 };
 
 const subscribeToEvents = (eventHandlers) => {
@@ -126,4 +136,6 @@ module.exports = {
   connectRabbitMQ,
   publishEvent,
   subscribeToEvents,
+  commitDomainAndOutbox,
+  replicaSetConfigured,
 };

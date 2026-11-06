@@ -79,9 +79,19 @@ All five consumers use manual acknowledgement (`noAck: false`). Inventory, Wareh
 | Routing key has no handler on that queue | log, then `ack` |
 | The retry or dead-letter publish itself fails | `nack(msg, false, true)` so the original message stays on the main queue |
 
-A retryable error is any other thrown error, including a database timeout and a failed follow-up `publishEvent`. The handler is not acknowledged when it throws. The delay queues perform the wait. A permanent failure is not put on a delay queue.
+A retryable error is any other thrown error, including a database timeout while the handler is writing. The handler is not acknowledged when it throws. The delay queues perform the wait. A permanent failure is not put on a delay queue.
 
-`publishEvent` validates the payload, wraps it in a version 1 envelope, and sends a persistent JSON message on a confirm channel. The broker message properties include `messageId` (`eventId`) and `correlationId`. The call resolves `true` only after the broker confirms. If the broker rejects the publish, the call throws `Broker rejected <routing key>`. If `channel` is missing, the call logs a warning, returns `false`, and does not send the message. A closed connection schedules another connect after 5 seconds and, when handlers were already registered, subscribes again. That reconnect does not replay a publish that was skipped. HTTP routes that await `publishEvent` return 500 when a confirm fails. There is no transactional outbox, so a publish that was skipped while the channel was down is not stored for replay.
+`publishEvent` validates the payload, wraps it in a version 1 envelope, and inserts that envelope into the `outboxevents` collection in the caller's MongoDB session. It does not talk to RabbitMQ. The service publisher later sends the stored envelope.
+
+## Transactional outbox
+
+A domain write and its event are stored in one MongoDB transaction. The background publisher in that service claims pending rows for its own producer, sends the stored envelope on a confirm channel, and marks the row published only after the broker confirms. The message properties still include `messageId` (`eventId`) and `correlationId`.
+
+If the broker is down or rejects the publish, the row stays `pending` and a later pass sends the same `eventId`. A restart reads the same collection, so the domain write is not repeated and the event is not dropped. Two publishers cannot hold a fresh claim on the same row. A claim older than `EVENT_OUTBOX_CLAIM_MS` (default 30 seconds) can be taken again. After a successful publish, `expiresAt` is set to seven days unless `EVENT_OUTBOX_RETENTION_DAYS` is a positive number. A TTL index deletes published rows. Pending rows have no `expiresAt`, so they are kept until they are published. The publisher polls every five seconds unless `EVENT_OUTBOX_POLL_MS` is set.
+
+The transaction requires a MongoDB replica set. `commitDomainAndOutbox` throws `ReplicaSetRequiredError` when `MONGO_URI` has no `replicaSet`. The container stack sets `replicaSet=rs0`. A standalone MongoDB, including the in-memory helper, cannot commit these writes.
+
+A follow-up event from a consumer is inserted in the same transaction as that handler's domain writes and inbox row. If the handler throws, the outbox row rolls back with them. The broker send happens only after commit.
 
 ## Idempotent consumers
 
@@ -91,7 +101,7 @@ On a replica set, the handler's MongoDB writes and the inbox insert commit in on
 
 `expiresAt` is set to seven days after processing unless `EVENT_INBOX_RETENTION_DAYS` is a positive number. A TTL index on `expiresAt` deletes the row. After that, a redelivery of the same `eventId` can be processed again. The row is not an audit log.
 
-A follow-up publish uses a new `eventId`. If the handler publishes and then throws, the transaction rolls back the domain write and the inbox row, and the retry can publish that follow-up again.
+A follow-up event stored in that transaction keeps the `eventId` written with the domain change. The publisher sends that same id. If the handler throws before commit, the row is not kept, and the retry builds a new envelope.
 
 ## Operational catalog
 
@@ -137,10 +147,10 @@ The same ack rules are in `microservices/shared/events/delivery.js`, used by eac
 | | |
 |---|---|
 | Routing key | `analytics.low_stock.predicted` |
-| When | `GET /reorder` in Analytics, for each active product where `predictedDemand > stockLevel` |
-| Producer | `microservices/analytics/services/lowStockPredictedService.js` |
+| When | Scheduled evaluation in Analytics, for each active product where `predictedDemand > stockLevel`, and only when the product, horizon, and forecast inputs changed or the cooldown has elapsed |
+| Producer | `microservices/analytics/services/lowStockSchedule.js` |
 | Consumer | Analytics only, on `smart-chain-analytics_events`. The handler logs the message. It does not create a purchase order or change stock |
 | Payload | `event` (`"LowStockPredicted"`), `productId`, `sku`, `name`, `stockLevel`, `predictedDemand`, `horizonDays`, `forecastMethod`, `reorderPoint`, `suggestedQuantity`, `emittedAt` |
 | Version | 1. Those fields are inside the envelope `payload`. `correlationId` is `productId` |
 
-If RabbitMQ is not connected, reorder still returns JSON and the publish is skipped. Details of the forecast rule are in [analytics-technical-note.md](./analytics-technical-note.md).
+`GET /reorder` only returns the suggestion JSON. It does not publish. The evaluation stores one `lowstocksignals` row per product and horizon. A repeat with the same forecast method, predicted demand, stock, and reorder point does not store another event until `EVENT_LOW_STOCK_COOLDOWN_MS` (default 24 hours). A change in stock or predicted demand can store a new event. The default pass runs every 15 minutes (`EVENT_LOW_STOCK_INTERVAL_MS`). Details of the forecast rule are in [analytics-technical-note.md](./analytics-technical-note.md).

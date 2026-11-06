@@ -32,7 +32,7 @@ Five operational Node.js/Express microservices (IAM, Sales, Inventory, Warehouse
 | Demand forecast | Croston when intermittent (≥ 40% zero days); else ES (α ≈ 0.3, ≥ 7 days) or moving average; approx. 80% residual band + short operator explanation | Same classical methods + sklearn lag Ridge; residual band mirrored in Python |
 | Forecast quality | One-step holdout on recent days → MAE / MAPE | Same holdout protocol for all methods |
 | Reorder | `max(0, ⌈forecast⌉ + reorderPoint − stock)` | — |
-| Low stock signal | RabbitMQ `analytics.low_stock.predicted` when `predictedDemand > stockLevel` (on `GET /reorder`) | Log subscriber in Analytics (demo) |
+| Low stock signal | RabbitMQ `analytics.low_stock.predicted` when a scheduled check finds `predictedDemand > stockLevel` and the stored signal changed or the cooldown elapsed | Log subscriber in Analytics (demo) |
 | Order anomalies | Z-score vs same-product history (default threshold 2.5, needs 3+ prior lines) | Isolation Forest on `[quantity, quantity − peer_mean]` |
 
 ## 4. Key metrics (demo data)

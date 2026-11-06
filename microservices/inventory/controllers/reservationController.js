@@ -2,7 +2,7 @@
 const Product = require('../models/productModel');
 const Reservation = require('../models/reservationModel');
 const InventoryTransaction = require('../models/inventoryTransactionModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 
 exports.reserveInventory = async (req, res) => {
     try {
@@ -16,31 +16,33 @@ exports.reserveInventory = async (req, res) => {
         }
 
         const reservation = new Reservation({ orderId, items });
-        await reservation.save();
+        await commitDomainAndOutbox(async (session) => {
+            await reservation.save({ session });
 
-        for (const item of items) {
-            const product = await Product.findById(item.productId);
-            product.stockLevel -= item.quantity;
-            await product.save();
+            for (const item of items) {
+                const product = await Product.findById(item.productId).session(session);
+                product.stockLevel -= item.quantity;
+                await product.save({ session });
 
-            await new InventoryTransaction({
-                productId: item.productId,
-                type: 'reserved',
-                quantity: item.quantity,
-                orderId,
-                performedBy: req.user.sub,
-            }).save();
+                await new InventoryTransaction({
+                    productId: item.productId,
+                    type: 'reserved',
+                    quantity: item.quantity,
+                    orderId,
+                    performedBy: req.user.sub,
+                }).save({ session });
 
-            if (product.stockLevel <= product.reorderPoint) {
-                await publishEvent('inventory.low_stock', {
-                    productId: product._id,
-                    currentLevel: product.stockLevel,
-                    reorderPoint: product.reorderPoint,
-                });
+                if (product.stockLevel <= product.reorderPoint) {
+                    await publishEvent('inventory.low_stock', {
+                        productId: product._id,
+                        currentLevel: product.stockLevel,
+                        reorderPoint: product.reorderPoint,
+                    }, { session });
+                }
             }
-        }
 
-        await publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items });
+            await publishEvent('inventory.reserved', { orderId, reservationId: reservation._id, items }, { session });
+        });
         res.status(201).json(reservation);
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });
@@ -53,24 +55,25 @@ exports.releaseInventory = async (req, res) => {
         const reservation = await Reservation.findOne({ orderId, status: 'reserved' });
         if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
 
-        for (const item of reservation.items) {
-            const product = await Product.findById(item.productId);
-            product.stockLevel += item.quantity;
-            await product.save();
+        await commitDomainAndOutbox(async (session) => {
+            for (const item of reservation.items) {
+                const product = await Product.findById(item.productId).session(session);
+                product.stockLevel += item.quantity;
+                await product.save({ session });
 
-            await new InventoryTransaction({
-                productId: item.productId,
-                type: 'released',
-                quantity: item.quantity,
-                orderId,
-                performedBy: req.user.sub,
-            }).save();
-        }
+                await new InventoryTransaction({
+                    productId: item.productId,
+                    type: 'released',
+                    quantity: item.quantity,
+                    orderId,
+                    performedBy: req.user.sub,
+                }).save({ session });
+            }
 
-        reservation.status = 'cancelled';
-        await reservation.save();
-
-        await publishEvent('inventory.released', { orderId, items: reservation.items });
+            reservation.status = 'cancelled';
+            await reservation.save({ session });
+            await publishEvent('inventory.released', { orderId, items: reservation.items }, { session });
+        });
         res.json({ message: 'Inventory released', reservationId: reservation._id });
     } catch (err) {
         res.status(500).json({ message: 'Server error', error: err.message });

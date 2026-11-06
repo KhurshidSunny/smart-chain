@@ -42,7 +42,7 @@ exports.handleOrderCreated = async (message, envelope, session) => {
           currentLevel: product.stockLevel,
           reorderPoint: product.reorderPoint,
         },
-        trace
+        { ...trace, session }
       );
     }
   }
@@ -50,7 +50,7 @@ exports.handleOrderCreated = async (message, envelope, session) => {
   await publishEvent(
     'inventory.reserved',
     { orderId, reservationId: reservation._id, items },
-    trace
+    { ...trace, session }
   );
   console.log(`Handled OrderCreated for order ${orderId}`);
 };
@@ -83,7 +83,7 @@ exports.handleOrderCancelled = async (message, envelope, session) => {
   await publishEvent(
     'inventory.released',
     { orderId, items: reservation.items },
-    followFrom(envelope)
+    { ...followFrom(envelope), session }
   );
   console.log(`Handled OrderCancelled for order ${orderId}`);
 };

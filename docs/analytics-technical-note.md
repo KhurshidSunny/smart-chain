@@ -43,7 +43,7 @@ Orders / inventory data (MongoDB)
 
 - Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
-- On `GET /reorder`, when `predictedDemand > stockLevel`, it publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`). A log subscriber in Analytics is enough for demo; no PO is created. This event is not part of the order flow. The order events are listed in [order-lifecycle.md](./order-lifecycle.md).
+- A scheduled evaluation publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`) when `predictedDemand > stockLevel`. `GET /reorder` does not publish. A log subscriber in Analytics is enough for demo; no PO is created. This event is not part of the order flow. The order events are listed in [order-lifecycle.md](./order-lifecycle.md).
 - **Live path:** Croston when demand is intermittent; otherwise moving average / exponential smoothing (forecast); z-score (anomalies).
 - Each live forecast also returns an **approx. 80% residual uncertainty band** and a short **operator explanation** (why the method was chosen; band limits). The band uses one-step residual scale × √horizon — demo-scale, not a calibrated probabilistic forecast.
 - **Offline experiments:** sklearn lag (Ridge) forecast baseline; Isolation Forest anomaly baseline. These strengthen the research comparison story; they are not required for the UI demo.
@@ -89,7 +89,7 @@ For each **active** product:
 
 A human-readable `reason` explains whether stock is below reorder point and/or forecast exceeds available stock.
 
-When forecasted demand exceeds current stock (`predictedDemand > stockLevel`), Analytics also publishes:
+When a scheduled evaluation finds forecasted demand above current stock (`predictedDemand > stockLevel`), Analytics stores and publishes:
 
 | Field | Meaning |
 |---|---|
@@ -100,7 +100,7 @@ When forecasted demand exceeds current stock (`predictedDemand > stockLevel`), A
 | `forecastMethod` / `reorderPoint` / `suggestedQuantity` | Context from the reorder calculation |
 | `emittedAt` | ISO timestamp |
 
-The reorder HTTP response includes `lowStockEventsPublished` (count of publishes the broker confirmed). The business fields above are the envelope `payload`. `eventVersion` is 1 and `correlationId` is `productId`. If RabbitMQ is down, reorder JSON is still returned and publish is skipped with a warning. A broker rejection fails the request.
+The business fields above are the envelope `payload`. `eventVersion` is 1 and `correlationId` is `productId`. The same product, horizon, forecast method, predicted demand, stock, and reorder point produce at most one signal until `EVENT_LOW_STOCK_COOLDOWN_MS` (default 24 hours). A change in stock or predicted demand can produce another. `GET /reorder` does not write that signal. If RabbitMQ is down, the outbox row stays pending and the reorder JSON is still returned.
 
 ### 3.4 Order quantity anomalies
 

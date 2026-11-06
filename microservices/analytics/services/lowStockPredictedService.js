@@ -1,8 +1,3 @@
-const {
-  publishEvent,
-  ROUTING_LOW_STOCK_PREDICTED,
-} = require('./eventService');
-
 /**
  * True when forecasted demand for the horizon exceeds current stock.
  * Advisory signal only — does not create purchase orders.
@@ -42,34 +37,7 @@ function buildLowStockPredictedPayload({
   };
 }
 
-function publishLowStockPredictedIfNeeded(row) {
-  if (
-    !shouldEmitLowStockPredicted({
-      stockLevel: row.stockLevel,
-      predictedDemand: row.predictedDemand,
-    })
-  ) {
-    return false;
-  }
-
-  const payload = buildLowStockPredictedPayload(row);
-  return publishEvent(ROUTING_LOW_STOCK_PREDICTED, payload);
-}
-
-async function publishLowStockPredictedBatch(rows) {
-  let published = 0;
-  for (const row of rows) {
-    if (await publishLowStockPredictedIfNeeded(row)) {
-      published += 1;
-    }
-  }
-  return published;
-}
-
 module.exports = {
   shouldEmitLowStockPredicted,
   buildLowStockPredictedPayload,
-  publishLowStockPredictedIfNeeded,
-  publishLowStockPredictedBatch,
-  ROUTING_LOW_STOCK_PREDICTED,
 };

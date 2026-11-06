@@ -1,5 +1,5 @@
 const Shipment = require('../models/shipmentModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 const validate = require('../middleware/validate');
 const Joi = require('joi');
 
@@ -49,8 +49,10 @@ const createShipment = [
                 deliveryAddress,
                 notes
             });
-            await shipment.save();
-            await publishEvent('logistics.shipemnt.created', { shipmentId: shipment._id, orderId, packageId });
+            await commitDomainAndOutbox(async (session) => {
+                await shipment.save({ session });
+                await publishEvent('logistics.shipemnt.created', { shipmentId: shipment._id, orderId, packageId }, { session });
+            });
             res.status(201).json(shipment);
         } catch (error) {
             res.status(500).json({ message: 'Error creating shipment', error: error.message });
@@ -90,21 +92,30 @@ const updateShipmentStatus = [
             shipment.status = req.body.status;
             if (req.body.status === 'Dispatched') {
                 shipment.dispatchDate = new Date();
-                await publishEvent('logistics.shipment.dispatched', {
-                    shipmentId: shipment._id,
-                    orderId: shipment.orderId,
-                    dispatchDate: shipment.dispatchDate,
-                    trackingNumber: shipment.trackingNumber
-                });
             } else if (req.body.status === 'Delivered') {
                 shipment.actualDeliveryDate = new Date();
-                await publishEvent('logistics.shipment.delivered', {
-                    shipmentId: shipment._id,
-                    orderId: shipment.orderId,
-                    deliveryDate: shipment.actualDeliveryDate
-                });
             }
-            await shipment.save();
+            if (req.body.status !== 'Dispatched' && req.body.status !== 'Delivered') {
+                await shipment.save();
+                return res.json(shipment);
+            }
+            await commitDomainAndOutbox(async (session) => {
+                await shipment.save({ session });
+                if (req.body.status === 'Dispatched') {
+                    await publishEvent('logistics.shipment.dispatched', {
+                        shipmentId: shipment._id,
+                        orderId: shipment.orderId,
+                        dispatchDate: shipment.dispatchDate,
+                        trackingNumber: shipment.trackingNumber
+                    }, { session });
+                } else {
+                    await publishEvent('logistics.shipment.delivered', {
+                        shipmentId: shipment._id,
+                        orderId: shipment.orderId,
+                        deliveryDate: shipment.actualDeliveryDate
+                    }, { session });
+                }
+            });
             res.json(shipment);
         } catch (error) {
             res.status(500).json({ message: 'Error updating shipment status', error: error.message });
@@ -123,12 +134,14 @@ const dispatchShipment = async (req, res) => {
         }
         shipment.status = 'Dispatched';
         shipment.dispatchDate = new Date();
-        await shipment.save();
-        await publishEvent('logistics.shipment.dispatched', {
-            shipmentId: shipment._id,
-            orderId: shipment.orderId,
-            dispatchDate: shipment.dispatchDate,
-            trackingNumber: shipment.trackingNumber
+        await commitDomainAndOutbox(async (session) => {
+            await shipment.save({ session });
+            await publishEvent('logistics.shipment.dispatched', {
+                shipmentId: shipment._id,
+                orderId: shipment.orderId,
+                dispatchDate: shipment.dispatchDate,
+                trackingNumber: shipment.trackingNumber
+            }, { session });
         });
         res.json(shipment);
     } catch (error) {
@@ -147,11 +160,13 @@ const deliverShipment = async (req, res) => {
         }
         shipment.status = 'Delivered';
         shipment.actualDeliveryDate = new Date();
-        await shipment.save();
-        await publishEvent('logistics.shipment.delivered', {
-            shipmentId: shipment._id,
-            orderId: shipment.orderId,
-            deliveryDate: shipment.actualDeliveryDate
+        await commitDomainAndOutbox(async (session) => {
+            await shipment.save({ session });
+            await publishEvent('logistics.shipment.delivered', {
+                shipmentId: shipment._id,
+                orderId: shipment.orderId,
+                deliveryDate: shipment.actualDeliveryDate
+            }, { session });
         });
         res.json(shipment);
     } catch (error) {

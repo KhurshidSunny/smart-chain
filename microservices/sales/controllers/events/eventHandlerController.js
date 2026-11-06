@@ -2,7 +2,7 @@ const Order = require('../../models/orderModel');
 const { publishEvent, read, save } = require('../../services/eventService');
 const QRCode = require('qrcode');
 
-exports.publishOrderCreated = async (order) => {
+exports.publishOrderCreated = async (order, session) => {
   await publishEvent('sales.order.created', {
     orderId: order._id,
     customerId: order.customerId,
@@ -11,7 +11,7 @@ exports.publishOrderCreated = async (order) => {
       quantity: item.quantity,
       shippingAddress: order.shippingAddress,
     })),
-  });
+  }, { session });
   console.log(`Published OrderCreated for order ${order._id}`);
 };
 

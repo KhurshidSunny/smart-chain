@@ -5,6 +5,7 @@ const errors = require('./errors');
 const topology = require('./topology');
 const session = require('./session');
 const inbox = require('./inbox');
+const outbox = require('./outbox');
 
 module.exports = {
   ...envelope,
@@ -14,4 +15,5 @@ module.exports = {
   ...topology,
   ...session,
   ...inbox,
+  ...outbox,
 };

@@ -1,5 +1,6 @@
 const Order = require('../models/orderModel');
 const { publishOrderCreated } = require('./events/eventHandlerController');
+const { commitDomainAndOutbox } = require('../services/eventService');
 
 const generateOrderNumber = () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -20,8 +21,10 @@ exports.createOrder = async (req, res) => {
             notes,
         });
 
-        await order.save();
-        await publishOrderCreated(order);
+        await commitDomainAndOutbox(async (session) => {
+            await order.save({ session });
+            await publishOrderCreated(order, session);
+        });
         res.status(201).json(order);
     } catch (error) {
         res.status(500).json({ message: 'Error creating order', error: error.message });

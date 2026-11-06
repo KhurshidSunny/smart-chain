@@ -35,7 +35,7 @@ const handleOrderPacked = async (message, envelope, session) => {
       orderId,
       packageId,
     },
-    followFrom(envelope)
+    { ...followFrom(envelope), session }
   );
   console.log(`Handled OrderPacked: Created shipment for order ${orderId}`);
 };

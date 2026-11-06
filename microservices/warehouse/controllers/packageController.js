@@ -1,5 +1,5 @@
 const Package = require('../models/packageModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 
 // Create a package record
 const createPackage = async (req, res) => {
@@ -13,14 +13,15 @@ const createPackage = async (req, res) => {
       packedAt: new Date(),
       shippingAddress,
     });
-    await packageRecord.save();
-
-    await publishEvent('warehouse.order.packed', {
-      orderId,
-      packageId: packageRecord._id,
-      qrCode, // QR code from order
-      dimensions,
-      shippingAddress
+    await commitDomainAndOutbox(async (session) => {
+      await packageRecord.save({ session });
+      await publishEvent('warehouse.order.packed', {
+        orderId,
+        packageId: packageRecord._id,
+        qrCode,
+        dimensions,
+        shippingAddress
+      }, { session });
     });
 
     res.status(201).json(packageRecord);

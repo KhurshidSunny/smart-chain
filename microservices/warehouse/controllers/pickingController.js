@@ -1,5 +1,5 @@
 const PickingList = require('../models/pickingListModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 
 // List all picking lists - filtered by role
 const listPickingLists = async (req, res) => {
@@ -74,18 +74,21 @@ const updatePickingListStatus = async (req, res) => {
     }
 
     pickingList.status = status;
+    pickingList.updatedAt = new Date();
     if (status === 'Completed') {
       pickingList.completedAt = new Date();
-      await publishEvent('warehouse.picking.completed', {
-        pickingListId: pickingList._id,
-        orderId: pickingList.orderId,
-        pickedItems: pickingList.items,
-        completedBy: req.user.sub || req.user.id
+      await commitDomainAndOutbox(async (session) => {
+        await pickingList.save({ session });
+        await publishEvent('warehouse.picking.completed', {
+          pickingListId: pickingList._id,
+          orderId: pickingList.orderId,
+          pickedItems: pickingList.items,
+          completedBy: req.user.sub || req.user.id
+        }, { session });
       });
+    } else {
+      await pickingList.save();
     }
-
-    pickingList.updatedAt = new Date();
-    await pickingList.save();
     res.json(pickingList);
   } catch (error) {
     console.error('Error updating picking list status:', error);

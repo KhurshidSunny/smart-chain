@@ -1,7 +1,7 @@
 // productController.js
 const Product = require('../models/productModel');
 const InventoryTransaction = require('../models/inventoryTransactionModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 
 exports.createProduct = async (req, res) => {
   try {
@@ -16,19 +16,24 @@ exports.createProduct = async (req, res) => {
       unitCost,
       dimensions,
     });
-    await product.save();
+    await commitDomainAndOutbox(async (session) => {
+      await product.save({ session });
+      await new InventoryTransaction({
+        productId: product._id,
+        type: 'received',
+        quantity: stockLevel,
+        performedBy: req.user.sub,
+        reason: 'Initial stock addition',
+      }).save({ session });
 
-    await new InventoryTransaction({
-      productId: product._id,
-      type: 'received',
-      quantity: stockLevel,
-      performedBy: req.user.sub,
-      reason: 'Initial stock addition',
-    }).save();
-
-    if (stockLevel <= reorderPoint) {
-      await publishEvent('inventory.low_stock', { productId: product._id, currentLevel: stockLevel, reorderPoint });
-    }
+      if (stockLevel <= reorderPoint) {
+        await publishEvent(
+          'inventory.low_stock',
+          { productId: product._id, currentLevel: stockLevel, reorderPoint },
+          { session }
+        );
+      }
+    });
 
     res.status(201).json(product);
   } catch (err) {

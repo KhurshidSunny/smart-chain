@@ -1,6 +1,6 @@
 const TrackingEvent = require('../models/trackingEventModel');
 const Shipment = require('../models/shipmentModel');
-const { publishEvent } = require('../services/eventService');
+const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 const validate = require('../middleware/validate');
 const Joi = require('joi');
 
@@ -30,12 +30,14 @@ const createTrackingEvent = [
                 return res.status(404).json({ message: 'Shipment not found' });
             }
             const trackingEvent = new TrackingEvent({ shipmentId, status, location, notes });
-            await trackingEvent.save();
-            await publishEvent('TrackingUpdated', {
-                shipmentId,
-                orderId: shipment.orderId,
-                status,
-                location
+            await commitDomainAndOutbox(async (session) => {
+                await trackingEvent.save({ session });
+                await publishEvent('TrackingUpdated', {
+                    shipmentId,
+                    orderId: shipment.orderId,
+                    status,
+                    location
+                }, { session });
             });
             res.status(201).json(trackingEvent);
         } catch (error) {

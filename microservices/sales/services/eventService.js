@@ -20,13 +20,21 @@ function loadEvents() {
 const {
   buildEnvelope,
   followFrom,
-  publishEnvelope,
   assertConsumerQueues,
   subscribeConsumer,
   read,
   save,
+  createProducerOutbox,
+  commitDomainAndOutbox: commitDomainAndOutboxWith,
 } = loadEvents();
 const PRODUCER = 'sales';
+const outbox = createProducerOutbox({
+  mongoose,
+  producer: PRODUCER,
+  getChannel: () => channel,
+  getExchange: () => process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange',
+});
+const commitDomainAndOutbox = (work) => commitDomainAndOutboxWith(mongoose, work);
 
 let channel;
 let activeHandlers = null;
@@ -54,6 +62,7 @@ const connectRabbitMQ = async () => {
       ],
     });
 
+    outbox.start();
     console.log('RabbitMQ Connected for Sales Service');
     console.log(
       `Queue ${queue} bound to ${exchange} with routing keys: inventory.reserved, warehouse.order.packed, logistics.shipment.*, logistics.order.delivered`
@@ -97,17 +106,11 @@ const publishEvent = async (routingKey, payload, context = {}) => {
     correlationId: context.correlationId,
     causationId: context.causationId,
   });
-  const exchange = process.env.RABBITMQ_EXCHANGE || 'smartchain_exchange';
-  const published = await publishEnvelope(channel, exchange, routingKey, envelope);
-  if (!published) {
-    console.warn(`RabbitMQ not ready — skipped publish: ${routingKey}`);
-    return false;
-  }
-
+  await outbox.store(routingKey, envelope, context.session);
   console.log(
-    `Event Published: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
+    `Event stored: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
   );
-  return true;
+  return envelope;
 };
 
 const subscribeToEvents = (eventHandlers) => {
@@ -123,4 +126,12 @@ const subscribeToEvents = (eventHandlers) => {
   console.log(`Subscribed to events on queue ${queue}`);
 };
 
-module.exports = { connectRabbitMQ, publishEvent, subscribeToEvents, followFrom, read, save };
+module.exports = {
+  connectRabbitMQ,
+  publishEvent,
+  subscribeToEvents,
+  followFrom,
+  read,
+  save,
+  commitDomainAndOutbox,
+};

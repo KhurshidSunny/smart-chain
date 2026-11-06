@@ -11,6 +11,7 @@ const {
   subscribeToEvents,
   ROUTING_LOW_STOCK_PREDICTED,
 } = require('./services/eventService');
+const { startLowStockSchedule } = require('./services/lowStockSchedule');
 require('./middleware/authMiddleware');
 
 const app = express();
@@ -29,6 +30,7 @@ app.use((err, req, res, next) => {
 
 const start = async () => {
   await connectDB();
+  startLowStockSchedule();
 
   const rabbitReady = await connectRabbitMQ();
   if (rabbitReady) {
