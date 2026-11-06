@@ -3,9 +3,9 @@ const { body, validationResult } = require('express-validator');
 const validateOrder = [
     body('items').isArray({ min: 1 }).withMessage('At least one item required'),
     body('items.*.productId').isMongoId().withMessage('Invalid product ID'),
-    body('items.*.name').notEmpty().withMessage('Item name required'),
-    body('items.*.quantity').isInt({ min: 1 }).withMessage('Quantity must be at least 1'),
-    body('items.*.unitPrice').isFloat({ min: 0 }).withMessage('Unit price must be non-negative'),
+    body('items.*.name').optional().isString().withMessage('Item name must be text'),
+    body('items.*.quantity').isInt({ min: 1, max: 10000 }).withMessage('Quantity must be a whole number from 1 to 10000'),
+    body('items.*.unitPrice').optional().isFloat({ min: 0 }).withMessage('Unit price must be non-negative'),
     body('shippingAddress.street').notEmpty().withMessage('Street required'),
     body('shippingAddress.city').notEmpty().withMessage('City required'),
     body('shippingAddress.state').notEmpty().withMessage('State required'),

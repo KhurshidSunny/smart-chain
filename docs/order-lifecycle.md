@@ -125,6 +125,8 @@ Every row uses envelope version `1`. The business fields below are inside `paylo
 
 `items` on `inventory.reserved` is the `items` array from `sales.order.created`. Warehouse fills missing `sku`, `name`, `location`, and `shippingAddress` when it builds the picking list.
 
+`POST /orders` copies `name` and `unitCost` from the product catalog onto each order line and stores that `unitPrice` with the summed `totalAmount`. Request fields `unitPrice`, `name`, and `totalAmount` are not used. An unknown product, an inactive product, a quantity that is not a whole number from 1 to 10000, or a quantity above `stockLevel` is rejected. The stored line is the price at creation. A later catalog change does not rewrite it. Inventory still checks stock again when it reserves the order.
+
 ## Where the code lives
 
 | Step | Path |

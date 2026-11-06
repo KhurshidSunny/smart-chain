@@ -1,6 +1,8 @@
 const Order = require('../models/orderModel');
+const CatalogProduct = require('../models/catalogProductModel');
 const { publishOrderCreated } = require('./events/eventHandlerController');
 const { commitDomainAndOutbox } = require('../services/eventService');
+const { priceOrder, OrderPricingError } = require('../services/orderPricing');
 
 const generateOrderNumber = () => `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -8,14 +10,17 @@ exports.createOrder = async (req, res) => {
     try {
         const { items, shippingAddress, notes } = req.body;
         const customerId = req.user.sub; // From JWT
-        const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+        const productIds = [...new Set(items.map((item) => String(item.productId)))];
+        const products = await CatalogProduct.find({ _id: { $in: productIds } }).lean();
+        const productsById = new Map(products.map((product) => [String(product._id), product]));
+        const priced = priceOrder(items, productsById);
         const orderNumber = generateOrderNumber();
 
         const order = new Order({
             orderNumber,
             customerId,
-            items,
-            totalAmount,
+            items: priced.items,
+            totalAmount: priced.totalAmount,
             shippingAddress,
             createdBy: req.user.sub,
             notes,
@@ -27,6 +32,9 @@ exports.createOrder = async (req, res) => {
         });
         res.status(201).json(order);
     } catch (error) {
+        if (error instanceof OrderPricingError) {
+            return res.status(400).json({ message: error.message });
+        }
         res.status(500).json({ message: 'Error creating order', error: error.message });
     }
 };
