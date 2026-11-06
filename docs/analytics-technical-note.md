@@ -41,7 +41,7 @@ Orders / inventory data (MongoDB)
         └──► RabbitMQ topic exchange (analytics.low_stock.predicted)
 ```
 
-- Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM.
+- Analytics is a **separate service** (`microservices/analytics`) behind the same JWT secret as IAM. Reorder, forecast, and demand require `admin` or `inventory_manager`. Anomaly reads also allow `sales_manager` and `warehouse_manager`. A customer token returns anomaly rows only for orders with that customer's id. The product baseline used to score those rows is still the non-cancelled order history.
 - It **reads** existing collections (orders, products, optionally inventory transactions). It does not replace Sales or Inventory write paths.
 - A scheduled evaluation publishes an advisory **`LowStockPredicted`** event (`analytics.low_stock.predicted`) when `predictedDemand > stockLevel`. `GET /reorder` does not publish. A log subscriber in Analytics is enough for demo; no PO is created. This event is not part of the order flow. The order events are listed in [order-lifecycle.md](./order-lifecycle.md).
 - **Live path:** Croston when demand is intermittent; otherwise moving average / exponential smoothing (forecast); z-score (anomalies).

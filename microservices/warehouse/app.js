@@ -6,16 +6,23 @@ const pickingRoutes = require('./routes/pickingRoutes');
 const packageRoutes = require('./routes/packageRoutes');
 const { handleInventoryReserved, handleOrderCancelled } = require('./controllers/events/eventHandlerController');
 require('dotenv').config();
-const cors = require('cors');
+const {
+  securityHeaders,
+  corsAllowlist,
+  queryLimits,
+  pathLimits,
+  jsonBodyLimit,
+  apiErrorHandler,
+} = require('./sharedLoad');
 
 const app = express();
 
-// Middleware
-app.use(express.json());
+app.use(securityHeaders);
+app.use(corsAllowlist);
+app.use(express.json({ limit: jsonBodyLimit() }));
+app.use(queryLimits);
+app.use(pathLimits);
 app.use(passport.initialize());
-app.use(cors({
-  origin: '*', // Allows any origin
-}));
 
 // Connect to DB and RabbitMQ
 connectDB();
@@ -36,10 +43,7 @@ app.use('/picking-lists', pickingRoutes);
 app.use('/packages', packageRoutes);
 
 // Error Handling
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
+app.use(apiErrorHandler);
 
 const PORT = process.env.PORT || 3004;
 app.listen(PORT, () => console.log(`Warehouse Service running on port ${PORT}`));

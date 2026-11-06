@@ -3,6 +3,7 @@ const {
   flagAnomalousOrderLines,
   DEFAULT_Z_THRESHOLD,
 } = require('../services/anomalyService');
+const { anomalyScope } = require('../middleware/requestLimits');
 
 function buildDateFilter(from, to) {
   if (!from && !to) {
@@ -23,7 +24,10 @@ exports.getOrderAnomalies = async (req, res) => {
   try {
     const { from, to, threshold, limit } = req.query;
     const zThreshold = Number(threshold) > 0 ? Number(threshold) : DEFAULT_Z_THRESHOLD;
-    const resultLimit = Number(limit) > 0 ? Number(limit) : 50;
+    const parsedLimit = Number(limit);
+    const resultLimit = Number.isInteger(parsedLimit) && parsedLimit > 0
+      ? Math.min(parsedLimit, 200)
+      : 50;
 
     const orders = await Order.find({
       status: { $ne: 'cancelled' },
@@ -32,9 +36,14 @@ exports.getOrderAnomalies = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
+    const ownerId = anomalyScope(req.user);
+    const visibleOrders = ownerId
+      ? orders.filter((order) => String(order.customerId) === ownerId.customerId)
+      : orders;
+
     const data = [];
 
-    for (const order of orders) {
+    for (const order of visibleOrders) {
       const anomalousLines = flagAnomalousOrderLines(order, orders, {
         threshold: zThreshold,
       });

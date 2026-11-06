@@ -26,10 +26,9 @@ router.put(
   pickingController.updatePickingListStatus
 );
 
-// Assign picking list to staff - only managers and admins
 router.put(
   '/:id/assign',
-  authMiddleware(['warehouse_manager', 'admin', 'warehouse_staff']),
+  authMiddleware(['warehouse_manager', 'admin']),
   validate('assignPickingList'),
   pickingController.assignPickingList
 );

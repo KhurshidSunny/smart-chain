@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/db');
 const healthRoutes = require('./routes/healthRoutes');
@@ -12,21 +11,29 @@ const {
   ROUTING_LOW_STOCK_PREDICTED,
 } = require('./services/eventService');
 const { startLowStockSchedule } = require('./services/lowStockSchedule');
+const {
+  securityHeaders,
+  corsAllowlist,
+  queryLimits,
+  pathLimits,
+  jsonBodyLimit,
+  apiErrorHandler,
+} = require('./sharedLoad');
 require('./middleware/authMiddleware');
 
 const app = express();
 
-app.use(cors({ origin: '*' }));
-app.use(express.json());
+app.use(securityHeaders);
+app.use(corsAllowlist);
+app.use(express.json({ limit: jsonBodyLimit() }));
+app.use(queryLimits);
+app.use(pathLimits);
 app.use(passport.initialize());
 
 app.use('/', healthRoutes);
 app.use('/', analyticsRoutes);
 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
+app.use(apiErrorHandler);
 
 const start = async () => {
   await connectDB();

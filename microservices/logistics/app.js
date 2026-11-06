@@ -4,16 +4,23 @@ const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService'
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const trackingRoutes = require('./routes/trackingRoutes');
 require('dotenv').config();
-const cors = require('cors');
 const { handleOrderPacked } = require('./controllers/events/eventHandlerController');
+const {
+  securityHeaders,
+  corsAllowlist,
+  queryLimits,
+  pathLimits,
+  jsonBodyLimit,
+  apiErrorHandler,
+} = require('./sharedLoad');
 
 const app = express();
 
-// Middleware
-app.use(express.json());
-app.use(cors({
-    origin: '*', // Allows any origin
-}));
+app.use(securityHeaders);
+app.use(corsAllowlist);
+app.use(express.json({ limit: jsonBodyLimit() }));
+app.use(queryLimits);
+app.use(pathLimits);
 
 // Connect to DB and RabbitMQ
 connectDB();
@@ -33,10 +40,7 @@ app.use('/shipments', shipmentRoutes);
 app.use('/tracking', trackingRoutes);
 
 // Error Handling
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ message: 'Something went wrong!' });
-});
+app.use(apiErrorHandler);
 
 const PORT = process.env.PORT || 3005;
 app.listen(PORT, () => console.log(`Logistics Service running on port ${PORT}`));

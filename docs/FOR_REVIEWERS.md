@@ -81,6 +81,8 @@ Every retail number is in [retail-forecast-evaluation.md](./retail-forecast-eval
 
 Health check without login: http://localhost:3006/health
 
+The Vite app at http://localhost:5173 is on the default CORS allowlist. A customer token can load that customer's order anomaly badges. Reorder and forecast cards are for the inventory manager and admin accounts above.
+
 Pushes and pull requests run the same checks in GitHub Actions (Node 20, Python 3.13). Deployment on `main` starts only after that workflow succeeds:
 
 ```powershell
