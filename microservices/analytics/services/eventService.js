@@ -16,6 +16,21 @@ function loadEvents() {
   throw new Error('Shared event module not found');
 }
 
+function loadObserve() {
+  const candidates = [
+    path.join(__dirname, '../../shared/observe'),
+    path.join(__dirname, '../shared/observe'),
+  ];
+  for (const dir of candidates) {
+    if (fs.existsSync(path.join(dir, 'index.js'))) {
+      return require(dir);
+    }
+  }
+  throw new Error('Shared observe module not found');
+}
+
+const { logEvent, writeLog } = loadObserve();
+
 const {
   buildEnvelope,
   assertConsumerQueues,
@@ -71,11 +86,18 @@ const connectRabbitMQ = async () => {
     );
 
     connection.on('error', (err) => {
-      console.error('RabbitMQ Connection Error:', err);
+      channel = null;
+      writeLog('error', {
+        service: PRODUCER,
+        event: 'rabbit.error',
+        outcome: 'error',
+        error: { message: err.message },
+      });
       reconnectRabbitMQ();
     });
 
     connection.on('close', () => {
+      channel = null;
       console.log('RabbitMQ Connection Closed');
       reconnectRabbitMQ();
     });
@@ -111,9 +133,7 @@ const publishEvent = async (routingKey, payload, context = {}) => {
     causationId: context.causationId,
   });
   await outbox.store(routingKey, envelope, context.session);
-  console.log(
-    `Event stored: ${routingKey} eventId=${envelope.eventId} correlationId=${envelope.correlationId}`
-  );
+  logEvent(PRODUCER, 'event.stored', envelope, { routingKey });
   return envelope;
 };
 
@@ -131,9 +151,12 @@ const subscribeToEvents = (eventHandlers) => {
   return true;
 };
 
+const isRabbitReady = () => Boolean(channel);
+
 module.exports = {
   ROUTING_LOW_STOCK_PREDICTED,
   connectRabbitMQ,
+  isRabbitReady,
   publishEvent,
   subscribeToEvents,
   commitDomainAndOutbox,

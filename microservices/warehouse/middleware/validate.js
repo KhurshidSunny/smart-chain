@@ -65,7 +65,6 @@ const schemas = {
 // Middleware to validate request body against a specific schema
 const validate = (schemaName) => {
   return (req, res, next) => {
-    console.log(req.body)
     const schema = schemas[schemaName];
     if (!schema) {
       return res.status(500).json({ message: 'Validation schema not found' });
@@ -73,7 +72,6 @@ const validate = (schemaName) => {
     const { error } = schema.validate(req.body, { abortEarly: false });
     if (error) {
       const errors = error.details.map((detail) => detail.message);
-      console.log(error.message)
       return res.status(400).json({ errors });
     }
     next();

@@ -107,7 +107,15 @@ function apiErrorHandler(err, req, res, next) {
   if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400)) {
     return res.status(400).json({ message: 'Invalid JSON body' });
   }
-  console.error(err.stack || err.message || err);
+  const { writeLog } = require('../observe');
+  writeLog('error', {
+    service: req.serviceName,
+    event: 'http.error',
+    requestId: req.requestId,
+    correlationId: (res.locals && res.locals.correlationId) || req.correlationId,
+    outcome: 'error',
+    error: { name: err.name, message: err.message },
+  });
   return res.status(500).json({ message: 'Something went wrong!' });
 }
 

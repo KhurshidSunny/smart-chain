@@ -71,7 +71,7 @@ exports.getUsers = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error('Error fetching users:', err.message);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -87,7 +87,7 @@ exports.getUserById = async (req, res) => {
 
         res.json({ firstName, lastName, email, _id })
     } catch (error) {
-        console.log(error)
+        console.error('Error fetching user:', error.message);
         res.status(500).json({ message: 'Server error' });
     }
 }
@@ -130,7 +130,7 @@ exports.getCurrentUser = async (req, res) => {
             updatedAt: user.updatedAt
         });
     } catch (err) {
-        console.error('Error fetching current user:', err);
+        console.error('Error fetching current user:', err.message);
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
@@ -186,7 +186,6 @@ exports.createUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { userId } = req.params;
-        console.log(userId)
         const { email, firstName, lastName, roleName, isActive } = req.body;
 
         const user = await User.findById(userId)

@@ -79,7 +79,7 @@ Every retail number is in [retail-forecast-evaluation.md](./retail-forecast-eval
    python generate_reports.py
    ```
 
-Health check without login: http://localhost:3006/health
+Health check without login: http://localhost:3006/health. `/ready` reports MongoDB and, when configured, RabbitMQ. `/metrics` summarizes requests and events. Log lines for one order share `correlationId`.
 
 The Vite app at http://localhost:5173 is on the default CORS allowlist. A customer token can load that customer's order anomaly badges. Reorder and forecast cards are for the inventory manager and admin accounts above.
 

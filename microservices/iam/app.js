@@ -12,6 +12,7 @@ const {
   jsonBodyLimit,
   apiErrorHandler,
 } = require('./sharedLoad');
+const { mountObservability } = require('./observeLoad');
 
 const app = express();
 
@@ -20,11 +21,17 @@ app.use(corsAllowlist);
 app.use(express.json({ limit: jsonBodyLimit() }));
 app.use(queryLimits);
 app.use(pathLimits);
+mountObservability(app, {
+  service: 'iam',
+  checks: {
+    mongodb: () => mongoose.connection.readyState === 1,
+  },
+});
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => console.error('MongoDB connection error:', err.message));
 
 // Routes
 app.use('/auth', authRoutes); // Authentication endpoints

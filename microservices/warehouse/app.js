@@ -1,7 +1,8 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const passport = require('passport');
 const connectDB = require('./config/db');
-const { connectRabbitMQ, subscribeToEvents } = require('./services/eventService');
+const { connectRabbitMQ, subscribeToEvents, isRabbitReady } = require('./services/eventService');
 const pickingRoutes = require('./routes/pickingRoutes');
 const packageRoutes = require('./routes/packageRoutes');
 const { handleInventoryReserved, handleOrderCancelled } = require('./controllers/events/eventHandlerController');
@@ -14,6 +15,7 @@ const {
   jsonBodyLimit,
   apiErrorHandler,
 } = require('./sharedLoad');
+const { mountObservability } = require('./observeLoad');
 
 const app = express();
 
@@ -23,6 +25,13 @@ app.use(express.json({ limit: jsonBodyLimit() }));
 app.use(queryLimits);
 app.use(pathLimits);
 app.use(passport.initialize());
+mountObservability(app, {
+  service: 'warehouse',
+  checks: {
+    mongodb: () => mongoose.connection.readyState === 1,
+    ...(process.env.RABBITMQ_URL ? { rabbitmq: isRabbitReady } : {}),
+  },
+});
 
 // Connect to DB and RabbitMQ
 connectDB();

@@ -26,7 +26,7 @@ const createPackage = async (req, res) => {
 
     res.status(201).json(packageRecord);
   } catch (error) {
-    console.error('Error creating package:', error);
+    console.error('Error creating package:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -46,7 +46,7 @@ const listPackages = async (req, res) => {
       currentPage: parseInt(page)
     });
   } catch (error) {
-    console.error('Error listing packages:', error);
+    console.error('Error listing packages:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -60,7 +60,7 @@ const getPackage = async (req, res) => {
     }
     res.json(packageRecord);
   } catch (error) {
-    console.error('Error getting package:', error);
+    console.error('Error getting package:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -79,7 +79,7 @@ const updatePackage = async (req, res) => {
     await packageRecord.save();
     res.json(packageRecord);
   } catch (error) {
-    console.error('Error updating package:', error);
+    console.error('Error updating package:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };

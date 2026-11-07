@@ -2,12 +2,13 @@ require('dotenv').config();
 
 const express = require('express');
 const passport = require('passport');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
-const healthRoutes = require('./routes/healthRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const {
   connectRabbitMQ,
   subscribeToEvents,
+  isRabbitReady,
   ROUTING_LOW_STOCK_PREDICTED,
 } = require('./services/eventService');
 const { startLowStockSchedule } = require('./services/lowStockSchedule');
@@ -19,6 +20,7 @@ const {
   jsonBodyLimit,
   apiErrorHandler,
 } = require('./sharedLoad');
+const { mountObservability, writeLog } = require('./observeLoad');
 require('./middleware/authMiddleware');
 
 const app = express();
@@ -29,8 +31,14 @@ app.use(express.json({ limit: jsonBodyLimit() }));
 app.use(queryLimits);
 app.use(pathLimits);
 app.use(passport.initialize());
+mountObservability(app, {
+  service: 'analytics',
+  checks: {
+    mongodb: () => mongoose.connection.readyState === 1,
+    ...(process.env.RABBITMQ_URL ? { rabbitmq: isRabbitReady } : {}),
+  },
+});
 
-app.use('/', healthRoutes);
 app.use('/', analyticsRoutes);
 
 app.use(apiErrorHandler);
@@ -43,11 +51,14 @@ const start = async () => {
   if (rabbitReady) {
     subscribeToEvents({
       [ROUTING_LOW_STOCK_PREDICTED]: async (message, envelope) => {
-        console.log(
-          `[LowStockPredicted] sku=${message.sku} stock=${message.stockLevel} ` +
-            `predictedDemand=${message.predictedDemand} horizonDays=${message.horizonDays} ` +
-            `correlationId=${envelope.correlationId}`
-        );
+        writeLog('info', {
+          service: 'analytics',
+          event: 'low_stock.predicted',
+          correlationId: envelope.correlationId,
+          eventId: envelope.eventId,
+          sku: message.sku,
+          outcome: 'ok',
+        });
       },
     });
   }

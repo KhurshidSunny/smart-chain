@@ -191,7 +191,7 @@ With seeded demo products and a handful of customer orders:
 
 - Inventory managers see a **7-day demand forecast summary** and **reorder suggestions** with suggested quantities.
 - Sales/admin users see **anomaly badges** when the same SKU has enough history and a line quantity is statistically unusual.
-- APIs: `GET /health`, `/demand/:productId`, `/forecast/:productId`, `/forecast/:productId/compare`, `/reorder`, `/anomalies` (JWT required except health).
+- APIs: `GET /health`, `/live`, `/ready`, `/metrics`, `/demand/:productId`, `/forecast/:productId`, `/forecast/:productId/compare`, `/reorder`, `/anomalies` (JWT required except the four probe paths).
 
 Exact numeric outputs depend on the demo data you place; empty history fails safely (zeroed forecast / no false anomalies). For downloadable evaluation tables, use the two results markdown files linked above.
 

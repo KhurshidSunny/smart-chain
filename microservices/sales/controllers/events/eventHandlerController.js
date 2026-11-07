@@ -3,7 +3,7 @@ const { publishEvent, read, save } = require('../../services/eventService');
 const QRCode = require('qrcode');
 
 exports.publishOrderCreated = async (order, session) => {
-  await publishEvent('sales.order.created', {
+  const envelope = await publishEvent('sales.order.created', {
     orderId: order._id,
     customerId: order.customerId,
     items: order.items.map((item) => ({
@@ -12,7 +12,7 @@ exports.publishOrderCreated = async (order, session) => {
       shippingAddress: order.shippingAddress,
     })),
   }, { session });
-  console.log(`Published OrderCreated for order ${order._id}`);
+  return envelope;
 };
 
 exports.handleInventoryReserved = async (message, envelope, session) => {

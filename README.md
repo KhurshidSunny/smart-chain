@@ -229,7 +229,7 @@ npm start
 # or: npm run dev
 ```
 
-Health check: http://localhost:3006/health
+Health check: http://localhost:3006/health (`/live` is the same check). http://localhost:3006/ready returns 503 until MongoDB is connected, and until RabbitMQ is connected when `RABBITMQ_URL` is set. http://localhost:3006/metrics returns request, error, and event counts. The same three paths exist on IAM (3001), Sales (3002), Inventory (3003), Warehouse (3004), and Logistics (3005). Each log line is JSON with `service`, `requestId`, `correlationId`, and `eventId` when those values exist. An order is traced by `correlationId` equal to the order id. Passwords, tokens, and contact fields are not written to the log.
 
 | Endpoint | Description |
 |---|---|
@@ -245,7 +245,7 @@ Health check: http://localhost:3006/health
 
 `GET /forecast/:productId/compare` always computes moving-average, exponential-smoothing, and Croston evaluations from Mongo demand history. The live forecast path selects Croston when the series is intermittent. Sklearn Ridge lag metrics are optional and loaded from `microservices/analytics/data/sklearn_holdout_cache.json` (demo SKU keys such as `sku-rice-1kg`). Use `?sklearnKey=sku-rice-1kg` to attach demo sklearn numbers while classical methods still use the live `:productId` history.
 
-All analytics routes except `/health` need a Bearer JWT from IAM. `GET /reorder`, `GET /forecast/:productId`, `GET /forecast/:productId/compare`, and `GET /demand/:productId` also require role `admin` or `inventory_manager`. `GET /anomalies` allows those roles plus `sales_manager` and `warehouse_manager`. A `customer` token receives anomaly rows only for that customer's orders. `limit` must be an integer from 1 to 200. `horizonDays` must be 7, 14, or 30 when it is sent.
+All analytics routes except `/health`, `/live`, `/ready`, and `/metrics` need a Bearer JWT from IAM. `GET /reorder`, `GET /forecast/:productId`, `GET /forecast/:productId/compare`, and `GET /demand/:productId` also require role `admin` or `inventory_manager`. `GET /anomalies` allows those roles plus `sales_manager` and `warehouse_manager`. A `customer` token receives anomaly rows only for that customer's orders. `limit` must be an integer from 1 to 200. `horizonDays` must be 7, 14, or 30 when it is sent.
 
 Browser calls are limited to origins in `CORS_ORIGINS`. When that variable is unset, the allowed origins are `http://localhost:5173` and `http://127.0.0.1:5173`. A request with no `Origin` header, including the health check, is still accepted. JSON bodies are limited to `JSON_BODY_LIMIT` (default `100kb`). Login, registration, and token refresh on IAM are limited to `AUTH_RATE_MAX` requests per IP per window (default 30 requests in 15 minutes). The access token expires in 1 hour. The refresh token expires in `REFRESH_TOKEN_EXPIRY` (default 7 days), is rotated on every refresh, and is stored in an HttpOnly cookie. `frontend-1` keeps the access token in memory. Refresh and logout must send the `X-CSRF-Token` header that matches the `smartchain_csrf` cookie. A failed or reused refresh clears the session. Set `COOKIE_SECURE=true` when IAM is served over HTTPS.
 

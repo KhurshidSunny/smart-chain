@@ -213,7 +213,7 @@ function subscribeConsumer(channel, { queue, handlers, mongoose, consumer }) {
   }
   channel.consume(
     queue,
-    (msg) => handleDelivery(channel, msg, wrapped, { queueName: queue }),
+    (msg) => handleDelivery(channel, msg, wrapped, { queueName: queue, service: consumer }),
     { noAck: false }
   );
 }

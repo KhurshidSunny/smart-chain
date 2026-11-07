@@ -112,7 +112,7 @@ exports.register = async (req, res) => {
         const session = establishSession(user, sessionDeps(role.name));
         sendAuth(res, 201, session, user, role.name);
     } catch (err) {
-        console.error('Register error:', err);
+        console.error('Register error:', err.message);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -162,7 +162,7 @@ exports.logout = async (req, res) => {
         res.json({ message: 'Logged out successfully' });
     } catch (err) {
         const status = err.status || 500;
-        if (status === 500) console.error(err);
+        if (status === 500) console.error(err.message);
         res.status(status).json({ message: err.message || 'Server error' });
     }
 };

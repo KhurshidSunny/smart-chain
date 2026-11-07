@@ -18,8 +18,6 @@ const listPickingLists = async (req, res) => {
       .skip((page - 1) * limit)
       .exec();
 
-    console.log(query)
-
     const count = await PickingList.countDocuments(query);
 
     res.json({
@@ -28,7 +26,7 @@ const listPickingLists = async (req, res) => {
       currentPage: parseInt(page)
     });
   } catch (error) {
-    console.error('Error listing picking lists:', error);
+    console.error('Error listing picking lists:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -52,7 +50,7 @@ const getPickingList = async (req, res) => {
 
     res.json(pickingList);
   } catch (error) {
-    console.error('Error getting picking list:', error);
+    console.error('Error getting picking list:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -91,7 +89,7 @@ const updatePickingListStatus = async (req, res) => {
     }
     res.json(pickingList);
   } catch (error) {
-    console.error('Error updating picking list status:', error);
+    console.error('Error updating picking list status:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -113,7 +111,7 @@ const assignPickingList = async (req, res) => {
 
     res.json(pickingList);
   } catch (error) {
-    console.error('Error assigning picking list:', error);
+    console.error('Error assigning picking list:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };
@@ -146,7 +144,7 @@ const updatePickedQuantity = async (req, res) => {
 
     res.json(pickingList);
   } catch (error) {
-    console.error('Error updating picked quantity:', error);
+    console.error('Error updating picked quantity:', error.message);
     res.status(500).json({ message: 'Something went wrong!' });
   }
 };

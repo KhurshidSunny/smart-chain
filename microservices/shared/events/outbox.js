@@ -1,5 +1,6 @@
 const { randomUUID } = require('crypto');
 const { publishEnvelope } = require('./confirm');
+const { logEvent } = require('../observe');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -290,7 +291,13 @@ async function publishClaimed(store, publish, options = {}) {
       return { claimed: true, published: false, eventId: row.envelope.eventId };
     }
     await store.markPublished(row, now, retention);
-    return { claimed: true, published: true, eventId: row.envelope.eventId };
+    return {
+      claimed: true,
+      published: true,
+      eventId: row.envelope.eventId,
+      routingKey: row.routingKey,
+      envelope: row.envelope,
+    };
   } catch (err) {
     await store.release(row);
     throw err;
@@ -314,9 +321,7 @@ function createProducerOutbox({ mongoose, producer, getChannel, getExchange }) {
       );
       again = result.published;
       if (result.published) {
-        console.log(
-          `Event published from outbox: ${result.eventId} producer=${producer}`
-        );
+        logEvent(producer, 'event.published', result.envelope, { routingKey: result.routingKey });
       }
     }
   }
@@ -335,7 +340,10 @@ function createProducerOutbox({ mongoose, producer, getChannel, getExchange }) {
       }
       const tick = () => {
         drain().catch((err) => {
-          console.error(`Outbox publish failed (${producer}): ${err.message}`);
+          logEvent(producer, 'event.failed', null, {
+            outcome: 'error',
+            error: { message: err.message },
+          });
         });
       };
       timer = setInterval(tick, pollIntervalMs());

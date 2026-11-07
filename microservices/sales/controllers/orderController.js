@@ -28,8 +28,11 @@ exports.createOrder = async (req, res) => {
 
         await commitDomainAndOutbox(async (session) => {
             await order.save({ session });
-            await publishOrderCreated(order, session);
+            const envelope = await publishOrderCreated(order, session);
+            res.locals.correlationId = String(order._id);
+            res.locals.eventId = envelope.eventId;
         });
+        res.setHeader('X-Correlation-Id', String(order._id));
         res.status(201).json(order);
     } catch (error) {
         if (error instanceof OrderPricingError) {

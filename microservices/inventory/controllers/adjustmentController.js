@@ -41,7 +41,6 @@ exports.adjustInventory = async (req, res) => {
 
 exports.getTransactions = async (req, res) => {
     try {
-        console.log('transactions')
         const transactions = await InventoryTransaction.find().populate('productId', 'name sku');
         res.json(transactions);
     } catch (err) {
