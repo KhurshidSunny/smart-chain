@@ -1,48 +1,47 @@
 import { create } from 'zustand';
+import { clearAccess, dropLegacyTokenStorage, readCsrfCookie, setAccess } from '../services/sessionMemory';
 
-const useAuthStore = create((set, get) => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
-    token: localStorage.getItem('token') || null,
-    refreshToken: localStorage.getItem('refreshToken') || null,
-    isAuthenticated: !!localStorage.getItem('token'),
+const useAuthStore = create((set) => ({
+    user: null,
+    token: null,
+    isAuthenticated: false,
 
-    setAuth: (user, token, refreshToken = null) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        if (refreshToken) {
-            localStorage.setItem('refreshToken', refreshToken);
-        }
-        set({ user, token, refreshToken, isAuthenticated: true });
+    setAuth: (user, token, csrfToken) => {
+        dropLegacyTokenStorage();
+        setAccess(token, csrfToken);
+        set({ user, token, isAuthenticated: true });
     },
 
     logout: async () => {
-        const { refreshToken } = get();
-
-        // Clear local state immediately for better UX
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
-
-        // Try to logout on server (don't wait for it)
         try {
-            if (refreshToken) {
-                const { logout: logoutService } = await import('../services/authService');
-                await logoutService(refreshToken);
-            }
+            const { logoutSession } = await import('../services/sessionClient');
+            await logoutSession();
         } catch (error) {
             console.warn('Server logout failed:', error.message);
-            // Don't throw error - local logout already completed
         }
+        clearAccess();
+        dropLegacyTokenStorage();
+        set({ user: null, token: null, isAuthenticated: false });
     },
 
-    // Force logout (used by interceptors)
     forceLogout: () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false });
-    }
+        clearAccess();
+        dropLegacyTokenStorage();
+        set({ user: null, token: null, isAuthenticated: false });
+    },
 }));
+
+export async function restoreSession() {
+    dropLegacyTokenStorage();
+    if (!readCsrfCookie()) return;
+
+    try {
+        const { refreshSession } = await import('../services/sessionClient');
+        const data = await refreshSession();
+        useAuthStore.getState().setAuth(data.user, data.token, data.csrfToken);
+    } catch {
+        useAuthStore.getState().forceLogout();
+    }
+}
 
 export default useAuthStore;

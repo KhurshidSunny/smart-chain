@@ -31,7 +31,7 @@ function RegistrationForm() {
                 password: values.password,
             };
             const response = await register(userData);
-            setAuth(response.user, response.token);
+            setAuth(response.user, response.token, response.csrfToken);
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Registration failed');

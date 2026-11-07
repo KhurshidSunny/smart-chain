@@ -1,8 +1,60 @@
+const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 const Role = require('../models/roleModel');
 const TokenBlacklist = require('../models/tokenBlacklistModel');
-const Address = require('../models/addressModel'); // New import
+const Address = require('../models/addressModel');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../services/jwtService');
+const {
+  REFRESH_COOKIE,
+  CSRF_COOKIE,
+  SessionError,
+  readCookie,
+  createCsrfToken,
+  setSessionCookies,
+  clearSessionCookies,
+  authBody,
+  establishSession,
+  rotateRefresh,
+  revokeRefresh,
+} = require('../services/session');
+
+function publicUser(user, roleName) {
+  const role = roleName || (user.roleId && user.roleId.name) || user.role;
+  return {
+    id: user._id,
+    email: user.email,
+    role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+  };
+}
+
+function blacklistExpiry(token) {
+  const decoded = jwt.decode(token);
+  if (decoded && typeof decoded.exp === 'number') return new Date(decoded.exp * 1000);
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+}
+
+function sessionDeps(roleName) {
+  return {
+    generateToken: (user) => generateToken(user, roleName),
+    generateRefreshToken,
+    createCsrfToken,
+    verifyRefreshToken,
+    loadUser: (decoded) => User.findById(decoded.id).populate('roleId'),
+    isBlacklisted: async (token) => Boolean(await TokenBlacklist.findOne({ token })),
+    blacklist: async (token) => {
+      const existing = await TokenBlacklist.findOne({ token });
+      if (existing) return;
+      await new TokenBlacklist({ token, expiresAt: blacklistExpiry(token) }).save();
+    },
+  };
+}
+
+function sendAuth(res, status, session, user, roleName) {
+  setSessionCookies(res, session.refreshToken, session.csrfToken);
+  res.status(status).json(authBody(session, publicUser(user, roleName)));
+}
 
 exports.login = async (req, res) => {
     try {
@@ -12,12 +64,11 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const token = generateToken(user);
-        const refreshToken = generateRefreshToken(user);
         user.lastLogin = Date.now();
         await user.save();
 
-        res.json({ token, refreshToken, user: { id: user._id, email: user.email, role: user.roleId.name, firstName: user.firstName, lastName: user.lastName } });
+        const session = establishSession(user, sessionDeps(user.roleId.name));
+        sendAuth(res, 200, session, user, user.roleId.name);
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
@@ -58,9 +109,8 @@ exports.register = async (req, res) => {
 
         await user.save();
 
-        const token = generateToken(user, role.name);
-        const refreshToken = generateRefreshToken(user);
-        res.status(201).json({ token, refreshToken, user: { id: user._id, email: user.email, role: role.name, firstName: user.firstName, lastName: user.lastName } });
+        const session = establishSession(user, sessionDeps(role.name));
+        sendAuth(res, 201, session, user, role.name);
     } catch (err) {
         console.error('Register error:', err);
         res.status(500).json({ message: 'Server error' });
@@ -68,19 +118,17 @@ exports.register = async (req, res) => {
 };
 
 exports.refreshToken = async (req, res) => {
-    const { refreshToken } = req.body;
     try {
-        const blacklistedToken = await TokenBlacklist.findOne({ token: refreshToken });
-        if (blacklistedToken) return res.status(401).json({ message: 'Refresh token invalidated' });
-
-        const decoded = await verifyRefreshToken(refreshToken);
-        const user = await User.findById(decoded.id).populate('roleId');
-        if (!user || !user.isActive) return res.status(401).json({ message: 'Invalid refresh token' });
-
-        const newToken = generateToken(user);
-        res.json({ token: newToken });
+        const session = await rotateRefresh({
+            refreshToken: readCookie(req, REFRESH_COOKIE),
+            csrfCookie: readCookie(req, CSRF_COOKIE),
+            csrfHeader: req.get('x-csrf-token'),
+        }, sessionDeps());
+        sendAuth(res, 200, session, session.user);
     } catch (err) {
-        res.status(401).json({ message: 'Invalid or expired refresh token' });
+        if (!(err instanceof SessionError) || err.status !== 403) clearSessionCookies(res);
+        const status = err.status || 401;
+        res.status(status).json({ message: err.message || 'Invalid or expired refresh token' });
     }
 };
 
@@ -105,17 +153,16 @@ exports.assignRole = async (req, res) => {
 
 exports.logout = async (req, res) => {
     try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) return res.status(400).json({ message: 'Refresh token required' });
-
-        const existing = await TokenBlacklist.findOne({ token: refreshToken });
-        if (existing) return res.status(200).json({ message: 'Already logged out' });
-
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-        await new TokenBlacklist({ token: refreshToken, expiresAt }).save();
-
+        await revokeRefresh({
+            refreshToken: readCookie(req, REFRESH_COOKIE),
+            csrfCookie: readCookie(req, CSRF_COOKIE),
+            csrfHeader: req.get('x-csrf-token'),
+        }, sessionDeps());
+        clearSessionCookies(res);
         res.json({ message: 'Logged out successfully' });
     } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        const status = err.status || 500;
+        if (status === 500) console.error(err);
+        res.status(status).json({ message: err.message || 'Server error' });
     }
 };
