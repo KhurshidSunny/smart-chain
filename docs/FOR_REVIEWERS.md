@@ -81,6 +81,8 @@ Every retail number is in [retail-forecast-evaluation.md](./retail-forecast-eval
 
 Health check without login: http://localhost:3006/health. `/ready` reports MongoDB and, when configured, RabbitMQ. `/metrics` summarizes requests and events. Log lines for one order share `correlationId`.
 
+`cd microservices/smoke && npm install && npm run smoke` places one isolated order and checks reservation, picking, packing, delivery, demand, forecast, anomalies, a repeated event, and that `GET /reorder` does not write an event. The services must already be running on ports 3001–3006, with MongoDB as a replica set. Pull requests check the script. The full stack run is the Smoke workflow, started by hand or on Monday.
+
 The Vite app at http://localhost:5173 is on the default CORS allowlist. A customer token can load that customer's order anomaly badges. Reorder and forecast cards are for the inventory manager and admin accounts above.
 
 Pushes and pull requests run the same checks in GitHub Actions (Node 20, Python 3.13). Deployment on `main` starts only after that workflow succeeds:

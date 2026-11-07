@@ -105,3 +105,24 @@ jobs:
         run: |
           npm ci
           node --check app.js
+
+  smoke:
+    name: Smoke script check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: microservices/smoke/package-lock.json
+
+      - name: Check the smoke script
+        working-directory: microservices/smoke
+        run: |
+          npm ci
+          node --check smoke-order.js
+          npm test

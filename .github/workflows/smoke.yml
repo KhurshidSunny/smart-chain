@@ -1,0 +1,85 @@
+name: Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    name: Order and analytics smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONGO_URI: mongodb://127.0.0.1:27017/smartchain?replicaSet=rs0
+      RABBITMQ_URL: amqp://smartchain:smartchain@127.0.0.1:5672
+      RABBITMQ_EXCHANGE: smartchain_exchange
+      RABBITMQ_QUEUE_PREFIX: smart-chain-
+      JWT_SECRET: smartchain-dev-jwt-secret-use-same-in-all-services
+      SMOKE_RUN_ID: ci-${{ github.run_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Start MongoDB and RabbitMQ
+        run: docker compose up -d mongodb rabbitmq
+
+      - name: Advertise the replica set on localhost
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if docker compose exec -T mongodb mongosh --quiet --eval "try { const cfg = rs.conf(); cfg.members[0].host = '127.0.0.1:27017'; rs.reconfig(cfg, { force: true }); quit(0); } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: '127.0.0.1:27017' }] }); quit(0); }"; then
+              exit 0
+            fi
+            sleep 3
+          done
+          exit 1
+
+      - name: Install service dependencies
+        run: |
+          for service in iam sales inventory warehouse logistics analytics smoke; do
+            npm ci --prefix "microservices/$service"
+          done
+
+      - name: Seed roles and the admin user
+        working-directory: microservices/iam
+        run: |
+          node scripts/initRoles.js
+          node scripts/seedDemoUsers.js
+
+      - name: Run the smoke test
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/logs"
+          pids="$RUNNER_TEMP/pids"
+          : > "$pids"
+          cleanup() {
+            if [ -f "$pids" ]; then
+              while read -r pid; do
+                kill "$pid" >/dev/null 2>&1 || true
+              done < "$pids"
+            fi
+          }
+          trap cleanup EXIT
+          for pair in iam:3001 sales:3002 inventory:3003 warehouse:3004 logistics:3005 analytics:3006; do
+            name="${pair%%:*}"
+            port="${pair##*:}"
+            PORT="$port" node "microservices/$name/app.js" > "$RUNNER_TEMP/logs/$name.log" 2>&1 &
+            echo $! >> "$pids"
+          done
+          if ! node microservices/smoke/smoke-order.js; then
+            echo '--- service logs ---'
+            for pair in iam:3001 sales:3002 inventory:3003 warehouse:3004 logistics:3005 analytics:3006; do
+              name="${pair%%:*}"
+              echo "===== $name ====="
+              tail -n 80 "$RUNNER_TEMP/logs/$name.log" || true
+            done
+            exit 1
+          fi

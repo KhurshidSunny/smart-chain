@@ -1,0 +1,13 @@
+{
+  "name": "smart-chain-smoke",
+  "private": true,
+  "description": "Order and analytics smoke test",
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node smoke-order.js"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "mongoose": "^8.12.1"
+  }
+}

@@ -154,8 +154,15 @@ npm run seed-products
 # Start all backends (Windows)
 # from microservices/: start-all.bat
 
+# Order and analytics smoke test, after the six services are ready.
+# The database must be the replica set started by `docker compose up -d mongodb rabbitmq`.
+cd ../smoke
+npm install
+npm test
+npm run smoke
+
 # Frontend (localhost API URLs in frontend-1/.env)
-cd frontend-1
+cd ../../frontend-1
 npm install
 npm run dev
 ```
