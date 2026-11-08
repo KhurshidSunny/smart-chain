@@ -40,13 +40,15 @@ Pushes and pull requests run Analytics tests, frontend-1 lint/build, experiment 
 
 | Layer | Tech |
 |---|---|
-| Frontend (active) | React + Vite + Tailwind (`frontend-1`) |
-| Backend | Node.js + Express microservices |
-| Database | MongoDB |
-| Events | RabbitMQ (topic exchange) |
-| Auth | JWT + roles |
+| Frontend (active) | React 19, Vite 6, Tailwind, Zustand (`frontend-1`) |
+| Frontend (previous) | `frontend/`. Kept in the tree. Not the app to run |
+| Backend | Node.js 20, Express microservices |
+| Database | MongoDB 7 in Compose. A replica set is required for order writes |
+| Events | RabbitMQ 3 (topic exchange) |
+| Auth | JWT access token in memory, HttpOnly refresh cookie, CSRF on refresh and logout |
+| Experiments | Python 3.13 |
 
-> Use **`frontend-1`**. The `frontend/` folder is legacy.
+Versions and check commands: [RELEASE.md](RELEASE.md). Security notes: [SECURITY.md](SECURITY.md). How to change the code: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Microservices
 
@@ -264,6 +266,6 @@ In `frontend-1`, set `VITE_API_ANALYTICS_URL=http://localhost:3006` (see `.env.e
 2. Login as **inventory** → Inventory Dashboard → forecast + reorder cards.
 3. Login as **sales/admin** → Orders → anomaly column / order detail.
 
-## License / academic note
+## License
 
-FYP materials remain subject to institute rules. This repo is for learning and further development of the project.
+This repository does not include a license file. FYP materials remain subject to institute rules. Add a license only after the team and the institute agree on the terms.

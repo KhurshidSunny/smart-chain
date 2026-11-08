@@ -1,12 +1,16 @@
-# React + Vite
+# frontend-1
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Active web UI for Smart-Chain. React 19, Vite 6, Tailwind, React Router, and Zustand.
 
-Currently, two official plugins are available:
+```bash
+cd frontend-1
+cp .env.example .env
+npm install
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Open http://localhost:5173. The API URLs in `.env` point at IAM through Analytics on ports 3001–3006.
 
-## Expanding the ESLint configuration
+`npm run lint` and `npm run build` are the checks used in pull requests. Session state lives in Zustand. The access token stays in memory. The refresh token is an HttpOnly cookie. See [docs/authentication/authentication.md](../docs/authentication/authentication.md).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The previous UI is `frontend/`. Do not start that folder.

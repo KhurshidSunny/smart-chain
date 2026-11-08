@@ -102,7 +102,7 @@ pip install -r requirements.txt
 python generate_reports.py --check
 ```
 
-Operational services (IAM, Sales, Inventory, Warehouse, Logistics) also run `npm ci` and `node --check app.js`. Do not run their `npm test` scripts; those are placeholders that exit 1.
+IAM and Sales run `npm test` (`node --test`) and `node --check app.js`. Inventory, Warehouse, and Logistics run `npm ci` and `node --check app.js`. They have no test script. The smoke helper tests run from `microservices/smoke`. The full order smoke test is `npm run smoke` there, after the services are up.
 
 Optional stress check: [demand-shock-simulation.md](./demand-shock-simulation.md) shows how MA/ES and a last-day z-score change when the end of a demo series is spiked.
 
