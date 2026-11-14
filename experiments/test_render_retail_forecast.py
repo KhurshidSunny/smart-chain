@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 
 from evaluate_rolling_forecast import METHODS, load_config
 from render_retail_forecast_report import render_retail_report
+from report_reproducibility import sha256_file
 
 
 def _score(mae: float, mape: float | None = None) -> dict:
@@ -97,6 +100,17 @@ class RenderRetailForecastTest(unittest.TestCase):
         self.assertIn("was not the lowest test micro MAE", first)
         self.assertIn("MAPE skips zero actuals, so this ranking is not the MAE ranking.", first)
         self.assertNotIn("abc", first.split("## Reproduce")[0])
+
+
+class TextHashLineEndingsTest(unittest.TestCase):
+    def test_crlf_and_lf_hash_match_for_text(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            lf_path = folder / "sample.json"
+            crlf_path = folder / "sample-crlf.json"
+            lf_path.write_bytes(b'{"a": 1}\n')
+            crlf_path.write_bytes(b'{"a": 1}\r\n')
+            self.assertEqual(sha256_file(lf_path), sha256_file(crlf_path))
 
 
 if __name__ == "__main__":

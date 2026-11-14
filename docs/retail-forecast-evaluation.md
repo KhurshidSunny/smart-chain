@@ -163,4 +163,4 @@ python generate_reports.py --check
 
 - Demand file: `daily_demand.csv` SHA-256 `0edbfa977962b2a0f7add1e3ac9f484f00edcf9078299322de75c9b94b0a06f9`
 - Workbook SHA-256 recorded by ingestion: `bcbe73b35f5b7babf197fb0cb983a11f5d9ff929078d4aa53d171b1f2df2e980`
-- Summary JSON: `docs/samples/retail_rolling_forecast_summary.json` SHA-256 `88af5cad34145eebb26c27b6ed2c2028f00ff374c23109436caf086fa443c058`
+- Summary JSON: `docs/samples/retail_rolling_forecast_summary.json` SHA-256 `efbcd2de6639ad9249e2ce02af12f4f28c9ea645e7d611a2fd4eea939dc80825`

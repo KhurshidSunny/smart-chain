@@ -12,12 +12,13 @@ actuals, so it is not comparable to the other three on intermittent series.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
 import time
 from pathlib import Path
+
+from report_reproducibility import sha256_file
 
 for _thread_key in (
     "OMP_NUM_THREADS",
@@ -546,14 +547,6 @@ def dump_report(report: dict) -> str:
     return json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
 
 
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def public_summary(report: dict, source: Path) -> dict:
     """Drop per-series rows. Keep the aggregates the write-up is rendered from."""
     preparation = None
@@ -571,7 +564,7 @@ def public_summary(report: dict, source: Path) -> dict:
         "summary": report["summary"],
         "runtime_seconds": report.get("runtime_seconds"),
         "input_name": report.get("input_name") or source.name,
-        "input_sha256": _sha256_file(source),
+        "input_sha256": sha256_file(source),
         "preparation": preparation,
     }
 

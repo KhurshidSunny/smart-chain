@@ -17,12 +17,15 @@ REQUIREMENTS_PATH = EXPERIMENTS_DIR / "requirements.txt"
 CRITICAL_PINS = ("scikit-learn",)
 
 
+_TEXT_SUFFIXES = {".json", ".md", ".csv", ".txt"}
+
+
 def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+    data = path.read_bytes()
+    # CR/LF must not change the digest. Reports are checked on Linux after a Windows checkout.
+    if path.suffix.lower() in _TEXT_SUFFIXES:
+        data = data.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def repo_relative(path: Path) -> str:

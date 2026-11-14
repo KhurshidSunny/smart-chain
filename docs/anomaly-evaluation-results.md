@@ -65,7 +65,7 @@ Best Isolation Forest contamination by F1: **0.20** (precision=1.0000, recall=0.
 
 Dataset SHA-256:
 
-- `experiments/data/anomaly_labels.json`: `83bad583c3f1a5d6fe7a078b44106476a9227e903e398d00867e1b2269714847`
+- `experiments/data/anomaly_labels.json`: `2cf98d51f0e8ea08d5d3805c5a54cb8fa9523f62b11f2f82c74cf002c994cc05`
 
 Regenerate or check drift (writes to a temp folder in `--check`;
 does not overwrite committed files during validation):

@@ -64,7 +64,7 @@ refit on earlier history, score MAE / MAPE).
 
 Dataset SHA-256:
 
-- `experiments/data/demo_daily_demand.json`: `5a2e850770532f9c13390ad04bd10029a9f2eb79c3bfc2506581605313cbc912`
+- `experiments/data/demo_daily_demand.json`: `e0ad358718005406f51369793c795b581e474224d0303692b806a0b9defb0974`
 
 Regenerate or check drift (writes to a temp folder in `--check`;
 does not overwrite committed files during validation):

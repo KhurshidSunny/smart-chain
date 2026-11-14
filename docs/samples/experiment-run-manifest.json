@@ -3,11 +3,11 @@
   "datasets": [
     {
       "path": "experiments/data/demo_daily_demand.json",
-      "sha256": "5a2e850770532f9c13390ad04bd10029a9f2eb79c3bfc2506581605313cbc912"
+      "sha256": "e0ad358718005406f51369793c795b581e474224d0303692b806a0b9defb0974"
     },
     {
       "path": "experiments/data/anomaly_labels.json",
-      "sha256": "83bad583c3f1a5d6fe7a078b44106476a9227e903e398d00867e1b2269714847"
+      "sha256": "2cf98d51f0e8ea08d5d3805c5a54cb8fa9523f62b11f2f82c74cf002c994cc05"
     }
   ],
   "packages": {
