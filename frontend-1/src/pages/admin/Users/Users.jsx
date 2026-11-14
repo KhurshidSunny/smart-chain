@@ -49,11 +49,6 @@ function Users() {
     fetchUsers();
   }, []);
 
-  // Apply filters whenever users or filters change
-  useEffect(() => {
-    applyFilters();
-  }, [applyFilters]);
-
   const fetchUsers = async () => {
     try {
       const response = await getUsers();
@@ -143,6 +138,10 @@ function Users() {
 
     setFilteredUsers(filtered);
   }, [users, filters]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({

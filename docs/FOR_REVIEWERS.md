@@ -66,6 +66,8 @@ Every retail number is in [retail-forecast-evaluation.md](./retail-forecast-eval
 
 ## 5. Reproduce the demo (5 steps)
 
+Screen walkthrough of that flow: [Smart-Chain walkthrough](https://youtu.be/YOraD9PDP5g).
+
 1. **Start dependencies.** RabbitMQ on `5672` (`docker compose up -d rabbitmq`) and MongoDB (Atlas URI in each service `.env`, or local). Copy every `.env.example` to `.env`.
 2. **Seed data.** In `microservices/iam`: `npm install`, `npm run init-roles`, `npm run seed-users`. In `microservices/inventory`: `npm run seed-products`.
 3. **Start services.** Run `microservices/start-all.bat` (IAM–Logistics + Analytics on 3006), then `cd frontend-1 && npm install && npm run dev` and open http://localhost:5173.

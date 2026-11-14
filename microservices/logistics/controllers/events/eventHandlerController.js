@@ -24,7 +24,7 @@ const handleOrderPacked = async (message, envelope, session) => {
   const trkEvt = new TrackingEvent({
     shipmentId: shipment._id,
     status: 'Created',
-    location: 'N/A',
+    location: 'Warehouse',
   });
   await save(trkEvt, session);
 

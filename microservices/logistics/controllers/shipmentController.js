@@ -1,4 +1,5 @@
 const Shipment = require('../models/shipmentModel');
+const TrackingEvent = require('../models/trackingEventModel');
 const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 const validate = require('../middleware/validate');
 const Joi = require('joi');
@@ -60,6 +61,38 @@ const createShipment = [
     }
 ];
 
+const eventLocation = (shipment) => shipment.deliveryAddress?.city || 'Warehouse';
+
+const recordStatusEvent = async (shipment, session) => {
+    const trackingEvent = new TrackingEvent({
+        shipmentId: shipment._id,
+        status: shipment.status,
+        location: eventLocation(shipment),
+    });
+    await trackingEvent.save({ session });
+};
+
+const eventsForShipment = async (shipment) => {
+    const trackingEvents = await TrackingEvent.find({ shipmentId: shipment._id }).sort({ timestamp: 1 });
+    const location = eventLocation(shipment);
+    for (const event of trackingEvents) {
+        if (event.location === 'N/A') {
+            event.location = event.status === 'Delivered' || event.status === 'OutForDelivery' ? location : 'Warehouse';
+            await event.save();
+        }
+    }
+    const latest = trackingEvents[trackingEvents.length - 1];
+    if (shipment.status && (!latest || latest.status !== shipment.status)) {
+        const recorded = await TrackingEvent.create({
+            shipmentId: shipment._id,
+            status: shipment.status,
+            location: shipment.status === 'Delivered' || shipment.status === 'OutForDelivery' ? location : 'Warehouse',
+        });
+        trackingEvents.push(recorded);
+    }
+    return trackingEvents;
+};
+
 const getShipments = async (req, res) => {
     try {
         const shipments = await Shipment.find().populate('orderId packageId');
@@ -75,7 +108,8 @@ const getShipmentById = async (req, res) => {
         if (!shipment) {
             return res.status(404).json({ message: 'Shipment not found' });
         }
-        res.json(shipment);
+        const trackingEvents = await eventsForShipment(shipment);
+        res.json({ ...shipment.toObject(), trackingEvents });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching shipment', error: error.message });
     }
@@ -95,12 +129,9 @@ const updateShipmentStatus = [
             } else if (req.body.status === 'Delivered') {
                 shipment.actualDeliveryDate = new Date();
             }
-            if (req.body.status !== 'Dispatched' && req.body.status !== 'Delivered') {
-                await shipment.save();
-                return res.json(shipment);
-            }
             await commitDomainAndOutbox(async (session) => {
                 await shipment.save({ session });
+                await recordStatusEvent(shipment, session);
                 if (req.body.status === 'Dispatched') {
                     await publishEvent('logistics.shipment.dispatched', {
                         shipmentId: shipment._id,
@@ -108,7 +139,7 @@ const updateShipmentStatus = [
                         dispatchDate: shipment.dispatchDate,
                         trackingNumber: shipment.trackingNumber
                     }, { session });
-                } else {
+                } else if (req.body.status === 'Delivered') {
                     await publishEvent('logistics.shipment.delivered', {
                         shipmentId: shipment._id,
                         orderId: shipment.orderId,
@@ -116,7 +147,8 @@ const updateShipmentStatus = [
                     }, { session });
                 }
             });
-            res.json(shipment);
+            const trackingEvents = await TrackingEvent.find({ shipmentId: shipment._id }).sort({ timestamp: 1 });
+            res.json({ ...shipment.toObject(), trackingEvents });
         } catch (error) {
             res.status(500).json({ message: 'Error updating shipment status', error: error.message });
         }
@@ -180,5 +212,6 @@ module.exports = {
     getShipmentById,
     updateShipmentStatus,
     dispatchShipment,
-    deliverShipment
+    deliverShipment,
+    eventsForShipment
 };

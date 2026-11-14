@@ -8,6 +8,10 @@ Supply chain management MVP built as a **BS Software Engineering Final Year Proj
 
 This repository is a maintained copy of the original team project ([4f74b/smart-chain](https://github.com/4f74b/smart-chain)), kept for continued development.
 
+## Demo
+
+[Smart-Chain walkthrough](https://youtu.be/YOraD9PDP5g) — a customer order, warehouse picking and packing, shipment tracking, anomaly detection, the inventory forecast and reorder cards, and the admin reports.
+
 ## What it does
 
 Role-based web app for a simple order-to-delivery flow:

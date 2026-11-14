@@ -31,8 +31,12 @@ function ShipmentDetail() {
 
     const handleStatusUpdate = async (status) => {
         try {
-            await updateShipmentStatus(id, { status });
-            setShipment({ ...shipment, status });
+            const response = await updateShipmentStatus(id, { status });
+            if (status === 'Delivered') {
+                navigate('/logistics');
+                return;
+            }
+            setShipment(response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update status');
         }
@@ -43,6 +47,12 @@ function ShipmentDetail() {
 
     return (
         <div className="min-h-screen bg-gray-100 p-6">
+            <button
+                onClick={() => navigate('/logistics')}
+                className="mb-4 text-primary hover:underline"
+            >
+                Back to shipments
+            </button>
             <h1 className="text-3xl font-bold text-primary mb-6">Shipment #{shipment.trackingNumber}</h1>
             <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
                 <div>
@@ -76,6 +86,7 @@ function ShipmentDetail() {
                         <p>No tracking events available.</p>
                     )}
                 </div>
+                {['Created', 'Dispatched', 'InTransit', 'OutForDelivery'].includes(shipment.status) && (
                 <div>
                     <h2 className="text-xl font-semibold text-gray-700 mb-2">Status Actions</h2>
                     <div className="space-x-2">
@@ -121,6 +132,7 @@ function ShipmentDetail() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

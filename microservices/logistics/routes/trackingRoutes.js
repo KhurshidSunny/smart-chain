@@ -7,8 +7,8 @@ const {
     getTrackingByNumber
 } = require('../controllers/trackingController');
 
+router.get('/number/:trackingNumber', getTrackingByNumber);
 router.get('/:id', authMiddleware(['admin', 'warehouse_manager', 'sales_manager', 'logistics_manager', 'customer_service', 'customer']), getTrackingEvents);
 router.post('/:id/tracking-events', authMiddleware(['logistics_manager', 'admin']), createTrackingEvent);
-router.get('/number/:trackingNumber', getTrackingByNumber); // Public endpoint, no auth required
 
 module.exports = router;

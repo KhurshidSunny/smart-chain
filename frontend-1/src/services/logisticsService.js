@@ -1,3 +1,4 @@
+import axios from 'axios';
 import apiClient from './apiClient';
 import { API_URLS } from '../utils/constants';
 
@@ -19,7 +20,20 @@ export const scanDispatch = async (id) => {
 };
 
 export const getTrackingInfo = async (trackingNumber) => {
-    return await apiClient.get(`${API_URLS.LOGISTICS}/tracking/${trackingNumber}`);
+    const response = await axios.get(
+        `${API_URLS.LOGISTICS}/tracking/number/${encodeURIComponent(trackingNumber.trim())}`,
+        { timeout: 10000 }
+    );
+    const body = response.data || {};
+    const shipment = body.shipment || body;
+    return {
+        ...response,
+        data: {
+            ...shipment,
+            shipmentId: shipment._id || body.shipmentId,
+            trackingEvents: body.trackingEvents || shipment.trackingEvents || [],
+        },
+    };
 };
 
 export const confirmDelivery = async (shipmentId) => {

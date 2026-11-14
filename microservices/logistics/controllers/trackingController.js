@@ -1,5 +1,6 @@
 const TrackingEvent = require('../models/trackingEventModel');
 const Shipment = require('../models/shipmentModel');
+const { eventsForShipment } = require('./shipmentController');
 const { publishEvent, commitDomainAndOutbox } = require('../services/eventService');
 const validate = require('../middleware/validate');
 const Joi = require('joi');
@@ -52,8 +53,14 @@ const getTrackingByNumber = async (req, res) => {
         if (!shipment) {
             return res.status(404).json({ message: 'Shipment not found' });
         }
-        const trackingEvents = await TrackingEvent.find({ shipmentId: shipment._id });
-        res.json({ shipment, trackingEvents });
+        const trackingEvents = await eventsForShipment(shipment);
+        const body = shipment.toObject();
+        res.json({
+            ...body,
+            shipmentId: shipment._id,
+            trackingEvents,
+            shipment: body,
+        });
     } catch (error) {
         res.status(500).json({ message: 'Error fetching tracking details', error: error.message });
     }
